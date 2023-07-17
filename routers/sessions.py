@@ -12,21 +12,21 @@ router = APIRouter(
 )
 
 @router.get("/per_supervisor/{supervisor}")
-def session_supervisor(supervisor: str, auth: dict = Depends(check_authentication_header)):
+def session_supervisor(supervisor: str):
     cmd = f"sophomorix-session -i --supervisor {supervisor} -jj".split()
     return lmn_getSophomorixValue(cmd, '')
 
 @router.get("/{session}")
-def get_session_sessionname(session: str, auth: dict = Depends(check_authentication_header)):
+def get_session_sessionname(session: str):
     cmd = f"sophomorix-session -i --session {session} -jj".split()
     return lmn_getSophomorixValue(cmd, '')
 
 @router.delete("/{session}")
-def delete_session(session: str, auth: dict = Depends(check_authentication_header)):
+def delete_session(session: str):
     cmd = f"sophomorix-session --session {session} --kill -jj".split()
     return lmn_getSophomorixValue(cmd, '')
 
 @router.post("/session/{supervisor}/{sessionname}")
-def session_create(supervisor: str, sessionname: str, auth: dict = Depends(check_authentication_header)):
+def session_create(supervisor: str, sessionname: str):
     cmd = f"sophomorix-session --create --supervisor {supervisor} --comment {sessionname} -jj".split()
     return lmn_getSophomorixValue(cmd, '')
