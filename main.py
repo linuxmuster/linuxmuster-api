@@ -1,13 +1,14 @@
 from fastapi import FastAPI, Depends
 from fastapi.responses import HTMLResponse
 
-from routers import users, sessions
+from routers import users, sessions, query
 
 
 app = FastAPI()
 
 app.include_router(users.router)
 app.include_router(sessions.router)
+app.include_router(query.router)
 
 @app.get("/", response_class=HTMLResponse)
 def root_response():
