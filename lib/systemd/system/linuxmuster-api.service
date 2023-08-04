@@ -1,0 +1,10 @@
+[Unit]
+Description=linuxmuster.net API
+After=network.target
+
+[Service]
+WorkingDirectory=/usr/lib/python3/dist-packages/linuxmusterApi7
+ExecStart=/usr/local/bin/uvicorn main:app --host 0.0.0.0 --ssl-keyfile /etc/ajenti/ajenti.pem --ssl-certfile /etc/ajenti/ajenti.pem
+
+[Install]
+WantedBy=multi-user.target
