@@ -4,8 +4,8 @@ import subprocess
 
 from security import PermissionChecker
 from utils import lmn_getSophomorixValue
-from ldapconnector.connector import LdapConnector
-from ldapconnector.models import LMNUser
+from linuxmusterTools.ldapconnector.connector import LdapConnector
+from linuxmusterTools.ldapconnector.models import LMNUser
 
 
 router = APIRouter(
