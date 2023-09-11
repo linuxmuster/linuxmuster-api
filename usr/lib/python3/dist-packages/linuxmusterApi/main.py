@@ -3,7 +3,7 @@ from fastapi import FastAPI, Depends, Request
 from fastapi.responses import HTMLResponse
 
 
-app = FastAPI()
+app = FastAPI(swagger_ui_parameters={"tryItOutEnabled": True})
 
 # V1
 from routers_v1 import users, sessions, query
