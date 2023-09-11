@@ -10,7 +10,7 @@ from linuxmusterTools.ldapconnector.models import LMNUser
 
 router = APIRouter(
     prefix="/users",
-    tags=["users"],
+    tags=["Users"],
     responses={404: {"description": "Not found"}},
 )
 

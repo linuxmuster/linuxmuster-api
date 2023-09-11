@@ -6,7 +6,7 @@ from utils import lmn_getSophomorixValue
 
 router = APIRouter(
     prefix="/query",
-    tags=["query"],
+    tags=["Query"],
     responses={404: {"description": "Not found"}},
 )
 

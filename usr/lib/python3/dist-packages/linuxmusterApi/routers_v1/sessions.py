@@ -6,7 +6,7 @@ from utils import lmn_getSophomorixValue
 
 router = APIRouter(
     prefix="/sessions",
-    tags=["sessions"],
+    tags=["Sessions"],
     responses={404: {"description": "Not found"}},
 )
 
