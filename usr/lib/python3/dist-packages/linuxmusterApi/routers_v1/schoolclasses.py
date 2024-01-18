@@ -28,6 +28,10 @@ def get_schoolclass(schoolclass: str, auth: bool = Depends(PermissionChecker(["g
     Get all details from a specific schoolclass.
     """
 
+    schoolclasses = [s['cn'] for s in lr.get('/schoolclasses', attributes=['cn'])]
+    if schoolclass not in schoolclasses:
+        raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
+
     return lr.get(f'/schoolclasses/{schoolclass}')
 
 @router.get("/{schoolclass}/first_passwords")
@@ -35,5 +39,9 @@ def get_schoolclass_passwords(schoolclass: str, auth: bool = Depends(PermissionC
     """
     Get all passwords from a specific schoolclass.
     """
+
+    schoolclasses = [s['cn'] for s in lr.get('/schoolclasses', attributes=['cn'])]
+    if schoolclass not in schoolclasses:
+        raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
     return lr.get(f'/schoolclasses/{schoolclass}', dict=False).get_first_passwords()
