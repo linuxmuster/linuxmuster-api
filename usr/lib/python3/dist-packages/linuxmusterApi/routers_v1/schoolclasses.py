@@ -18,7 +18,6 @@ def check_schoolclass(schoolclass):
     if schoolclass not in schoolclasses:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
-
 @router.get("/")
 def get_all_schoolclasses(auth: bool = Depends(PermissionChecker("globaladministrator"))):
     """

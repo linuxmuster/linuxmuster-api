@@ -13,7 +13,6 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-
 @router.get("/")
 def get_all_users(auth: bool = Depends(PermissionChecker("globaladministrator"))):
     """

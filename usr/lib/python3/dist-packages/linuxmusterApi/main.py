@@ -6,12 +6,13 @@ from fastapi.responses import HTMLResponse
 app = FastAPI(swagger_ui_parameters={"tryItOutEnabled": True})
 
 # V1
-from routers_v1 import users, sessions, query, schoolclasses
+from routers_v1 import users, sessions, query, schoolclasses, teachers
 
 app.include_router(users.router, prefix="/v1")
 app.include_router(sessions.router, prefix="/v1")
 app.include_router(query.router, prefix="/v1")
 app.include_router(schoolclasses.router, prefix="/v1")
+app.include_router(teachers.router, prefix="/v1")
 
 @app.middleware("http")
 async def add_process_time_logging(request: Request, call_next):
