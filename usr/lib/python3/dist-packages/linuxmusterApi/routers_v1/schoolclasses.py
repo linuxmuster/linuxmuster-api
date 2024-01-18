@@ -13,6 +13,11 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+def check_schoolclass(schoolclass):
+    schoolclasses = [s['cn'] for s in lr.get('/schoolclasses', attributes=['cn'])]
+    if schoolclass not in schoolclasses:
+        raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
+
 
 @router.get("/")
 def get_all_schoolclasses(auth: bool = Depends(PermissionChecker("globaladministrator"))):
@@ -28,9 +33,7 @@ def get_schoolclass(schoolclass: str, auth: bool = Depends(PermissionChecker(["g
     Get all details from a specific schoolclass.
     """
 
-    schoolclasses = [s['cn'] for s in lr.get('/schoolclasses', attributes=['cn'])]
-    if schoolclass not in schoolclasses:
-        raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
+    check_schoolclass(schoolclass)
 
     return lr.get(f'/schoolclasses/{schoolclass}')
 
@@ -40,8 +43,16 @@ def get_schoolclass_passwords(schoolclass: str, auth: bool = Depends(PermissionC
     Get all passwords from a specific schoolclass.
     """
 
-    schoolclasses = [s['cn'] for s in lr.get('/schoolclasses', attributes=['cn'])]
-    if schoolclass not in schoolclasses:
-        raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
+    check_schoolclass(schoolclass)
 
     return lr.get(f'/schoolclasses/{schoolclass}', dict=False).get_first_passwords()
+
+@router.get("/{schoolclass}/students")
+def get_schoolclass_passwords(schoolclass: str, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+    """
+    Get all students details from a specific schoolclass.
+    """
+
+    check_schoolclass(schoolclass)
+
+    return lr.get(f'/schoolclasses/{schoolclass}/students')
