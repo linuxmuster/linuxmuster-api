@@ -1,6 +1,8 @@
 dpath==2.0.6         # used for getSophomorixValue
 fastapi
+pyOpenSSL
 python-ldap
 pyyaml
+uvicorn
 websockets>=11.0.3
 
