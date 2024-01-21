@@ -58,8 +58,8 @@ if __name__ == "__main__":
     config['uvicorn'].setdefault('host', '0.0.0.0')
     config['uvicorn'].setdefault('port', 8001)
     # Using the same certificates as the Webui
-    config['uvicorn'].setdefault('ssl_keyfile', '/etc/ajenti/ajenti.pem')
-    config['uvicorn'].setdefault('ssl_certfile', '/etc/ajenti/ajenti.pem')
+    config['uvicorn'].setdefault('ssl_keyfile', '/etc/linuxmuster/api/lmnapi.pem')
+    config['uvicorn'].setdefault('ssl_certfile', '/etc/linuxmuster/api/lmnapi.pem')
     config['uvicorn'].setdefault('log_level', 'info')
 
     uvicorn.run("main:app", **config['uvicorn'])
