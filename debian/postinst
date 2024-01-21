@@ -11,18 +11,36 @@ msg()
     message=$1
     echo
     # Bold and orange font for linuxmuster.net
-    echo "\e[1m\e[38;5;214m$message\e[39m\e[0m"
+    echo -e "\e[1m\e[38;5;214m$message\e[39m\e[0m"
     echo
 }
 
 case "$1" in
     install|configure)
         msg "Install Python requirements"
-        /usr/bin/python3 -m pip install -r /usr/lib/python3/dist-packages/linuxmusterApi7/requirements.txt
-        
+        /usr/bin/python3 -m pip install -r /usr/lib/python3/dist-packages/linuxmusterApi/requirements.txt
+
+        msg "Checking config file"
+        if [ ! -f "/etc/linuxmuster/api/config.yml" ] ; then
+            mkdir -p /etc/linuxmuster/api
+            cat << EOF > /etc/linuxmuster/api/config.yml
+uvicorn:
+  port: 8001
+  host: 0.0.0.0
+  ssl_certfile: /etc/linuxmuster/api/lmnapi.pem
+  ssl_keyfile: /etc/linuxmuster/api/lmnapi.pem
+  log_level: info
+EOF
+        fi
+
+        msg "Checking certificate"
+        if [ ! -f "/etc/linuxmuster/api/lmnapi.pem" ] ; then
+            /usr/lib/python3/dist-packages/linuxmusterApi/lmnapi-ssl-gen.py
+        fi
+
         msg "Reload service linuxmuster-api"
-        systemctl daemon-reload
         systemctl enable linuxmuster-api
+        systemctl daemon-reload
         systemctl restart linuxmuster-api
     ;;
 
