@@ -1,4 +1,9 @@
+#! /usr/bin/env python3
+
 import time
+import uvicorn
+import yaml
+import os
 from fastapi import FastAPI, Depends, Request
 from fastapi.responses import HTMLResponse
 
@@ -41,3 +46,20 @@ def home():
 </html>
     """
 
+if __name__ == "__main__":
+    config = {}
+    config_path = '/etc/linuxmuster/api/config.yml'
+    if os.path.isfile(config_path):
+        with open(config_path, 'r') as config_file:
+            config = yaml.load(config_file, Loader=yaml.SafeLoader)
+
+    # Ensure config data
+    config.setdefault('uvicorn', {})
+    config['uvicorn'].setdefault('host', '0.0.0.0')
+    config['uvicorn'].setdefault('port', 8001)
+    # Using the same certificates as the Webui
+    config['uvicorn'].setdefault('ssl_keyfile', '/etc/ajenti/ajenti.pem')
+    config['uvicorn'].setdefault('ssl_certfile', '/etc/ajenti/ajenti.pem')
+    config['uvicorn'].setdefault('log_level', 'info')
+
+    uvicorn.run("main:app", **config['uvicorn'])
