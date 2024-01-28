@@ -1,4 +1,10 @@
-linuxmuster-api7 (0.0.1) lmn72; urgency=medium
+linuxmuster-api8 (8.0.1) lmn8; urgency=medium
+
+  * Second test package. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 28 Jan 2024 17:36:53 +0100
+
+linuxmuster-api8 (8.0.0) lmn8; urgency=medium
 
   * First test package 
 
