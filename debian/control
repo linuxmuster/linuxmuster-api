@@ -1,4 +1,4 @@
-Source: linuxmuster-api7
+Source: linuxmuster-api8
 Section: linuxmuster
 Priority: optional
 Maintainer: Arnaud Kientz <arnaud@linuxmuster.net>
@@ -7,5 +7,5 @@ Standards-Version: 5.0.0
 
 Package: linuxmuster-api7
 Architecture: all
-Depends: python3
-Description: Api for the linuxmuster.net 7 server.
+Depends: python3, linuxmuster-tools8
+Description: Api for the linuxmuster.net 8 server.
