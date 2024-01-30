@@ -1,6 +1,11 @@
 from fastapi import Depends, HTTPException
 from fastapi.security import APIKeyHeader
 from starlette import status
+import jwt
+import base64
+import yaml
+
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
 X_API_KEY = APIKeyHeader(name='X-API-Key')
@@ -10,22 +15,28 @@ async def check_authentication_header(x_api_key: str = Depends(X_API_KEY)):
     Return role associated with the api key.
     """
 
-    # Must read from config file
-    api_keys = {
-        "1": "globaladministrator",
-        "2": "schooladministrator",
-        "3": "teacher",
-        "4": "student"
-    }
+    with open('/etc/linuxmuster/api/config.yml', 'r') as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
 
-    # incredible strong password for test purpose
-    if x_api_key in api_keys:
-        return api_keys[x_api_key]
+    secret = base64.b64decode(config['secret'])
 
-    raise HTTPException(
-        status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Invalid API Key",
-    )
+    try:
+        payload = jwt.decode(x_api_key, secret, algorithms=["HS512", "HS256"])
+        user = payload['user']
+    except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API Key",
+        )
+
+    # role may be eventually None
+    role = lr.getval(f'/users/{user}', 'sophomorixRole')
+
+    # No memory leak
+    secret = ''
+
+    return role.get('sophomorixRole', None)
+
 
 class PermissionChecker:
     """
