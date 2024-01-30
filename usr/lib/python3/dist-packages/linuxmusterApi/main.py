@@ -4,6 +4,9 @@ import time
 import uvicorn
 import yaml
 import os
+import sys
+import base64
+import binascii
 from fastapi import FastAPI, Depends, Request
 from fastapi.responses import HTMLResponse
 
@@ -60,6 +63,22 @@ if __name__ == "__main__":
     if os.path.isfile(config_path):
         with open(config_path, 'r') as config_file:
             config = yaml.load(config_file, Loader=yaml.SafeLoader)
+
+    secret = config.get('secret', None)
+    if not secret:
+        print('Linuxmuster-api can not work without secret key, please configure it first.')
+        sys.exit(1)
+
+    try:
+        secret_decoded = base64.b64decode(secret)
+        if len(secret_decoded) < 64:
+            print('Secret key should at least be 512 bits long for an optimal security.')
+            sys.exit(1)
+    except binascii.Error as e:
+        print(f'Invalid secret key in config.yml: {e}')
+        sys.exit(1)
+
+    secret = ''
 
     # Ensure config data
     config.setdefault('uvicorn', {})
