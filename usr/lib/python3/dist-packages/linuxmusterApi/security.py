@@ -1,14 +1,16 @@
 from fastapi import Depends, HTTPException
-from fastapi.security import APIKeyHeader
+from fastapi.security import APIKeyHeader, HTTPBasic, HTTPBasicCredentials
 from starlette import status
 import jwt
 import base64
 import yaml
+from typing_extensions import Annotated
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
 X_API_KEY = APIKeyHeader(name='X-API-Key')
+BASIC_AUTH = HTTPBasic()
 
 async def generate_jwt(user):
     """
@@ -84,3 +86,17 @@ class PermissionChecker:
             detail='Permissions denied'
         )
 
+class BasicAuthChecker:
+    """
+    Check username and password from basic auth.
+    """
+
+    async def __call__(self, credentials: Annotated[HTTPBasicCredentials, Depends(BASIC_AUTH)]) -> bool:
+        user = lr.get(f'/users/{credentials.username}', dict=False)
+        if user.test_password(password=credentials.password):
+            return await generate_jwt(user.cn)
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Wrong credentials, please send a valid username and password.'
+        )
