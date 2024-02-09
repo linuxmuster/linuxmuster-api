@@ -29,14 +29,11 @@ async def check_authentication_header(x_api_key: str = Depends(X_API_KEY)):
             detail="Invalid API Key",
         )
 
-    # role may be eventually None
-    role = lr.getval(f'/users/{user}', 'sophomorixRole')
-
     # No memory leak
     secret = ''
 
-    return role.get('sophomorixRole', None)
-
+    # role may be eventually None
+    return lr.getval(f'/users/{user}', 'sophomorixRole')
 
 class PermissionChecker:
     """
