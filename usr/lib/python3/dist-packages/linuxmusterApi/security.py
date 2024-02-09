@@ -10,6 +10,33 @@ from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 X_API_KEY = APIKeyHeader(name='X-API-Key')
 
+async def generate_jwt(user):
+    """
+    Generate a valid jwt for a specific user.
+
+    :param user: concerned user
+    :type user: basestring
+    :return: jwt
+    :rtype: basestring
+    """
+
+    user_details = lr.get(f'/users/{user}')
+    if not user_details:
+        # User not found in ldap tree, discarding request
+        return ''
+
+    with open('/etc/linuxmuster/api/config.yml', 'r') as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
+
+    secret = base64.b64decode(config['secret'])
+
+    payload  = {
+        'user': user,
+        'role': user_details['sophomorixRole'],
+    }
+
+    return jwt.encode(payload, secret, algorithm="HS512")
+
 async def check_authentication_header(x_api_key: str = Depends(X_API_KEY)):
     """
     Return role associated with the api key.
