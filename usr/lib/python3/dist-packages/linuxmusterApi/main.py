@@ -15,6 +15,7 @@ app = FastAPI(swagger_ui_parameters={"tryItOutEnabled": True})
 
 # V1
 from routers_v1 import (
+    auth,
     query,
     managementgroup,
     roles,
@@ -24,6 +25,7 @@ from routers_v1 import (
     users,
 )
 
+app.include_router(auth.router, prefix="/v1")
 app.include_router(query.router, prefix="/v1")
 app.include_router(managementgroup.router, prefix="/v1")
 app.include_router(schoolclasses.router, prefix="/v1")
