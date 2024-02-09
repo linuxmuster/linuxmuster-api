@@ -37,7 +37,12 @@ async def generate_jwt(user):
         'role': user_details['sophomorixRole'],
     }
 
-    return jwt.encode(payload, secret, algorithm="HS512")
+    token = jwt.encode(payload, secret, algorithm="HS512")
+
+    # No memory leak
+    secret = ''
+
+    return token
 
 async def check_authentication_header(x_api_key: str = Depends(X_API_KEY)):
     """
@@ -91,7 +96,7 @@ class BasicAuthChecker:
     Check username and password from basic auth.
     """
 
-    async def __call__(self, credentials: Annotated[HTTPBasicCredentials, Depends(BASIC_AUTH)]) -> bool:
+    async def __call__(self, credentials: Annotated[HTTPBasicCredentials, Depends(BASIC_AUTH)]) -> str:
         user = lr.get(f'/users/{credentials.username}', dict=False)
         if user.test_password(password=credentials.password):
             return await generate_jwt(user.cn)
