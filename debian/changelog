@@ -1,18 +1,5 @@
-linuxmuster-api8 (8.0.2) lmn80; urgency=medium
+linuxmuster-api8 (7.2.1) lmn72; urgency=medium
 
-  * Secret key as JWT
-  * URLS for management groups 
+  * First test package. Do NOT use it in production. 
 
- -- Arnaud Kientz <arnaud@linuxmuster.net>  Tue, 30 Jan 2024 18:03:12 +0100
-
-linuxmuster-api8 (8.0.1) lmn80; urgency=medium
-
-  * Second test package. 
-
- -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 28 Jan 2024 17:36:53 +0100
-
-linuxmuster-api8 (8.0.0) lmn80; urgency=medium
-
-  * First test package 
-
- -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 02 Aug 2023 12:31:31 +0200
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Mon, 12 Feb 2024 10:35:55 +0100
