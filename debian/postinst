@@ -34,6 +34,7 @@ uvicorn:
 secret: $SECRET_KEY
 EOF
         fi
+        chmod 600 /etc/linuxmuster/api/config.yml
 
         msg "Checking certificate"
         if [ ! -f "/etc/linuxmuster/api/lmnapi.pem" ] ; then
