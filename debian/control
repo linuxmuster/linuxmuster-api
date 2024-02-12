@@ -1,11 +1,11 @@
-Source: linuxmuster-api8
+Source: linuxmuster-api7
 Section: linuxmuster
 Priority: optional
 Maintainer: Arnaud Kientz <arnaud@linuxmuster.net>
 Build-Depends: debhelper (>= 5.0.0)
 Standards-Version: 5.0.0
 
-Package: linuxmuster-api8
+Package: linuxmuster-api7
 Architecture: all
-Depends: openssl, linuxmuster-tools8, python3
-Description: Api for the linuxmuster.net 8 server.
+Depends: openssl, linuxmuster-tools7, python3
+Description: Api for the linuxmuster.net 7 server.
