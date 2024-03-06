@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import FileResponse
-import subprocess
+from pydantic import BaseModel
 
 from security import PermissionChecker
-from utils import lmn_getSophomorixValue
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
 
 
 router = APIRouter(
@@ -12,6 +11,9 @@ router = APIRouter(
     tags=["Users"],
     responses={404: {"description": "Not found"}},
 )
+
+class Password(BaseModel):
+    password: str
 
 @router.get("/")
 def get_all_users(auth: bool = Depends(PermissionChecker("globaladministrator"))):
@@ -29,3 +31,11 @@ def get_user(user: str, auth: bool = Depends(PermissionChecker(["globaladministr
 
     return lr.get(f'/users/{user}')
 
+@router.post("/{user}/set-first-password")
+def set_first_user_password(user: str, password: Password, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+    """
+    Set first password from a specific user.
+    """
+
+    # TODO : paswword constraints ?
+    lw.set(user, 'user', {'sophomorixFirstPassword': password.password})
