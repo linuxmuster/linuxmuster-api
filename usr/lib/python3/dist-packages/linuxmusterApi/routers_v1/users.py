@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 from security import PermissionChecker
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
@@ -14,8 +14,13 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-class Password(BaseModel):
+class SetFirstPassword(BaseModel):
     password: str
+    set_current: bool = Field(default= False)
+
+class SetCurrentPassword(BaseModel):
+    password: str
+    set_first: bool = Field(default= False)
 
 @router.get("/")
 def get_all_users(auth: bool = Depends(PermissionChecker("globaladministrator"))):
@@ -34,16 +39,21 @@ def get_user(user: str, auth: bool = Depends(PermissionChecker(["globaladministr
     return lr.get(f'/users/{user}')
 
 @router.post("/{user}/set-first-password")
-def set_first_user_password(user: str, password: Password, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+def set_first_user_password(user: str, password: SetFirstPassword, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
     """
     Set first password from a specific user.
     """
 
     # TODO : paswword constraints ?
     lw.set(user, 'user', {'sophomorixFirstPassword': password.password})
+    if password.set_current:
+        try:
+            user_manager.set_password(user, password.password)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Cannot set current password: {str(e)}")
 
 @router.post("/{user}/set-current-password")
-def set_current_user_password(user: str, password: Password, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+def set_current_user_password(user: str, password: SetCurrentPassword, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
     """
     Set current password from a specific user.
     """
@@ -52,3 +62,7 @@ def set_current_user_password(user: str, password: Password, auth: bool = Depend
         user_manager.set_password(user, password.password)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+    if password.set_first:
+        # TODO : paswword constraints ?
+        lw.set(user, 'user', {'sophomorixFirstPassword': password.password})
