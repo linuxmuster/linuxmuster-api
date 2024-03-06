@@ -4,7 +4,9 @@ from pydantic import BaseModel
 from security import PermissionChecker
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
+from linuxmusterTools.samba_util import UserManager
 
+user_manager = UserManager()
 
 router = APIRouter(
     prefix="/users",
@@ -39,3 +41,14 @@ def set_first_user_password(user: str, password: Password, auth: bool = Depends(
 
     # TODO : paswword constraints ?
     lw.set(user, 'user', {'sophomorixFirstPassword': password.password})
+
+@router.post("/{user}/set-current-password")
+def set_current_user_password(user: str, password: Password, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+    """
+    Set current password from a specific user.
+    """
+
+    try:
+        user_manager.set_password(user, password.password)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
