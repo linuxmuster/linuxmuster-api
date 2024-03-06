@@ -67,7 +67,10 @@ async def check_authentication_header(x_api_key: str = Depends(X_API_KEY)):
     secret = ''
 
     # role may be eventually None
-    return lr.getval(f'/users/{user}', 'sophomorixRole')
+    return {
+        "user": user,
+        "role": lr.getval(f'/users/{user}', 'sophomorixRole')
+    }
 
 class PermissionChecker:
     """
@@ -82,8 +85,10 @@ class PermissionChecker:
         elif isinstance(roles, str):
             self.roles = [roles]
 
-    def __call__(self, group: str = Depends(check_authentication_header)) -> bool:
-        if group in self.roles:
+    def __call__(self, who: dict = Depends(check_authentication_header), user=None) -> bool:
+        if who["role"] in self.roles:
+            return True
+        if who["user"] == user:
             return True
 
         raise HTTPException(
