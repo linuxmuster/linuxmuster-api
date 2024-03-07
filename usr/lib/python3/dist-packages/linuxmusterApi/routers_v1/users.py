@@ -5,6 +5,8 @@ from security import PermissionChecker
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
 from linuxmusterTools.samba_util import UserManager
+import linuxmusterTools.quotas
+
 
 user_manager = UserManager()
 
@@ -66,3 +68,15 @@ def set_current_user_password(user: str, password: SetCurrentPassword, auth: boo
     if password.set_first:
         # TODO : paswword constraints ?
         lw.set(user, 'user', {'sophomorixFirstPassword': password.password})
+
+
+@router.get("/{user}/quotas")
+def get_user_quotas(user: str, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+    """
+    Get current used quotas from a specific user.
+    """
+
+    try:
+       return linuxmusterTools.quotas.get_user_quotas(user)
+    except Exception as e:
+        raise HttpException(status_code=404, detail=str(e))
