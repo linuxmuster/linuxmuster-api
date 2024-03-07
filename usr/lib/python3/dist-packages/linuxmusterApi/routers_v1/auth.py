@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from security import generate_jwt, BasicAuthChecker
+from security import BasicAuthChecker
 
 
 router = APIRouter(
