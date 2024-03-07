@@ -19,7 +19,7 @@ def check_schoolclass(schoolclass):
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
 @router.get("/")
-def get_all_schoolclasses(auth: bool = Depends(PermissionChecker("globaladministrator"))):
+def get_all_schoolclasses(auth: bool = Depends(PermissionChecker("GS"))):
     """
     Get alls schoolclasses
     """
@@ -27,31 +27,34 @@ def get_all_schoolclasses(auth: bool = Depends(PermissionChecker("globaladminist
     return lr.get('/schoolclasses')
 
 @router.get("/{schoolclass}")
-def get_schoolclass(schoolclass: str, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+def get_schoolclass(schoolclass: str, auth: bool = Depends(PermissionChecker("GST"))):
     """
     Get all details from a specific schoolclass.
     """
 
+    # TODO: Check group membership
     check_schoolclass(schoolclass)
 
     return lr.get(f'/schoolclasses/{schoolclass}')
 
 @router.get("/{schoolclass}/first_passwords")
-def get_schoolclass_passwords(schoolclass: str, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+def get_schoolclass_passwords(schoolclass: str, auth: bool = Depends(PermissionChecker("GST"))):
     """
     Get all passwords from a specific schoolclass.
     """
 
+    # TODO: Check group membership
     check_schoolclass(schoolclass)
 
     return lr.get(f'/schoolclasses/{schoolclass}', dict=False).get_first_passwords()
 
 @router.get("/{schoolclass}/students")
-def get_schoolclass_passwords(schoolclass: str, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+def get_schoolclass_passwords(schoolclass: str, auth: bool = Depends(PermissionChecker("GST"))):
     """
     Get all students details from a specific schoolclass.
     """
 
+    # TODO: Check group membership
     check_schoolclass(schoolclass)
 
     return lr.get(f'/schoolclasses/{schoolclass}/students')

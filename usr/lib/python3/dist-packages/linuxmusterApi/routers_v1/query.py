@@ -11,7 +11,15 @@ router = APIRouter(
 )
 
 @router.get("/{school}/{sam}")
-def query_user(school: str='default-school', sam: str='', auth: bool = Depends(PermissionChecker("globaladministrator"))):
+def query_user(school: str='default-school', sam: str='', auth: bool = Depends(PermissionChecker("GST"))):
+    """
+    Search user in LDAP per sAMAccountName.
+
+    :param school: school name
+    :type school: basestring
+    :param sam: samaccountname of the user. May be incomplete
+    :type sam: basestring
+    """
 
     if school == 'global':
         return lr.get(f'/search/{sam}')

@@ -25,7 +25,7 @@ class SetCurrentPassword(BaseModel):
     set_first: bool = Field(default= False)
 
 @router.get("/")
-def get_all_users(auth: bool = Depends(PermissionChecker("globaladministrator"))):
+def get_all_users(auth: bool = Depends(PermissionChecker("G"))):
     """
     Get basic informations from all users
     """
@@ -33,7 +33,7 @@ def get_all_users(auth: bool = Depends(PermissionChecker("globaladministrator"))
     return lr.get('/users', attributes=['sn', 'givenName', 'sophomorixRole', 'sophomorixAdminClass'])
 
 @router.get("/{user}")
-def get_user(user: str, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+def get_user(user: str, auth: bool = Depends(PermissionChecker("ST"))):
     """
     Get all details from a specific user.
     """
@@ -41,7 +41,7 @@ def get_user(user: str, auth: bool = Depends(PermissionChecker(["globaladministr
     return lr.get(f'/users/{user}')
 
 @router.post("/{user}/set-first-password")
-def set_first_user_password(user: str, password: SetFirstPassword, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+def set_first_user_password(user: str, password: SetFirstPassword, auth: bool = Depends(PermissionChecker("GST"))):
     """
     Set first password from a specific user.
     """
@@ -55,7 +55,7 @@ def set_first_user_password(user: str, password: SetFirstPassword, auth: bool = 
             raise HTTPException(status_code=400, detail=f"Cannot set current password: {str(e)}")
 
 @router.post("/{user}/set-current-password")
-def set_current_user_password(user: str, password: SetCurrentPassword, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+def set_current_user_password(user: str, password: SetCurrentPassword, auth: bool = Depends(PermissionChecker("GST"))):
     """
     Set current password from a specific user.
     """
@@ -71,7 +71,7 @@ def set_current_user_password(user: str, password: SetCurrentPassword, auth: boo
 
 
 @router.get("/{user}/quotas")
-def get_user_quotas(user: str, auth: bool = Depends(PermissionChecker(["globaladministrator"]))):
+def get_user_quotas(user: str, auth: bool = Depends(PermissionChecker("GST"))):
     """
     Get current used quotas from a specific user.
     """

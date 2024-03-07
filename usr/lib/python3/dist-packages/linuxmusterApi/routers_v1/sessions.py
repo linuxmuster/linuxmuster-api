@@ -10,22 +10,25 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+# TODO: rewrite the whole with lr and lw
+# TODO: Permissions
+
 @router.get("/per_supervisor/{supervisor}")
-def session_supervisor(supervisor: str, auth: bool = Depends(PermissionChecker("globaladministrator"))):
+def session_supervisor(supervisor: str, auth: bool = Depends(PermissionChecker("GS"))):
     cmd = f"sophomorix-session -i --supervisor {supervisor} -jj".split()
     return lmn_getSophomorixValue(cmd, '')
 
 @router.get("/{session}")
-def get_session_sessionname(session: str, auth: bool = Depends(PermissionChecker("globaladministrator"))):
+def get_session_sessionname(session: str, auth: bool = Depends(PermissionChecker("GS"))):
     cmd = f"sophomorix-session -i --session {session} -jj".split()
     return lmn_getSophomorixValue(cmd, '')
 
 @router.delete("/{session}")
-def delete_session(session: str, auth: bool = Depends(PermissionChecker("globaladministrator"))):
+def delete_session(session: str, auth: bool = Depends(PermissionChecker("GS"))):
     cmd = f"sophomorix-session --session {session} --kill -jj".split()
     return lmn_getSophomorixValue(cmd, '')
 
 @router.post("/session/{supervisor}/{sessionname}")
-def session_create(supervisor: str, sessionname: str, auth: bool = Depends(PermissionChecker("globaladministrator"))):
+def session_create(supervisor: str, sessionname: str, auth: bool = Depends(PermissionChecker("GS"))):
     cmd = f"sophomorix-session --create --supervisor {supervisor} --comment {sessionname} -jj".split()
     return lmn_getSophomorixValue(cmd, '')
