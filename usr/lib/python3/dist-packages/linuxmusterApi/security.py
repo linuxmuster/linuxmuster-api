@@ -79,11 +79,22 @@ class PermissionChecker:
     access its own informations.
     """
 
+    ROLES_MAPPING = {
+        'G': 'globaladministrator',
+        'S': 'schooladministrator',
+        'T': 'teacher',
+        's': 'student'
+    }
+
     def __init__(self, roles) -> None:
         if isinstance(roles, list):
             self.roles = roles
         elif isinstance(roles, str):
-            self.roles = [roles]
+            self.roles = [
+                self.ROLES_MAPPING[alias]
+                for alias in roles if alias in self.ROLES_MAPPING
+            ]
+
 
     def _check_role_permissions(self, who, requested_user):
 
