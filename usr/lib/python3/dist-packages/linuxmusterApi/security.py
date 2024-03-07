@@ -138,13 +138,13 @@ class PermissionChecker:
 
     def __call__(self, who: dict = Depends(check_authentication_header), user=None) -> bool:
 
-        if who["role"] in self.roles or who["role"] == 'globaladministrator':
+        if who["role"] == 'globaladministrator':
             return True
 
         if who["user"] == user:
             return True
 
-        if self._check_role_permissions(who, user):
+        if who["role"] in self.roles and self._check_role_permissions(who, user):
             return True
 
         raise HTTPException(
