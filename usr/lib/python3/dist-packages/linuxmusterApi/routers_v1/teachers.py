@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 import subprocess
 
-from security import PermissionChecker
+from security import RoleChecker
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
@@ -19,7 +19,7 @@ def check_teacher(teacher):
         raise HTTPException(status_code=404, detail=f"Teacher {teacher} not found")
 
 @router.get("/")
-def get_all_teachers(auth: bool = Depends(PermissionChecker("GS"))):
+def get_all_teachers(auth: bool = Depends(RoleChecker("GS"))):
     """
     Get basic informations from all teachers
     """
@@ -27,7 +27,7 @@ def get_all_teachers(auth: bool = Depends(PermissionChecker("GS"))):
     return lr.get('/roles/teacher')
 
 @router.get("/{teacher}")
-def get_teacher(teacher: str, auth: bool = Depends(PermissionChecker("GS"))):
+def get_teacher(teacher: str, auth: bool = Depends(RoleChecker("GS"))):
     """
     Get all details from a specific teacher.
     """

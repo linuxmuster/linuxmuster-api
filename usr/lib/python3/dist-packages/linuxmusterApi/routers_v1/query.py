@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from security import PermissionChecker
+from security import RoleChecker
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
@@ -11,7 +11,7 @@ router = APIRouter(
 )
 
 @router.get("/{school}/{sam}")
-def query_user(school: str='default-school', sam: str='', auth: bool = Depends(PermissionChecker("GST"))):
+def query_user(school: str='default-school', sam: str='', auth: bool = Depends(RoleChecker("GST"))):
     """
     Search user in LDAP per sAMAccountName.
 

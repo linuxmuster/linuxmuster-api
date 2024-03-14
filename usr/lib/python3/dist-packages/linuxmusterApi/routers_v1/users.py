@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from security import PermissionChecker
+from security import RoleChecker, UserChecker
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
 from linuxmusterTools.samba_util import UserManager
@@ -25,7 +25,7 @@ class SetCurrentPassword(BaseModel):
     set_first: bool = Field(default= False)
 
 @router.get("/")
-def get_all_users(auth: bool = Depends(PermissionChecker("G"))):
+def get_all_users(auth: bool = Depends(RoleChecker("G"))):
     """
     Get basic informations from all users
     """
@@ -33,7 +33,7 @@ def get_all_users(auth: bool = Depends(PermissionChecker("G"))):
     return lr.get('/users', attributes=['sn', 'givenName', 'sophomorixRole', 'sophomorixAdminClass'])
 
 @router.get("/{user}")
-def get_user(user: str, auth: bool = Depends(PermissionChecker("ST"))):
+def get_user(user: str, auth: bool = Depends(UserChecker("ST"))):
     """
     Get all details from a specific user.
     """
@@ -41,7 +41,7 @@ def get_user(user: str, auth: bool = Depends(PermissionChecker("ST"))):
     return lr.get(f'/users/{user}')
 
 @router.post("/{user}/set-first-password")
-def set_first_user_password(user: str, password: SetFirstPassword, auth: bool = Depends(PermissionChecker("GST"))):
+def set_first_user_password(user: str, password: SetFirstPassword, auth: bool = Depends(UserChecker("GST"))):
     """
     Set first password from a specific user.
     """
@@ -55,7 +55,7 @@ def set_first_user_password(user: str, password: SetFirstPassword, auth: bool = 
             raise HTTPException(status_code=400, detail=f"Cannot set current password: {str(e)}")
 
 @router.post("/{user}/set-current-password")
-def set_current_user_password(user: str, password: SetCurrentPassword, auth: bool = Depends(PermissionChecker("GST"))):
+def set_current_user_password(user: str, password: SetCurrentPassword, auth: bool = Depends(UserChecker("GST"))):
     """
     Set current password from a specific user.
     """
@@ -71,7 +71,7 @@ def set_current_user_password(user: str, password: SetCurrentPassword, auth: boo
 
 
 @router.get("/{user}/quotas")
-def get_user_quotas(user: str, auth: bool = Depends(PermissionChecker("GST"))):
+def get_user_quotas(user: str, auth: bool = Depends(UserChecker("GST"))):
     """
     Get current used quotas from a specific user.
     """

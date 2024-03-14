@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from security import PermissionChecker
+from security import RoleChecker, UserListChecker
 from utils import lmn_getSophomorixValue
 
 
@@ -11,11 +11,11 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-class UsersList(BaseModel):
+class UserList(BaseModel):
     users: list | None = None
 
 @router.get("/")
-def get_management_groups_list(auth: bool = Depends(PermissionChecker("GST"))):
+def get_management_groups_list(auth: bool = Depends(RoleChecker("GST"))):
     """
     List the samba group an user can modify.
     """
@@ -25,7 +25,7 @@ def get_management_groups_list(auth: bool = Depends(PermissionChecker("GST"))):
     return groups + [f'no{g}' for g in groups]
 
 @router.get("/groups/{group}")
-def get_group_details(group: str, auth: bool = Depends(PermissionChecker("GS"))):
+def get_group_details(group: str, auth: bool = Depends(RoleChecker("GS"))):
     """
     Get informations a bout a specific group.
     """
@@ -34,31 +34,29 @@ def get_group_details(group: str, auth: bool = Depends(PermissionChecker("GS")))
     return lmn_getSophomorixValue(cmd, f'GROUPS/{group}')
 
 @router.delete("/groupmembership/{group}")
-def remove_user_from_group(group: str, usersList: UsersList, auth: bool = Depends(PermissionChecker("GST"))):
+def remove_user_from_group(group: str, userlist: UserList, auth: bool = Depends(UserListChecker("GST"))):
     """
     Remove users from a specific group.
 
     :param group: group name
     :type group: basestring
-    :param usersList: users list
-    :type usersList: list
+    :param users: users list
+    :type users: list
     """
 
-    # TODO: Check roles in userslist
-    cmd = ['sophomorix-managementgroup', f'--no{group}', ','.join(usersList.users), '-jj']
+    cmd = ['sophomorix-managementgroup', f'--no{group}', ','.join(userlist.users), '-jj']
     return lmn_getSophomorixValue(cmd, '')
 
 @router.post("/groupmembership/{group}")
-def add_user_to_group(group: str, usersList: UsersList, auth: bool = Depends(PermissionChecker("GST"))):
+def add_user_to_group(group: str, userlist: UserList, auth: bool = Depends(UserListChecker("GST"))):
     """
     Add users to a specific group.
 
     :param group: group name
     :type group: basestring
-    :param usersList: users list
-    :type usersList: list
+    :param users: users list
+    :type users: list
     """
 
-    # TODO: Check roles in usersList
-    cmd = ['sophomorix-managementgroup', f'--{group}', ','.join(usersList.users), '-jj']
+    cmd = ['sophomorix-managementgroup', f'--{group}', ','.join(userlist.users), '-jj']
     return lmn_getSophomorixValue(cmd, '')

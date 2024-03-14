@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 import subprocess
 
-from security import PermissionChecker
+from security import RoleChecker
 from utils import lmn_getSophomorixValue
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
@@ -14,7 +14,7 @@ router = APIRouter(
 )
 
 @router.get("/")
-def get_all_roles(auth: bool = Depends(PermissionChecker("GS"))):
+def get_all_roles(auth: bool = Depends(RoleChecker("GS"))):
     """
     Get all used roles
     """
@@ -22,7 +22,7 @@ def get_all_roles(auth: bool = Depends(PermissionChecker("GS"))):
     return set([k['sophomorixRole'] for k in lr.get('/search/', attributes=['sophomorixRole']) if k['sophomorixRole']])
 
 @router.get("/{role}")
-def get_role_users(role: str, school: str | None = 'default-school', auth: bool = Depends(PermissionChecker(["GS"]))):
+def get_role_users(role: str, school: str | None = 'default-school', auth: bool = Depends(RoleChecker(["GS"]))):
     """
     Get all users having a specific role. A valid role could be teacher, student, globaladministrator,
     schooladministrator, etc ...
