@@ -1,3 +1,11 @@
+linuxmuster-api7 (7.2.2) lmn72; urgency=medium
+
+  * Rewrite permissions checker to handle all cases.
+  * Auth via JWT.
+  * Endpoints to set passwords.
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 20 Mar 2024 16:35:36 +0100
+
 linuxmuster-api7 (7.2.1) lmn72; urgency=medium
 
   * First test package. Do NOT use it in production. 
