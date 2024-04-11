@@ -79,4 +79,4 @@ def get_user_quotas(user: str, auth: bool = Depends(UserChecker("GST"))):
     try:
        return linuxmusterTools.quotas.get_user_quotas(user)
     except Exception as e:
-        raise HttpException(status_code=404, detail=str(e))
+        raise HTTPException(status_code=404, detail=str(e))
