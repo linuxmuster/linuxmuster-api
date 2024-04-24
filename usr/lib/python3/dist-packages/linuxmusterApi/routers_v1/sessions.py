@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
+from datetime import datetime
 
 from security import RoleChecker
 from utils import lmn_getSophomorixValue
@@ -61,5 +62,10 @@ def delete_session(supervisor:str, sessionsid: str, response: Response, auth: bo
 
 @router.post("/{supervisor}/{sessionname}")
 def session_create(supervisor: str, sessionname: str, auth: bool = Depends(RoleChecker("GS"))):
-    cmd = f"sophomorix-session --create --supervisor {supervisor} --comment {sessionname} -jj".split()
-    return lmn_getSophomorixValue(cmd, '')
+    sid = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    # TODO: Check valid session name
+
+    new_session = f"{sid};{sessionname};;"
+    lw.set(supervisor, 'user', {'sophomorixSessions': new_session}, add=True)
+    return
+
