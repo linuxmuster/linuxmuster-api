@@ -4,6 +4,7 @@ from datetime import datetime
 from security import RoleChecker
 from utils import lmn_getSophomorixValue
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
+from linuxmusterTools.common import Validator, STRING_RULES
 
 
 router = APIRouter(
@@ -62,9 +63,10 @@ def delete_session(supervisor:str, sessionsid: str, response: Response, auth: bo
 
 @router.post("/{supervisor}/{sessionname}")
 def session_create(supervisor: str, sessionname: str, auth: bool = Depends(RoleChecker("GS"))):
-    sid = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    # TODO: Check valid session name
+    if not Validator.check_session(sessionname):
+        raise HTTPException(status_code=422, detail=f"{sessionname} is not a valid name. Valid chars are {STRING_RULES['session']}")
 
+    sid = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     new_session = f"{sid};{sessionname};;"
     lw.set(supervisor, 'user', {'sophomorixSessions': new_session}, add=True)
     return
