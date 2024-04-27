@@ -4,7 +4,7 @@ from pydantic import BaseModel
 
 from security import UserChecker, AuthenticatedUser
 from checks import get_user_or_404
-from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
+from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
 from linuxmusterTools.common import Validator, STRING_RULES
 
 

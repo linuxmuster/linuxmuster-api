@@ -3,6 +3,7 @@ from pydantic import BaseModel
 
 from security import RoleChecker, UserListChecker
 from sophomorix import lmn_getSophomorixValue
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
 router = APIRouter(
@@ -20,9 +21,7 @@ def get_management_groups_list(auth: bool = Depends(RoleChecker("GST"))):
     List the samba group an user can modify.
     """
 
-    # Yes, it's not pretty good ... I must find a better way to list all available groups
-    groups = ['wifi', 'internet', 'intranet', 'webfilter', 'printing']
-    return groups + [f'no{g}' for g in groups]
+    return [group['cn'] for group in lr.get('/managementgroups', attributes=['cn'])]
 
 @router.get("/groups/{group}")
 def get_group_details(group: str, auth: bool = Depends(RoleChecker("GS"))):
