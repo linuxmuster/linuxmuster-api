@@ -35,6 +35,7 @@ def generate_jwt(user):
     payload  = {
         'user': user,
         'role': user_details['sophomorixRole'],
+        'school': user_details['sophomorixSchoolname']
     }
 
     token = jwt.encode(payload, secret, algorithm="HS512")
