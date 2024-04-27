@@ -1,9 +1,9 @@
 from fastapi import Depends, HTTPException
 from starlette import status
 
-from .header import check_authentication_header
+from .header import *
 
-
+# + Owner of group ?
 class RoleChecker:
     """
     Check role for permission access. Missing the possibility to check the user:
@@ -27,13 +27,13 @@ class RoleChecker:
                 for alias in roles if alias in self.ROLES_MAPPING
             ]
 
-    def __call__(self, who: dict = Depends(check_authentication_header)) -> bool:
+    def __call__(self, who: AuthenticatedUser = Depends(check_authentication_header)) -> AuthenticatedUser:
 
-        if who["role"] == 'globaladministrator':
-            return True
+        if who.role == 'globaladministrator':
+            return who
 
-        if who["role"] in self.roles:
-            return True
+        if who.role in self.roles:
+            return who
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

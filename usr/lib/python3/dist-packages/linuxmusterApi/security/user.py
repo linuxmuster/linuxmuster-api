@@ -1,7 +1,7 @@
 from fastapi import Depends, HTTPException
 from starlette import status
 
-from .header import check_authentication_header
+from .header import *
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
@@ -38,8 +38,8 @@ class UserChecker:
                 'examuser': 1,
             }
 
-            identity = who['user']
-            identity_role = who['role']
+            identity = who.user
+            identity_role = who.role
 
             # Global admins have all rights
             if identity_role == 'globaladministrator':
@@ -68,16 +68,16 @@ class UserChecker:
 
             return True
 
-    def __call__(self, who: dict = Depends(check_authentication_header), user=None) -> bool:
+    def __call__(self, who: AuthenticatedUser = Depends(check_authentication_header), user=None) -> bool:
 
-        if who["role"] == 'globaladministrator':
-            return True
+        if who.role == 'globaladministrator':
+            return who
 
-        if who["user"] == user:
-            return True
+        if who.user == user:
+            return who
 
-        if who["role"] in self.roles and self._check_role_permissions(who, user):
-            return True
+        if who.role in self.roles and self._check_role_permissions(who, user):
+            return who
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

@@ -4,13 +4,20 @@ from starlette import status
 import jwt
 import base64
 import yaml
+from pydantic import BaseModel
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
+class AuthenticatedUser(BaseModel):
+    user: str
+    role: str | None = None
+    school: str | None = None
+
+
 X_API_KEY = APIKeyHeader(name='X-API-Key')
 
-def check_authentication_header(x_api_key: str = Depends(X_API_KEY)):
+def check_authentication_header(x_api_key: str = Depends(X_API_KEY)) -> AuthenticatedUser:
     """
     Return role associated with the api key.
     """
@@ -33,8 +40,11 @@ def check_authentication_header(x_api_key: str = Depends(X_API_KEY)):
     secret = ''
 
     # role may be eventually None
-    return {
-        "user": user,
-        "role": lr.getval(f'/users/{user}', 'sophomorixRole')
-    }
+    user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole','sophomorixSchoolname'])
+
+    return AuthenticatedUser(
+        user=user,
+        role=user_details['sophomorixRole'],
+        school=user_details['sophomorixSchoolname']
+    )
 

@@ -1,7 +1,7 @@
 from fastapi import Depends, Request, HTTPException
 from starlette import status
 
-from .header import check_authentication_header
+from .header import *
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
@@ -38,8 +38,8 @@ class UserListChecker:
                 'examuser': 1,
             }
 
-            identity = who['user']
-            identity_role = who['role']
+            identity = who.user
+            identity_role = who.role
 
             # Global admins have all rights
             if identity_role == 'globaladministrator':
@@ -68,15 +68,15 @@ class UserListChecker:
 
             return True
 
-    async def __call__(self, request: Request, who: dict = Depends(check_authentication_header)) -> bool:
+    async def __call__(self, request: Request, who: AuthenticatedUser = Depends(check_authentication_header)) -> bool:
 
         body = await request.json()
         users = body.get('users', [])
 
-        if who["role"] == 'globaladministrator':
+        if who.role == 'globaladministrator':
             return True
 
-        if who["role"] in self.roles:
+        if who.role in self.roles:
             # If one user has higher level, refuse to answer
             for user in users:
                 if not self._check_role_permissions(who, user):
