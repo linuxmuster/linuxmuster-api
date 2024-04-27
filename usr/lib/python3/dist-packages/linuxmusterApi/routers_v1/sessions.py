@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from datetime import datetime
 
 from security import UserChecker, AuthenticatedUser
+from checks import get_user_or_404
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
 from linuxmusterTools.common import Validator, STRING_RULES
 
@@ -14,7 +15,8 @@ router = APIRouter(
 
 @router.get("/{user}")
 def session_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
-    sessions = lr.get(f'/users/{user}', school=who.school, dict=False).lmnsessions
+    user_details = get_user_or_404(user, who.school)
+    sessions = user_details.lmnsessions
     sessionsList = []
     for session in sessions:
         s = {
@@ -28,7 +30,8 @@ def session_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))
 
 @router.get("/{user}/{sessionsid}")
 def get_session_sessionname(user:str, sessionsid: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
-    sessions = lr.get(f'/users/{user}', school=who.school, dict=False).lmnsessions
+    user_details = get_user_or_404(user, who.school)
+    sessions = user_details.lmnsessions
     for session in sessions:
         if sessionsid == session.sid:
             return {
@@ -41,7 +44,8 @@ def get_session_sessionname(user:str, sessionsid: str, who: AuthenticatedUser = 
 
 @router.delete("/{user}/{sessionsid}", status_code=204)
 def delete_session(user:str, sessionsid: str, response: Response, who: AuthenticatedUser = Depends(UserChecker("GST"))):
-    sessions = lr.get(f'/users/{user}', school=who.school, dict=False).lmnsessions
+    user_details = get_user_or_404(user, who.school)
+    sessions = user_details.lmnsessions
     modified = False
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
@@ -64,6 +68,9 @@ def session_create(user: str, sessionname: str, who: AuthenticatedUser = Depends
 
     sid = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     new_session = f"{sid};{sessionname};;"
-    lw.set(user, 'user', {'sophomorixSessions': new_session}, add=True)
+    try:
+        lw.set(user, 'user', {'sophomorixSessions': new_session}, add=True)
+    except Exception as e:
+       raise HTTPException(status_code=404, detail=str(e))
     return
 
