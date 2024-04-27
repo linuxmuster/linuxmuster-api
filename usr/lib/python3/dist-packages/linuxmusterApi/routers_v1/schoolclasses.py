@@ -1,9 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from fastapi.responses import FileResponse
-import subprocess
 
 from security import RoleChecker
-from utils import lmn_getSophomorixValue
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 

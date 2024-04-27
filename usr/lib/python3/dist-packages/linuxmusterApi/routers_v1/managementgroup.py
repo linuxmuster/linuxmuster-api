@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from security import RoleChecker, UserListChecker
-from utils import lmn_getSophomorixValue
+from sophomorix import lmn_getSophomorixValue
 
 
 router = APIRouter(
