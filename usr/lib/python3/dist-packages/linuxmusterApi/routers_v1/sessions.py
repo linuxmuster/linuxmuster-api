@@ -1,8 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from datetime import datetime
 
-from security import RoleChecker
-from utils import lmn_getSophomorixValue
+from security import UserChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
 from linuxmusterTools.common import Validator, STRING_RULES
 
@@ -13,12 +12,9 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-# TODO: rewrite the whole with lr and lw
-# TODO: Permissions
-
-@router.get("/{supervisor}")
-def session_supervisor(supervisor: str, auth: bool = Depends(RoleChecker("GS"))):
-    sessions = lr.get(f'/users/{supervisor}', dict=False).lmnsessions
+@router.get("/{user}")
+def session_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+    sessions = lr.get(f'/users/{user}', school=who.school, dict=False).lmnsessions
     sessionsList = []
     for session in sessions:
         s = {
@@ -30,9 +26,9 @@ def session_supervisor(supervisor: str, auth: bool = Depends(RoleChecker("GS")))
         sessionsList.append(s)
     return sessionsList
 
-@router.get("/{supervisor}/{sessionsid}")
-def get_session_sessionname(supervisor:str, sessionsid: str, auth: bool = Depends(RoleChecker("GS"))):
-    sessions = lr.get(f'/users/{supervisor}', dict=False).lmnsessions
+@router.get("/{user}/{sessionsid}")
+def get_session_sessionname(user:str, sessionsid: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+    sessions = lr.get(f'/users/{user}', school=who.school, dict=False).lmnsessions
     for session in sessions:
         if sessionsid == session.sid:
             return {
@@ -41,11 +37,11 @@ def get_session_sessionname(supervisor:str, sessionsid: str, auth: bool = Depend
                 'membersCount': session.membersCount,
                 'members': session.members,
             }
-    raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {supervisor}")
+    raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
 
-@router.delete("/{supervisor}/{sessionsid}", status_code=204)
-def delete_session(supervisor:str, sessionsid: str, response: Response, auth: bool = Depends(RoleChecker("GS"))):
-    sessions = lr.get(f'/users/{supervisor}', dict=False).lmnsessions
+@router.delete("/{user}/{sessionsid}", status_code=204)
+def delete_session(user:str, sessionsid: str, response: Response, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+    sessions = lr.get(f'/users/{user}', school=who.school, dict=False).lmnsessions
     modified = False
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
@@ -55,19 +51,19 @@ def delete_session(supervisor:str, sessionsid: str, response: Response, auth: bo
 
     if modified:
         ldap_sessions = [f"{session.sid};{session.name};{','.join(session.members)};" for session in sessions]
-        lw.set(supervisor, 'user', {'sophomorixSessions': ldap_sessions})
+        lw.set(user, 'user', {'sophomorixSessions': ldap_sessions})
     else:
         response.status_code = status.HTTP_304_NOT_MODIFIED
 
     return
 
-@router.post("/{supervisor}/{sessionname}")
-def session_create(supervisor: str, sessionname: str, auth: bool = Depends(RoleChecker("GS"))):
+@router.post("/{user}/{sessionname}")
+def session_create(user: str, sessionname: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
     if not Validator.check_session(sessionname):
         raise HTTPException(status_code=422, detail=f"{sessionname} is not a valid name. Valid chars are {STRING_RULES['session']}")
 
     sid = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     new_session = f"{sid};{sessionname};;"
-    lw.set(supervisor, 'user', {'sophomorixSessions': new_session}, add=True)
+    lw.set(user, 'user', {'sophomorixSessions': new_session}, add=True)
     return
 
