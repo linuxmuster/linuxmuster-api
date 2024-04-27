@@ -23,14 +23,13 @@ def get_management_groups_list(auth: bool = Depends(RoleChecker("GST"))):
 
     return [group['cn'] for group in lr.get('/managementgroups', attributes=['cn'])]
 
-@router.get("/groups/{group}")
+@router.get("/{group}")
 def get_group_details(group: str, auth: bool = Depends(RoleChecker("GS"))):
     """
     Get informations a bout a specific group.
     """
 
-    cmd = f"sophomorix-managementgroup -i -m {group} -jj".split()
-    return lmn_getSophomorixValue(cmd, f'GROUPS/{group}')
+    return lr.get(f'/managementgroups/{group}')
 
 @router.delete("/groupmembership/{group}")
 def remove_user_from_group(group: str, userlist: UserList, auth: bool = Depends(UserListChecker("GST"))):
