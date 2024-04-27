@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from datetime import datetime
+from pydantic import BaseModel
 
 from security import UserChecker, AuthenticatedUser
 from checks import get_user_or_404
@@ -12,6 +13,9 @@ router = APIRouter(
     tags=["Sessions"],
     responses={404: {"description": "Not found"}},
 )
+
+class UserList(BaseModel):
+    users: list | None = None
 
 @router.get("/{user}")
 def session_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
@@ -71,3 +75,27 @@ def session_create(user: str, sessionname: str, who: AuthenticatedUser = Depends
        raise HTTPException(status_code=404, detail=str(e))
     return
 
+@router.post("/{user}/{sessionsid}/members")
+def add_user_to_session(user: str, sessionsid: str, userlist: UserList, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+
+    if not userlist.users:
+        # Nothing to do
+        return
+
+    user_details = get_user_or_404(user, who.school)
+    sessions = user_details.lmnsessions
+
+    for index, session in enumerate(sessions):
+        if sessionsid == session.sid:
+            old_session = f"{session.sid};{session.name};{','.join(session.members)};"
+            lw.delete(user, 'user', {'sophomorixSessions': old_session})
+
+            session.members += userlist.users
+            session.members = list(set(session.members))
+
+            new_session = f"{session.sid};{session.name};{','.join(session.members)};"
+            lw.set(user, 'user', {'sophomorixSessions': new_session}, add=True)
+
+            return
+    else:
+       raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
