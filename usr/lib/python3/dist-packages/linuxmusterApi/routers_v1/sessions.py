@@ -52,12 +52,8 @@ def delete_session(user:str, sessionsid: str, who: AuthenticatedUser = Depends(U
     sessions = user_details.lmnsessions
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
-            sessions.pop(index)
-            ldap_sessions = [
-                f"{session.sid};{session.name};{','.join(session.members)};"
-                for session in sessions
-            ]
-            lw.set(user, 'user', {'sophomorixSessions': ldap_sessions})
+            old_session = f"{session.sid};{session.name};{','.join(session.members)};"
+            lw.delete(user, 'user', {'sophomorixSessions': old_session})
             return
     else:
        raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
