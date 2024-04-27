@@ -43,23 +43,20 @@ def get_session_sessionname(user:str, sessionsid: str, who: AuthenticatedUser = 
     raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
 
 @router.delete("/{user}/{sessionsid}", status_code=204)
-def delete_session(user:str, sessionsid: str, response: Response, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+def delete_session(user:str, sessionsid: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
     user_details = get_user_or_404(user, who.school)
     sessions = user_details.lmnsessions
-    modified = False
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
             sessions.pop(index)
-            modified = True
-            break
-
-    if modified:
-        ldap_sessions = [f"{session.sid};{session.name};{','.join(session.members)};" for session in sessions]
-        lw.set(user, 'user', {'sophomorixSessions': ldap_sessions})
+            ldap_sessions = [
+                f"{session.sid};{session.name};{','.join(session.members)};"
+                for session in sessions
+            ]
+            lw.set(user, 'user', {'sophomorixSessions': ldap_sessions})
+            return
     else:
-        response.status_code = status.HTTP_304_NOT_MODIFIED
-
-    return
+       raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
 
 @router.post("/{user}/{sessionname}")
 def session_create(user: str, sessionname: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
