@@ -30,6 +30,9 @@ class UserListChecker:
 
     def _check_role_permissions(self, who, requested_user):
 
+            if not requested_user:
+                return False
+
             role_rank = {
                 'globaladministrator': 4,
                 'schooladministrator': 3,
