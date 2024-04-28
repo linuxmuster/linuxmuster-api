@@ -2,7 +2,7 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
-from security import RoleChecker, UserListChecker
+from security import RoleChecker, UserListChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
 
 
@@ -16,7 +16,7 @@ class UserList(BaseModel):
     users: list | None = None
 
 @router.get("/")
-def get_management_groups_list(auth: bool = Depends(RoleChecker("GST"))):
+def get_management_groups_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     List the samba management group an user can modify.
     """
@@ -37,7 +37,7 @@ def get_group_details(group: str, auth: bool = Depends(RoleChecker("GS"))):
     raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
 
 @router.delete("/{group}/members", status_code=204)
-def remove_user_from_group(group: str, userlist: UserList, auth: bool = Depends(UserListChecker("GST"))):
+def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
     Remove users from a specific management group.
 
@@ -66,7 +66,7 @@ def remove_user_from_group(group: str, userlist: UserList, auth: bool = Depends(
     return
 
 @router.post("/{group}/members")
-def add_user_to_group(group: str, userlist: UserList, auth: bool = Depends(UserListChecker("GST"))):
+def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
     Add users to a specific management group.
 

@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from datetime import datetime
 from pydantic import BaseModel
 
-from security import UserChecker, AuthenticatedUser
+from security import UserChecker, UserListChecker, AuthenticatedUser
 from checks import get_user_or_404
 from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
 from linuxmusterTools.common import Validator, STRING_RULES
@@ -72,7 +72,7 @@ def session_create(user: str, sessionname: str, who: AuthenticatedUser = Depends
     return
 
 @router.delete("/{user}/{sessionsid}/members", status_code=204)
-def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
 
     if not userlist.users:
         # Nothing to do
@@ -99,7 +99,7 @@ def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who:
        raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
 
 @router.post("/{user}/{sessionsid}/members")
-def add_user_to_session(user: str, sessionsid: str, userlist: UserList, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+def add_user_to_session(user: str, sessionsid: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
 
     if not userlist.users:
         # Nothing to do
