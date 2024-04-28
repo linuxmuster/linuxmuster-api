@@ -18,7 +18,7 @@ class UserList(BaseModel):
 @router.get("/")
 def get_management_groups_list(auth: bool = Depends(RoleChecker("GST"))):
     """
-    List the samba group an user can modify.
+    List the samba management group an user can modify.
     """
 
     return [group['cn'] for group in lr.get('/managementgroups', attributes=['cn'])]
@@ -26,15 +26,20 @@ def get_management_groups_list(auth: bool = Depends(RoleChecker("GST"))):
 @router.get("/{group}")
 def get_group_details(group: str, auth: bool = Depends(RoleChecker("GS"))):
     """
-    Get informations a bout a specific group.
+    Get informations a bout a specific management group.
     """
 
-    return lr.get(f'/managementgroups/{group}')
+    group_details = lr.get(f'/managementgroups/{group}')
 
-@router.delete("/groupmembership/{group}")
+    if group_details:
+        return group_details
+
+    raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
+
+@router.delete("/{group}/members")
 def remove_user_from_group(group: str, userlist: UserList, auth: bool = Depends(UserListChecker("GST"))):
     """
-    Remove users from a specific group.
+    Remove users from a specific management group.
 
     :param group: group name
     :type group: basestring
@@ -45,10 +50,10 @@ def remove_user_from_group(group: str, userlist: UserList, auth: bool = Depends(
     cmd = ['sophomorix-managementgroup', f'--no{group}', ','.join(userlist.users), '-jj']
     return lmn_getSophomorixValue(cmd, '')
 
-@router.post("/groupmembership/{group}")
+@router.post("/{group}/members")
 def add_user_to_group(group: str, userlist: UserList, auth: bool = Depends(UserListChecker("GST"))):
     """
-    Add users to a specific group.
+    Add users to a specific management group.
 
     :param group: group name
     :type group: basestring
