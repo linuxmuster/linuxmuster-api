@@ -3,7 +3,6 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from security import RoleChecker, UserListChecker
-from sophomorix import lmn_getSophomorixValue
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
 
 
@@ -77,5 +76,20 @@ def add_user_to_group(group: str, userlist: UserList, auth: bool = Depends(UserL
     :type users: list
     """
 
-    cmd = ['sophomorix-managementgroup', f'--{group}', ','.join(userlist.users), '-jj']
-    return lmn_getSophomorixValue(cmd, '')
+    if not userlist.users:
+        # Nothing to do
+        return
+
+    group_details = lr.get(f'/managementgroups/{group}')
+
+    if not group_details:
+        raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
+
+    for member in userlist.users:
+        dn = lr.getval(f'/users/{member}', 'dn')
+        if dn:
+            lw.set(group, 'group', {'member': dn}, add=True)
+        else:
+            logging.warning(f"User {member} not found, will not add it to management group {group}")
+
+    return
