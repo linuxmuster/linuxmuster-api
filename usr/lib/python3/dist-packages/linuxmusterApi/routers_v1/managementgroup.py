@@ -1,9 +1,10 @@
+import logging
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 
 from security import RoleChecker, UserListChecker
 from sophomorix import lmn_getSophomorixValue
-from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
 
 
 router = APIRouter(
@@ -36,7 +37,7 @@ def get_group_details(group: str, auth: bool = Depends(RoleChecker("GS"))):
 
     raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
 
-@router.delete("/{group}/members")
+@router.delete("/{group}/members", status_code=204)
 def remove_user_from_group(group: str, userlist: UserList, auth: bool = Depends(UserListChecker("GST"))):
     """
     Remove users from a specific management group.
@@ -47,8 +48,23 @@ def remove_user_from_group(group: str, userlist: UserList, auth: bool = Depends(
     :type users: list
     """
 
-    cmd = ['sophomorix-managementgroup', f'--no{group}', ','.join(userlist.users), '-jj']
-    return lmn_getSophomorixValue(cmd, '')
+    if not userlist.users:
+        # Nothing to do
+        return
+
+    group_details = lr.get(f'/managementgroups/{group}')
+
+    if not group_details:
+        raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
+
+    for member in userlist.users:
+        dn = lr.getval(f'/users/{member}', 'dn')
+        if dn:
+            lw.delete(group, 'group', {'member': dn})
+        else:
+            logging.warning(f"User {member} not found, will not delete from management group {group}")
+
+    return
 
 @router.post("/{group}/members")
 def add_user_to_group(group: str, userlist: UserList, auth: bool = Depends(UserListChecker("GST"))):
