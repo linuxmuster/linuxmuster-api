@@ -84,3 +84,33 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
 
     cmd = ['sophomorix-project',  *options, '--create', '-p', project.lower(), '-jj']
     return lmn_getSophomorixValue(cmd, '')
+
+
+@router.patch("/{project}")
+def modify_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+    if not Validator.check_session(project):
+        raise HTTPException(status_code=422, detail=f"{project} is not a valid name. Valid chars are {STRING_RULES['project']}")
+
+    options = []
+
+    if project_details.description:
+        options.extend(['--description', project_details.description])
+
+    if project_details.join:
+        options.append('--join')
+    else:
+        options.append('--nojoin')
+
+    if project_details.hide:
+        options.append('--hide')
+    else:
+        options.append('--nohide')
+
+    if project_details.admins:
+        options.extend(['--admins', ','.join(project_details.admins)])
+
+    if project_details.school:
+        options.extend(['--school', project_details.school])
+
+    cmd = ['sophomorix-project',  *options, '-p', project.lower(), '-jj']
+    return lmn_getSophomorixValue(cmd, '')
