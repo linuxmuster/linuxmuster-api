@@ -21,6 +21,9 @@ class NewProject(BaseModel):
     join: bool = True
     hide: bool = False
     admins: list = []
+    admingroups: list = []
+    members: list = []
+    membergroups: list = []
     school: str = 'default-school'
 
 class UserList(BaseModel):
@@ -76,15 +79,15 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
     else:
         options.append('--nohide')
 
-    if project_details.admins:
-        options.extend(['--admins', ','.join(project_details.admins)])
+    for option in ['admins', 'members', 'admingroups', 'membergroups']:
+        if getattr(project_details, option):
+            options.extend([f'--{option}', ','.join(getattr(project_details, option))])
 
     if project_details.school:
         options.extend(['--school', project_details.school])
 
     cmd = ['sophomorix-project',  *options, '--create', '-p', project.lower(), '-jj']
     return lmn_getSophomorixValue(cmd, '')
-
 
 @router.patch("/{project}")
 def modify_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -106,8 +109,9 @@ def modify_project(project: str, project_details: NewProject, who: Authenticated
     else:
         options.append('--nohide')
 
-    if project_details.admins:
-        options.extend(['--admins', ','.join(project_details.admins)])
+    for option in ['admins', 'members', 'admingroups', 'membergroups']:
+        if getattr(project_details, option):
+            options.extend([f'--{option}', ','.join(getattr(project_details, option))])
 
     if project_details.school:
         options.extend(['--school', project_details.school])
