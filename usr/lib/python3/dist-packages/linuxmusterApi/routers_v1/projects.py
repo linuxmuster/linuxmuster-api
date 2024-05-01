@@ -21,15 +21,15 @@ def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     List all projects an user can modify.
     """
 
-    return lr.get('/projects')
+    return lr.get('/projects', school=who.school)
 
 @router.get("/{project}")
-def get_project_details(project: str, auth: bool = Depends(RoleChecker("GS"))):
+def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     Get informations a bout a specific project.
     """
 
-    project_details = lr.get(f'/projects/{project}')
+    project_details = lr.get(f'/projects/{project}', school=who.school)
 
     if project_details:
         return project_details
