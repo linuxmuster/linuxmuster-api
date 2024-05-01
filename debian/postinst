@@ -44,7 +44,7 @@ EOF
 
         msg "Checking certificate"
         if [ ! -f "/etc/linuxmuster/api/lmnapi.pem" ] ; then
-            /usr/lib/python3/dist-packages/linuxmusterApi/lmnapi-ssl-gen.py
+            /usr/lib/python3/dist-packages/linuxmusterApi/scripts/lmnapi-ssl-gen.py
         fi
 
         msg "Reload service linuxmuster-api"
