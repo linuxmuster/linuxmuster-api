@@ -1,0 +1,39 @@
+version: 1
+disable_existing_loggers: False
+formatters:
+  default:
+    format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+handlers:
+  default:
+    formatter: default
+    class: logging.StreamHandler
+    stream: ext://sys.stderr
+  access:
+    formatter: default
+    class: logging.StreamHandler
+    stream: ext://sys.stdout
+  filelog:
+    formatter: default
+    class: logging.handlers.RotatingFileHandler
+    filename: /var/log/linuxmuster/api/lmnapi.log
+    mode: a
+loggers:
+  uvicorn.error:
+    level: INFO
+    handlers:
+      - default
+      - filelog
+    propagate: no
+  uvicorn.access:
+    level: INFO
+    handlers:
+      - access
+      - filelog
+    propagate: no
+root:
+  level: DEBUG
+  handlers:
+    - default
+    - filelog
+  propagate: no
+

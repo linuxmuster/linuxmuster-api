@@ -20,7 +20,7 @@ case "$1" in
         msg "Install Python requirements"
         /usr/bin/python3 -m pip install -r /usr/lib/python3/dist-packages/linuxmusterApi/requirements.txt
 
-        msg "Checking config file"
+        msg "Checking config files"
         if [ ! -f "/etc/linuxmuster/api/config.yml" ] ; then
             mkdir -p /etc/linuxmuster/api
             SECRET_KEY=$(echo $(openssl rand 64) | openssl enc -A -base64)
@@ -31,10 +31,16 @@ uvicorn:
   ssl_certfile: /etc/linuxmuster/api/lmnapi.pem
   ssl_keyfile: /etc/linuxmuster/api/lmnapi.pem
   log_level: info
+  log_config: /etc/linuxmuster/api/uvicorn_log_conf.yml
 secret: $SECRET_KEY
 EOF
         fi
+
         chmod 600 /etc/linuxmuster/api/config.yml
+
+        if [ ! -f "/etc/linuxmuster/api/log_conf.yml" ] ; then
+          cp /usr/lib/python3/dist-packages/linuxmusterApi/templates/log_conf.yml /etc/linuxmuster/api/uvicorn_log_conf.yml
+        fi
 
         msg "Checking certificate"
         if [ ! -f "/etc/linuxmuster/api/lmnapi.pem" ] ; then
