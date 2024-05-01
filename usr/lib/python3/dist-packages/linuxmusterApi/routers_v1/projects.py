@@ -4,6 +4,7 @@ from pydantic import BaseModel
 
 from security import RoleChecker, UserListChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
+from sophomorix import lmn_getSophomorixValue
 
 
 router = APIRouter(
@@ -35,3 +36,13 @@ def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleCheck
         return project_details
 
     raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+
+@router.delete("/{project}", status_code=204)
+def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+    project_details = lr.get(f'/projects/{project}', school=who.school)
+    if not project_details:
+       raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+
+    cmd = ['sophomorix-project', '--kill', '-p', project, '-jj']
+    return lmn_getSophomorixValue(cmd, '')
+
