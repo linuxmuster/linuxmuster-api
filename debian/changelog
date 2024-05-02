@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.2.5) lmn72; urgency=medium
+
+  * Checking log files 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Thu, 02 May 2024 14:34:45 +0200
+
 linuxmuster-api7 (7.2.4) lmn72; urgency=medium
 
   * Typo log path in postinst 
