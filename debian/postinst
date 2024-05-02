@@ -38,6 +38,8 @@ EOF
 
         chmod 600 /etc/linuxmuster/api/config.yml
 
+        msg "Checking log files"
+        mkdir -p /var/log/linuxmuster/api
         if [ ! -f "/etc/linuxmuster/api/uvicorn_log_conf.yml" ] ; then
           cp /usr/lib/python3/dist-packages/linuxmusterApi/templates/uvicorn_log_conf.yml /etc/linuxmuster/api/uvicorn_log_conf.yml
         fi
