@@ -38,8 +38,8 @@ EOF
 
         chmod 600 /etc/linuxmuster/api/config.yml
 
-        if [ ! -f "/etc/linuxmuster/api/log_conf.yml" ] ; then
-          cp /usr/lib/python3/dist-packages/linuxmusterApi/templates/log_conf.yml /etc/linuxmuster/api/uvicorn_log_conf.yml
+        if [ ! -f "/etc/linuxmuster/api/uvicorn_log_conf.yml" ] ; then
+          cp /usr/lib/python3/dist-packages/linuxmusterApi/templates/uvicorn_log_conf.yml /etc/linuxmuster/api/uvicorn_log_conf.yml
         fi
 
         msg "Checking certificate"
