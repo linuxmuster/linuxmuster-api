@@ -145,8 +145,21 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
 
 @router.patch("/{project}")
 def modify_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
-    if not Validator.check_project_name(project):
-        raise HTTPException(status_code=422, detail=f"{project} is not a valid name. Valid chars are {STRING_RULES['project']}")
+    """
+    Modify an existing project.
+    """
+
+    # School specific request. For global-admins, it will search in all projects from all schools
+    project_details = lr.get(f'/projects/{project}', school=who.school)
+
+    if not project_details:
+       raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+
+    if who.role == "teacher":
+        # Only teacher admins of the group should be able to modify the project
+        # TODO: read sophomorixAdminGroups too
+        if who.user not in project_details['sophomorixAdmins']:
+            raise HTTPException(status_code=403, detail=f"Forbidden")
 
     options = []
 
