@@ -54,17 +54,30 @@ def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
         return response
 
 @router.get("/{project}")
-def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     Get informations a bout a specific project.
     """
 
+    # School specific request. For global-admins, it will search in all projects from all schools
     project_details = lr.get(f'/projects/{project}', school=who.school)
 
-    if project_details:
+    if not project_details:
+        raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+
+    if who.role in ["schooladministrator", "globaladministrator"]:
+        # No filter
         return project_details
 
-    raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+    elif who.role == "teacher":
+        # Only the teacher's project or not hidden projects or project in which the teacher is member of
+        # TODO: read sophomorixMemberGroups too
+        response =  []
+        if who.user in project_details['sophomorixAdmins'] or who.user in project_details['sophomorixMembers']:
+            return project_details
+        elif not project_details['sophomorixHidden']:
+            return project_details
+        raise HTTPException(status_code=403, detail=f"Forbidden")
 
 @router.delete("/{project}", status_code=204)
 def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
