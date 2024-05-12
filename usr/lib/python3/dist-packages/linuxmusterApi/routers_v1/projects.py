@@ -35,7 +35,23 @@ def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     List all projects an user can modify.
     """
 
-    return lr.get('/projects', school=who.school)
+    # School specific request. For global-admins, it will return all projects from all schools
+    projects = lr.get('/projects', school=who.school)
+
+    if who.role in ["schooladministrator", "globaladministrator"]:
+        # No filter
+        return projects
+
+    elif who.role == "teacher":
+        # Only the teacher's project or not hidden projects or project in which the teacher is member of
+        # TODO: read sophomorixMemberGroups too
+        response =  []
+        for project in projects:
+            if who.user in project['sophomorixAdmins'] or who.user in project['sophomorixMembers']:
+                response.append(project)
+            elif not project['sophomorixHidden']:
+                response.append(project)
+        return response
 
 @router.get("/{project}")
 def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
