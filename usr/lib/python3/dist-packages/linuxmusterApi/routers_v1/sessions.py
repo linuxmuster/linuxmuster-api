@@ -60,7 +60,7 @@ def delete_session(user:str, sessionsid: str, who: AuthenticatedUser = Depends(U
 
 @router.post("/{user}/{sessionname}")
 def session_create(user: str, sessionname: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
-    if not Validator.check_session(sessionname):
+    if not Validator.check_session_name(sessionname):
         raise HTTPException(status_code=422, detail=f"{sessionname} is not a valid name. Valid chars are {STRING_RULES['session']}")
 
     sid = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

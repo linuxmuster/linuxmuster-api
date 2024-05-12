@@ -61,7 +61,7 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
 
 @router.post("/{project}")
 def create_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
-    if not Validator.check_session(project):
+    if not Validator.check_project_name(project):
         raise HTTPException(status_code=422, detail=f"{project} is not a valid name. Valid chars are {STRING_RULES['project']}")
 
     options = []
@@ -91,7 +91,7 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
 
 @router.patch("/{project}")
 def modify_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
-    if not Validator.check_session(project):
+    if not Validator.check_project_name(project):
         raise HTTPException(status_code=422, detail=f"{project} is not a valid name. Valid chars are {STRING_RULES['project']}")
 
     options = []
