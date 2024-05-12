@@ -105,9 +105,18 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
         raise HTTPException(status_code=403, detail=f"Forbidden")
 
 @router.post("/{project}")
-def create_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+def create_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+    """
+    Create a project with all possible options.
+    """
+
     if not Validator.check_project_name(project):
         raise HTTPException(status_code=422, detail=f"{project} is not a valid name. Valid chars are {STRING_RULES['project']}")
+
+    # School specific request. For global-admins, it will return all projects from all schools
+    projects = lr.get('/projects', attributes=['cn'], school=who.school)
+    if {'cn': project} in projects or {'cn': f"p_{project}"} in projects:
+        raise HTTPException(status_code=400, detail=f"Project {project} already exists on this server.")
 
     options = []
 
