@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.2.7) lmn72; urgency=medium
+
+  * Add cors configuration 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 15 May 2024 09:43:22 +0200
+
 linuxmuster-api7 (7.2.6) lmn72; urgency=medium
 
   * Additional permissions and value check for project endpoints 
