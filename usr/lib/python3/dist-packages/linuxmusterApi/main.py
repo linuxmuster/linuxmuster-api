@@ -9,9 +9,25 @@ import base64
 import binascii
 from fastapi import FastAPI, Depends, Request
 from fastapi.responses import HTMLResponse
+from fastapi.middleware.cors import CORSMiddleware
 
+
+config = {}
+config_path = '/etc/linuxmuster/api/config.yml'
+if os.path.isfile(config_path):
+    with open(config_path, 'r') as config_file:
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
 
 app = FastAPI(swagger_ui_parameters={"tryItOutEnabled": True})
+
+if config.get("cors", {}):
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins     = config["cors"].get("allow_origins", []),
+        allow_credentials = config["cors"].get("allow_credentials", True),
+        allow_methods     = config["cors"].get("allow_methods", ["*"]),
+        allow_headers     = config["cors"].get("allow_headers", ["*"]),
+    )
 
 # V1
 from routers_v1 import (
@@ -64,12 +80,6 @@ def home():
     """
 
 if __name__ == "__main__":
-    config = {}
-    config_path = '/etc/linuxmuster/api/config.yml'
-    if os.path.isfile(config_path):
-        with open(config_path, 'r') as config_file:
-            config = yaml.load(config_file, Loader=yaml.SafeLoader)
-
     secret = config.get('secret', None)
     if not secret:
         print('Linuxmuster-api can not work without secret key, please configure it first.')
