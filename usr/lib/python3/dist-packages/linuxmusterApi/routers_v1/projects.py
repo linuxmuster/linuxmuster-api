@@ -105,7 +105,7 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
         raise HTTPException(status_code=403, detail=f"Forbidden")
 
 @router.post("/{project}")
-def create_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def create_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     Create a project with all possible options.
     """

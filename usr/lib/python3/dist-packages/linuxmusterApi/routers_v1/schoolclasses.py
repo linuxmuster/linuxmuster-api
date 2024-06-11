@@ -16,7 +16,7 @@ def check_schoolclass(schoolclass):
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
 @router.get("/")
-def get_all_schoolclasses(auth: bool = Depends(RoleChecker("GS"))):
+def get_all_schoolclasses(auth: bool = Depends(RoleChecker("GST"))):
     """
     Get alls schoolclasses
     """
