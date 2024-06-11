@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.2.8) lmn72; urgency=medium
+
+  * Allow teachers to create project and see schoolclasses. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Tue, 11 Jun 2024 15:08:58 +0200
+
 linuxmuster-api7 (7.2.7) lmn72; urgency=medium
 
   * Add cors configuration 
