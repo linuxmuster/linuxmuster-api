@@ -19,6 +19,7 @@ class UserList(BaseModel):
 def get_management_groups_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     List the samba management group an user can modify.
+    Accessible by global-administrators, school-administrators and teachers.
     """
 
     return [group['cn'] for group in lr.get('/managementgroups', attributes=['cn'])]
@@ -27,6 +28,7 @@ def get_management_groups_list(who: AuthenticatedUser = Depends(RoleChecker("GST
 def get_group_details(group: str, auth: bool = Depends(RoleChecker("GS"))):
     """
     Get informations a bout a specific management group.
+    Accessible by global-administrators an school-administrators.
     """
 
     group_details = lr.get(f'/managementgroups/{group}')
@@ -40,6 +42,7 @@ def get_group_details(group: str, auth: bool = Depends(RoleChecker("GS"))):
 def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
     Remove users from a specific management group.
+    Accessible by global-administrators, school-administrators and teachers.
 
     :param group: group name
     :type group: basestring
@@ -69,6 +72,7 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
 def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
     Add users to a specific management group.
+    Accessible by global-administrators, school-administrators and teachers.
 
     :param group: group name
     :type group: basestring

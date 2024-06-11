@@ -12,7 +12,8 @@ router = APIRouter(
 @router.get("/")
 def get_json_web_token(auth: bool = Depends(BasicAuthChecker())):
     """
-    Check user's password and send a valid jwt.
+    Check user's password and respond with a valid jwt.
+    Accessible by all users.
     """
 
     return auth

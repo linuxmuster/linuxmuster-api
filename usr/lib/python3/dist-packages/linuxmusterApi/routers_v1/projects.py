@@ -33,6 +33,7 @@ class UserList(BaseModel):
 def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     List all projects an user can modify.
+    Accessible by global-administrators, school-administrators and teachers.
     """
 
     # School specific request. For global-admins, it will return all projects from all schools
@@ -57,6 +58,7 @@ def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
 def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     Get informations about a specific project.
+    Accessible by global-administrators, school-administrators and teachers.
     """
 
     # School specific request. For global-admins, it will search in all projects from all schools
@@ -83,6 +85,8 @@ def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleCheck
 def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     Delete a specific project.
+    Accessible by global-administrators, school-administrators and teachers.
+    Use sophomorix.
     """
 
     # School specific request. For global-admins, it will search in all projects from all schools
@@ -108,6 +112,8 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
 def create_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     Create a project with all possible options.
+    Accessible by global-administrators, school-administrators and teachers.
+    Use sophomorix.
     """
 
     if not Validator.check_project_name(project):
@@ -147,6 +153,8 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
 def modify_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     Modify an existing project.
+    Accessible by global-administrators, school-administrators and teachers.
+    Use sophomorix.
     """
 
     # School specific request. For global-admins, it will search in all projects from all schools

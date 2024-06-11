@@ -18,7 +18,8 @@ def check_schoolclass(schoolclass):
 @router.get("/")
 def get_all_schoolclasses(auth: bool = Depends(RoleChecker("GST"))):
     """
-    Get alls schoolclasses
+    Get alls schoolclasses.
+    Accessible by global-administrators, school-administrators and teachers.
     """
 
     return lr.get('/schoolclasses')
@@ -27,6 +28,7 @@ def get_all_schoolclasses(auth: bool = Depends(RoleChecker("GST"))):
 def get_schoolclass(schoolclass: str, auth: bool = Depends(RoleChecker("GST"))):
     """
     Get all details from a specific schoolclass.
+    Accessible by global-administrators, school-administrators and teachers.
     """
 
     # TODO: Check group membership
@@ -38,6 +40,7 @@ def get_schoolclass(schoolclass: str, auth: bool = Depends(RoleChecker("GST"))):
 def get_schoolclass_passwords(schoolclass: str, auth: bool = Depends(RoleChecker("GST"))):
     """
     Get all passwords from a specific schoolclass.
+    Accessible by global-administrators, school-administrators and teachers.
     """
 
     # TODO: Check group membership
@@ -49,6 +52,7 @@ def get_schoolclass_passwords(schoolclass: str, auth: bool = Depends(RoleChecker
 def get_schoolclass_passwords(schoolclass: str, auth: bool = Depends(RoleChecker("GST"))):
     """
     Get all students details from a specific schoolclass.
+    Accessible by global-administrators, school-administrators and teachers.
     """
 
     # TODO: Check group membership

@@ -27,15 +27,17 @@ class SetCurrentPassword(BaseModel):
 @router.get("/")
 def get_all_users(auth: bool = Depends(RoleChecker("G"))):
     """
-    Get basic informations from all users
+    Get basic informations from all users.
+    Accessible by global-administrators.
     """
 
     return lr.get('/users', attributes=['sn', 'givenName', 'sophomorixRole', 'sophomorixAdminClass'])
 
 @router.get("/{user}")
-def get_user(user: str, auth: bool = Depends(UserChecker("ST"))):
+def get_user(user: str, auth: bool = Depends(UserChecker("GST"))):
     """
     Get all details from a specific user.
+    Accessible by global-administrators, school-administrators and teachers.
     """
 
     return lr.get(f'/users/{user}')
@@ -44,6 +46,7 @@ def get_user(user: str, auth: bool = Depends(UserChecker("ST"))):
 def set_first_user_password(user: str, password: SetFirstPassword, auth: bool = Depends(UserChecker("GST"))):
     """
     Set first password from a specific user.
+    Accessible by global-administrators, school-administrators and teachers.
     """
 
     # TODO : paswword constraints ?
@@ -58,6 +61,7 @@ def set_first_user_password(user: str, password: SetFirstPassword, auth: bool = 
 def set_current_user_password(user: str, password: SetCurrentPassword, auth: bool = Depends(UserChecker("GST"))):
     """
     Set current password from a specific user.
+    Accessible by global-administrators, school-administrators and teachers.
     """
 
     try:
@@ -74,6 +78,7 @@ def set_current_user_password(user: str, password: SetCurrentPassword, auth: boo
 def get_user_quotas(user: str, auth: bool = Depends(UserChecker("GST"))):
     """
     Get current used quotas from a specific user.
+    Accessible by global-administrators, school-administrators and teachers.
     """
 
     try:

@@ -14,6 +14,7 @@ router = APIRouter(
 def query_user(school: str='default-school', sam: str='', auth: bool = Depends(RoleChecker("GST"))):
     """
     Search user in LDAP per sAMAccountName.
+    Accessible by global-administrators, school-administrators and teachers.
 
     :param school: school name
     :type school: basestring

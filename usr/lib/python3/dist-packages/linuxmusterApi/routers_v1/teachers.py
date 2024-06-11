@@ -21,7 +21,8 @@ def check_teacher(teacher):
 @router.get("/")
 def get_all_teachers(auth: bool = Depends(RoleChecker("GS"))):
     """
-    Get basic informations from all teachers
+    Get basic informations from all teachers.
+    Accessible by global-administrators and school-administrators.
     """
 
     return lr.get('/roles/teacher')
@@ -30,6 +31,7 @@ def get_all_teachers(auth: bool = Depends(RoleChecker("GS"))):
 def get_teacher(teacher: str, auth: bool = Depends(RoleChecker("GS"))):
     """
     Get all details from a specific teacher.
+    Accessible by global-administrators and school-administrators.
     """
 
     check_teacher(teacher)
