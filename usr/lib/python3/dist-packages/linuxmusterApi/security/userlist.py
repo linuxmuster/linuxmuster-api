@@ -77,7 +77,7 @@ class UserListChecker:
         users = body.get('users', [])
 
         if who.role == 'globaladministrator':
-            return True
+            return who
 
         if who.role in self.roles:
             # If one user has higher level, refuse to answer
@@ -87,7 +87,7 @@ class UserListChecker:
                         status_code=status.HTTP_401_UNAUTHORIZED,
                         detail='Permissions denied'
                     )
-            return True
+            return who
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
