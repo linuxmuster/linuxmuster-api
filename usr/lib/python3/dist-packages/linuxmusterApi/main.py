@@ -32,6 +32,7 @@ if config.get("cors", {}):
 # V1
 from routers_v1 import (
     auth,
+    exam,
     query,
     managementgroups,
     projects,
@@ -43,6 +44,7 @@ from routers_v1 import (
 )
 
 app.include_router(auth.router, prefix="/v1")
+app.include_router(exam.router, prefix="/v1")
 app.include_router(query.router, prefix="/v1")
 app.include_router(managementgroups.router, prefix="/v1")
 app.include_router(projects.router, prefix="/v1")
