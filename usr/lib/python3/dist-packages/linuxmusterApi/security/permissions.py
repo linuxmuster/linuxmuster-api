@@ -5,11 +5,10 @@ from .header import *
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
-class UserListChecker:
+class BasicChecker:
     """
-    Check role and user for permission access for command that need to be run over several users.
-    globaladmin can access all user informations, and an user is able to access its own informations, and to access
-    informations of users from a bellow roles.
+    Root class which defines all common functions and variables for the other checker.
+    This class can not be used directly, its only purpose is code factoring.
     """
 
     ROLES_MAPPING = {
@@ -71,6 +70,64 @@ class UserListChecker:
 
             return True
 
+class RoleChecker(BasicChecker):
+    """
+    Check role for permission access. Missing the possibility to check the user:
+    globaladmin can access all user informations, but an user should be able to
+    access its own informations.
+    """
+
+    def __init__(self, roles) -> None:
+        BasicChecker.__init__(self, roles)
+
+    def __call__(self, who: AuthenticatedUser = Depends(check_authentication_header)) -> AuthenticatedUser:
+
+        if who.role == 'globaladministrator':
+            return who
+
+        if who.role in self.roles:
+            return who
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Permissions denied')
+
+
+class UserChecker(BasicChecker):
+    """
+    Check role and user for permission access.
+    globaladmin can access all user informations, and an user is able to access its own informations.
+    """
+
+    def __init__(self, roles) -> None:
+        BasicChecker.__init__(self, roles)
+
+    def __call__(self, who: AuthenticatedUser = Depends(check_authentication_header), user=None) -> AuthenticatedUser:
+
+        if who.role == 'globaladministrator':
+            return who
+
+        if who.user == user:
+            return who
+
+        if who.role in self.roles and self._check_role_permissions(who, user):
+            return who
+
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Permissions denied')
+
+
+class UserListChecker(BasicChecker):
+    """
+    Check role and user for permission access for command that need to be run over several users.
+    globaladmin can access all user informations, and an user is able to access its own informations, and to access
+    informations of users from a bellow roles.
+    """
+
+    def __init__(self, roles) -> None:
+        BasicChecker.__init__(self, roles)
+
     async def __call__(self, request: Request, who: AuthenticatedUser = Depends(check_authentication_header)) -> bool:
 
         body = await request.json()
@@ -91,5 +148,4 @@ class UserListChecker:
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Permissions denied'
-        )
+            detail='Permissions denied')
