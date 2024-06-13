@@ -3,7 +3,7 @@ from pydantic import BaseModel, Field
 from time import localtime, strftime
 
 from security import UserListChecker, AuthenticatedUser
-from sophomorix import lmn_getSophomorixValue
+from utils.sophomorix import lmn_getSophomorixValue
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 

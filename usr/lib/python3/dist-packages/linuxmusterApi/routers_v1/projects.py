@@ -5,7 +5,7 @@ from pydantic import BaseModel
 from security import RoleChecker, UserListChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
 from linuxmusterTools.common import Validator, STRING_RULES
-from sophomorix import lmn_getSophomorixValue
+from utils.sophomorix import lmn_getSophomorixValue
 
 
 router = APIRouter(

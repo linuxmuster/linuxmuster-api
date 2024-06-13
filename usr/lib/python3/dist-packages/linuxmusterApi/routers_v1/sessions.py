@@ -3,7 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel
 
 from security import UserChecker, UserListChecker, AuthenticatedUser
-from checks import get_user_or_404
+from utils.checks import get_user_or_404
 from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
 from linuxmusterTools.common import Validator, STRING_RULES
 
