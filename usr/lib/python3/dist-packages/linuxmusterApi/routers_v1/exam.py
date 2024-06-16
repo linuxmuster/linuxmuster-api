@@ -21,12 +21,27 @@ class StopExam(BaseModel):
     group_type: str | None = None
     group_name: str | None = None
 
-@router.post("/start")
+@router.post("/start", name="Start exam")
 def start_exam_mode(userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
-    Accessible by global-administrators, school-administrators and teachers.
-    Use sophomorix.
+    ## Start exam for the authenticated user
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data)
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :param userlist: List of samaccountname for whom start the exam
+    :type userlist: UserList
+    :return: Session details
+    :rtype: dict
     """
+
 
     if not userlist.users:
         # Nothing to do
@@ -45,12 +60,27 @@ def start_exam_mode(userlist: UserList, who: AuthenticatedUser = Depends(UserLis
         raise HTTPException(status_code=500, detail=f"Error starting exam mode: {str(e)}")
 
 
-@router.post("/stop")
+@router.post("/stop", name="Stop exam")
 def stop_exam_mode(stopexam: StopExam, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
-    Accessible by global-administrators, school-administrators and teachers.
-    Use sophomorix.
+    ## Stop exam of the authenticated user
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data)
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :param userlist: List of samaccountname for whom stop the exam
+    :type userlist: UserList
+    :return: Session details
+    :rtype: dict
     """
+
 
     if not stopexam.users:
         # Nothing to do
