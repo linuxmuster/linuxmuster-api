@@ -29,12 +29,26 @@ class NewProject(BaseModel):
 class UserList(BaseModel):
     users: list | None = None
 
-@router.get("/")
+@router.get("/", name="List all projects the authenticated user can see")
 def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
-    List all projects an user can modify.
-    Accessible by global-administrators, school-administrators and teachers.
+    ## List all details of all projects.
+
+    The authenticated user can only see projects he's a member of, or not hidden.
+    For global-administrators, the search will be done in all schools.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of all projects details (dict)
+    :rtype: list
     """
+
 
     # School specific request. For global-admins, it will return all projects from all schools
     projects = lr.get('/projects', school=who.school)
@@ -54,12 +68,28 @@ def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
                 response.append(project)
         return response
 
-@router.get("/{project}")
+@router.get("/{project}", name="Get all details from a specific project")
 def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
-    Get informations about a specific project.
-    Accessible by global-administrators, school-administrators and teachers.
+    ## Get all details of a specific project.
+
+    The authenticated user can only see projects he's a member of, or not hidden.
+    For global-administrators, the search will be done in all schools.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    \f
+    :param project: cn of the project to describe
+    :type project: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of all projects details (dict)
+    :rtype: list
     """
+
 
     # School specific request. For global-admins, it will search in all projects from all schools
     project_details = lr.get(f'/projects/{project}', school=who.school)
@@ -81,13 +111,30 @@ def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleCheck
             return project_details
         raise HTTPException(status_code=403, detail=f"Forbidden")
 
-@router.delete("/{project}", status_code=204)
+@router.delete("/{project}", status_code=204, name="Delete a specific project")
 def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
-    Delete a specific project.
-    Accessible by global-administrators, school-administrators and teachers.
-    Use sophomorix.
+    ## Delete a specific project
+
+    The authenticated user can only delete a project if he's a admin of, or if
+    he's an admin.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param project: cn of the project to delete
+    :type project: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of all projects details (dict)
+    :rtype: list
     """
+
 
     # School specific request. For global-admins, it will search in all projects from all schools
     project_details = lr.get(f'/projects/{project}', school=who.school)
@@ -108,13 +155,32 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
             return lmn_getSophomorixValue(cmd, '')
         raise HTTPException(status_code=403, detail=f"Forbidden")
 
-@router.post("/{project}")
+@router.post("/{project}", name="Create a new project")
 def create_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
-    Create a project with all possible options.
-    Accessible by global-administrators, school-administrators and teachers.
-    Use sophomorix.
+    ## Create a new project
+
+    *project_details* are the attribute of the project, like *description*,
+    *join* if the project should be joinable, *hide*, etc ...
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param project: cn of the project to create
+    :type project: basestring
+    :param project_details: Parameter of the project, see NewProject attributes
+    :type project_details: NewProject
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of all projects details (dict)
+    :rtype: list
     """
+
 
     if not Validator.check_project_name(project):
         raise HTTPException(status_code=422, detail=f"{project} is not a valid name. Valid chars are {STRING_RULES['project']}")
@@ -149,13 +215,33 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
     cmd = ['sophomorix-project',  *options, '--create', '-p', project.lower(), '-jj']
     return lmn_getSophomorixValue(cmd, '')
 
-@router.patch("/{project}")
+@router.patch("/{project}", name="Update the parameters of a specific project")
 def modify_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
-    Modify an existing project.
-    Accessible by global-administrators, school-administrators and teachers.
-    Use sophomorix.
+    ## Update the parameters of a specific project
+
+    *project_details* are the attribute of the project, like *description*,
+    *join* if the project should be joinable, *hide*, etc ... and can be partial.
+    Teachers can only modify a project of which they are admin.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param project: cn of the project to update
+    :type project: basestring
+    :param project_details: Parameter of the project, see NewProject attributes
+    :type project_details: NewProject
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of all projects details (dict)
+    :rtype: list
     """
+
 
     # School specific request. For global-admins, it will search in all projects from all schools
     project_details = lr.get(f'/projects/{project}', school=who.school)
