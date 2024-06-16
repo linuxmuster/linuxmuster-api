@@ -42,9 +42,15 @@ def check_authentication_header(x_api_key: str = Depends(X_API_KEY)) -> Authenti
     # role may be eventually None
     user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole','sophomorixSchoolname'])
 
+    if user_details.get('sophomorixRole', None) is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid API Key",
+        )
+
     return AuthenticatedUser(
         user=user,
         role=user_details['sophomorixRole'],
-        school=user_details['sophomorixSchoolname']
+        school=user_details.get('sophomorixSchoolname', "")
     )
 
