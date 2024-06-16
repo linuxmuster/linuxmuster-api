@@ -9,11 +9,13 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/")
+@router.get("/", name="Basic auth to get a valid JWT")
 def get_json_web_token(auth: bool = Depends(BasicAuthChecker())):
     """
-    Check user's password and respond with a valid jwt.
-    Accessible by all users.
+    ## Check user's password and respond with a valid jwt.
+
+    ### Access
+    - all users
     """
 
     return auth
