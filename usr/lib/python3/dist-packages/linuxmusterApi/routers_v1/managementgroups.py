@@ -90,7 +90,7 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
 
     if not userlist.users:
         # Nothing to do
-        return
+        raise HTTPException(status_code=400, detail=f"Missing userlist of members to delete")
 
     group_details = lr.get(f'/managementgroups/{group}')
 
@@ -128,7 +128,7 @@ def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = D
 
     if not userlist.users:
         # Nothing to do
-        return
+        raise HTTPException(status_code=400, detail=f"Missing userlist of members to add")
 
     group_details = lr.get(f'/managementgroups/{group}')
 
