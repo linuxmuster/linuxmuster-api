@@ -17,8 +17,26 @@ router = APIRouter(
 class UserList(BaseModel):
     users: list | None = None
 
-@router.get("/{user}")
+@router.get("/{user}", name="Get all sessions of a specific user")
 def session_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+    """
+    ## Get all sessions details of a specific user and return a list of sessions.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data)
+
+    \f
+    :param user: Valid LDAP samaccountname
+    :type user: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of sessions details (details as dict)
+    :rtype: list
+    """
+
+
     user_details = get_user_or_404(user, who.school)
     sessions = user_details.lmnsessions
     sessionsList = []
@@ -32,8 +50,28 @@ def session_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))
         sessionsList.append(s)
     return sessionsList
 
-@router.get("/{user}/{sessionsid}")
+@router.get("/{user}/{sessionsid}", name="Get all details from a specific session sid of a specific user")
 def get_session_sessionname(user:str, sessionsid: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+    """
+    ## Get all details from a specific session of a specific user.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data)
+
+    \f
+    :param user: Valid LDAP samaccountname
+    :type user: basestring
+    :param sessionsid: Valid sessionsid
+    :type sessionsid: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: Session details
+    :rtype: dict
+    """
+
+
     user_details = get_user_or_404(user, who.school)
     sessions = user_details.lmnsessions
     for session in sessions:
@@ -46,8 +84,26 @@ def get_session_sessionname(user:str, sessionsid: str, who: AuthenticatedUser = 
             }
     raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
 
-@router.delete("/{user}/{sessionsid}", status_code=204)
+@router.delete("/{user}/{sessionsid}", status_code=204, name="Delete a specific session from a specific user")
 def delete_session(user:str, sessionsid: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+    """
+    ## Delete a specific session of a specific user.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data)
+
+    \f
+    :param user: Valid LDAP samaccountname
+    :type user: basestring
+    :param sessionsid: Valid sessionsid
+    :type sessionsid: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
+
     user_details = get_user_or_404(user, who.school)
     sessions = user_details.lmnsessions
     for index, session in enumerate(sessions):
@@ -58,8 +114,29 @@ def delete_session(user:str, sessionsid: str, who: AuthenticatedUser = Depends(U
     else:
        raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
 
-@router.post("/{user}/{sessionname}")
+@router.post("/{user}/{sessionname}", name="Create a new session for a specific user")
 def session_create(user: str, sessionname: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+    """
+    ## Create a new session for a specific user.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data)
+
+    ### TODO
+    - provide a way to direcly add members.
+
+    \f
+    :param user: Valid LDAP samaccountname
+    :type user: basestring
+    :param sessionname: Valid sessionname, will be checked
+    :type sessionname: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
+
     if not Validator.check_session_name(sessionname):
         raise HTTPException(status_code=422, detail=f"{sessionname} is not a valid name. Valid chars are {STRING_RULES['session']}")
 
@@ -71,8 +148,27 @@ def session_create(user: str, sessionname: str, who: AuthenticatedUser = Depends
        raise HTTPException(status_code=404, detail=str(e))
     return
 
-@router.delete("/{user}/{sessionsid}/members", status_code=204)
+@router.delete("/{user}/{sessionsid}/members", status_code=204, name="Remove members from a specific session of a specific user")
 def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
+    """
+    ## Remove members from a specific session of a specific user.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data)
+
+    \f
+    :param user: Valid LDAP samaccountname
+    :type user: basestring
+    :param sessionsid: Valid sessionsid
+    :type sessionsid: basestring
+    :param userlist: List of samaccountname to delete
+    :type userlist: UserList
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
 
     if not userlist.users:
         # Nothing to do
@@ -98,8 +194,27 @@ def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who:
     else:
        raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
 
-@router.post("/{user}/{sessionsid}/members")
+@router.post("/{user}/{sessionsid}/members", name="Add members to a specific session of a specific user")
 def add_user_to_session(user: str, sessionsid: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
+    """
+    ## Add members to a specific session of a specific user.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data)
+
+    \f
+    :param user: Valid LDAP samaccountname
+    :type user: basestring
+    :param sessionsid: Valid sessionsid
+    :type sessionsid: basestring
+    :param userlist: List of samaccountname to add
+    :type userlist: UserList
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
 
     if not userlist.users:
         # Nothing to do
