@@ -15,21 +15,51 @@ router = APIRouter(
 class UserList(BaseModel):
     users: list | None = None
 
-@router.get("/")
+@router.get("/", name="List all samba management groups")
 def get_management_groups_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
-    List the samba management group an user can modify.
-    Accessible by global-administrators, school-administrators and teachers.
+    ## List all available samba management groups.
+
+    Return the cn of the found groups.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    \f
+    :param user: Valid LDAP samaccountname
+    :type user: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List cn of each management group
+    :rtype: list
     """
+
 
     return [group['cn'] for group in lr.get('/managementgroups', attributes=['cn'])]
 
-@router.get("/{group}")
-def get_group_details(group: str, auth: bool = Depends(RoleChecker("GS"))):
+@router.get("/{group}", name="Get details of a specific management group")
+def get_group_details(group: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
-    Get informations a bout a specific management group.
-    Accessible by global-administrators an school-administrators.
+    ## List all informations of a specific samba management group.
+
+    The details returned are *members*, *cn*, *sophomorixSchoolName*, *dn*,
+    etc...
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param group: Valid cn of a management group
+    :type group: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: All available informations
+    :rtype: dict
     """
+
 
     group_details = lr.get(f'/managementgroups/{group}')
 
@@ -38,17 +68,25 @@ def get_group_details(group: str, auth: bool = Depends(RoleChecker("GS"))):
 
     raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
 
-@router.delete("/{group}/members", status_code=204)
+@router.delete("/{group}/members", status_code=204, name="Remove users from a specific management group")
 def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
-    Remove users from a specific management group.
-    Accessible by global-administrators, school-administrators and teachers.
+    ## Remove members from a specific management group.
 
-    :param group: group name
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data and students)
+
+    \f
+    :param group: Valid cn of a management group
     :type group: basestring
-    :param users: users list
-    :type users: list
+    :param userlist: List of samaccountname to remove
+    :type userlist: UserList
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
     """
+
 
     if not userlist.users:
         # Nothing to do
@@ -68,17 +106,25 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
 
     return
 
-@router.post("/{group}/members")
+@router.post("/{group}/members", name="Add users to a specific management group")
 def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
-    Add users to a specific management group.
-    Accessible by global-administrators, school-administrators and teachers.
+    ## Add members to a specific management group.
 
-    :param group: group name
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data and students)
+
+    \f
+    :param group: Valid cn of a management group
     :type group: basestring
-    :param users: users list
-    :type users: list
+    :param userlist: List of samaccountname to add
+    :type userlist: UserList
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
     """
+
 
     if not userlist.users:
         # Nothing to do
