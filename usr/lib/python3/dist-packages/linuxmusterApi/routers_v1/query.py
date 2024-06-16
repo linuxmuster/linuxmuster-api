@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from security import RoleChecker
+from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
@@ -10,17 +10,31 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/{school}/{sam}")
-def query_user(school: str='default-school', sam: str='', auth: bool = Depends(RoleChecker("GST"))):
+@router.get("/{school}/{sam}", name="Search for an user in a specific school")
+def query_user(school: str='default-school', sam: str='', who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
-    Search user in LDAP per sAMAccountName.
-    Accessible by global-administrators, school-administrators and teachers.
+    ## Get basic informations of a specific user.
 
-    :param school: school name
+    If **school** is *global*, search in all schools.
+    If an user is found, the response provide some basic details like dn,
+    sophomorixRole, cn, sophomorixSchoolName, samaccountname, etc ...
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    \f
+    :param school: The school where to search, all schools if global is given
     :type school: basestring
-    :param sam: samaccountname of the user. May be incomplete
+    :param sam: String to search for in the samaccountname field
     :type sam: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of user's basic details (not complete, as dict)
+    :rtype: list
     """
+
 
     if school == 'global':
         return lr.get(f'/search/{sam}')
