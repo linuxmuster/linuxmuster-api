@@ -144,9 +144,9 @@ def session_create(user: str, sessionname: str, who: AuthenticatedUser = Depends
     new_session = f"{sid};{sessionname};;"
     try:
         lw.set(user, 'user', {'sophomorixSessions': new_session}, add=True)
+        return
     except Exception as e:
        raise HTTPException(status_code=404, detail=str(e))
-    return
 
 @router.delete("/{user}/{sessionsid}/members", status_code=204, name="Remove members from a specific session of a specific user")
 def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
