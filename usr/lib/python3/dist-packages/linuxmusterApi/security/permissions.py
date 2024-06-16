@@ -47,10 +47,15 @@ class BasicChecker:
             if identity_role == 'globaladministrator':
                 return True
 
+            # Ensure the requested user exists in LDAP
             if requested_user.endswith('-exam'):
-                user_role = "examuser"
+                user_role = lr.getval(f'/users/exam/{requested_user}', 'sophomorixRole')
             else:
                 user_role = lr.getval(f'/users/{requested_user}', 'sophomorixRole')
+
+            # Is it really a valid user ?
+            if user_role is None:
+                return False
 
             ## Some additional security checks
             # Access forbidden for students
@@ -142,7 +147,7 @@ class UserListChecker(BasicChecker):
                 if not self._check_role_permissions(who, user):
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail='Permissions denied'
+                        detail=f'Permissions denied to request user {user}'
                     )
             return who
 
