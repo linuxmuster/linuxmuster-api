@@ -45,7 +45,7 @@ def start_exam_mode(userlist: UserList, who: AuthenticatedUser = Depends(UserLis
 
     if not userlist.users:
         # Nothing to do
-        return
+        raise HTTPException(status_code=400, detail=f"Missing userlist of members to handle")
 
     try:
         sophomorixCommand = [
@@ -84,7 +84,7 @@ def stop_exam_mode(stopexam: StopExam, who: AuthenticatedUser = Depends(UserList
 
     if not stopexam.users:
         # Nothing to do
-        return
+        raise HTTPException(status_code=400, detail=f"Missing userlist of members to handle")
 
     now = strftime("%Y-%m-%d_%Hh%Mm%S", localtime())
     target = f'EXAM_{stopexam.group_type}_{stopexam.group_name}_{now}'
