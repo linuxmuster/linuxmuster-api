@@ -172,7 +172,7 @@ def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who:
 
     if not userlist.users:
         # Nothing to do
-        return
+        raise HTTPException(status_code=400, detail=f"Missing userlist of members to delete")
 
     user_details = get_user_or_404(user, who.school)
     sessions = user_details.lmnsessions
@@ -218,7 +218,7 @@ def add_user_to_session(user: str, sessionsid: str, userlist: UserList, who: Aut
 
     if not userlist.users:
         # Nothing to do
-        return
+        raise HTTPException(status_code=400, detail=f"Missing userlist of members to add")
 
     user_details = get_user_or_404(user, who.school)
     sessions = user_details.lmnsessions
