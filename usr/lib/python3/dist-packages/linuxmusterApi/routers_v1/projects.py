@@ -1,8 +1,7 @@
-import logging
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 
 from security import RoleChecker, UserListChecker, AuthenticatedUser
+from .body_schemas import UserList, NewProject
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
 from linuxmusterTools.common import Validator, STRING_RULES
 from utils.sophomorix import lmn_getSophomorixValue
@@ -13,21 +12,6 @@ router = APIRouter(
     tags=["Projects"],
     responses={404: {"description": "Not found"}},
 )
-
-class NewProject(BaseModel):
-    description: str | None = ''
-    quota: str = ''
-    mailquota: str = ''
-    join: bool = True
-    hide: bool = False
-    admins: list = []
-    admingroups: list = []
-    members: list = []
-    membergroups: list = []
-    school: str = 'default-school'
-
-class UserList(BaseModel):
-    users: list | None = None
 
 @router.get("/", name="List all projects the authenticated user can see")
 def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):

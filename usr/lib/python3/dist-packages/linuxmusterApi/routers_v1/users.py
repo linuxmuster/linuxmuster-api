@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
 
 from security import RoleChecker, UserChecker, AuthenticatedUser
+from .body_schemas import SetFirstPassword, SetCurrentPassword
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
 from linuxmusterTools.samba_util import UserManager
@@ -15,14 +15,6 @@ router = APIRouter(
     tags=["Users"],
     responses={404: {"description": "Not found"}},
 )
-
-class SetFirstPassword(BaseModel):
-    password: str
-    set_current: bool = Field(default= False)
-
-class SetCurrentPassword(BaseModel):
-    password: str
-    set_first: bool = Field(default= False)
 
 @router.get("/", name="List all users")
 def get_all_users(who: AuthenticatedUser = Depends(RoleChecker("G"))):

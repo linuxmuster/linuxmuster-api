@@ -1,8 +1,8 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 
 from security import RoleChecker, UserListChecker, AuthenticatedUser
+from .body_schemas import UserList
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
 
 
@@ -11,9 +11,6 @@ router = APIRouter(
     tags=["Management Groups"],
     responses={404: {"description": "Not found"}},
 )
-
-class UserList(BaseModel):
-    users: list | None = None
 
 @router.get("/", name="List all samba management groups")
 def get_management_groups_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):

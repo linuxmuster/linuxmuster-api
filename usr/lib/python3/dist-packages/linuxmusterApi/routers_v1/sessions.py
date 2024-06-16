@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from datetime import datetime
-from pydantic import BaseModel
 
 from security import UserChecker, UserListChecker, AuthenticatedUser
 from utils.checks import get_user_or_404
+from .body_schemas import UserList
 from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
 from linuxmusterTools.common import Validator, STRING_RULES
 
@@ -14,8 +14,6 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-class UserList(BaseModel):
-    users: list | None = None
 
 @router.get("/{user}", name="Get all sessions of a specific user")
 def session_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):

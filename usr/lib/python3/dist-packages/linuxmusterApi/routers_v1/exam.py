@@ -1,10 +1,9 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
 from time import localtime, strftime
 
 from security import UserListChecker, AuthenticatedUser
+from .body_schemas import UserList, StopExam
 from utils.sophomorix import lmn_getSophomorixValue
-from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
 router = APIRouter(
@@ -12,14 +11,6 @@ router = APIRouter(
     tags=["Exam mode"],
     responses={404: {"description": "Not found"}},
 )
-
-class UserList(BaseModel):
-    users: list | None = None
-
-class StopExam(BaseModel):
-    users: list | None = None
-    group_type: str | None = None
-    group_name: str | None = None
 
 @router.post("/start", name="Start exam")
 def start_exam_mode(userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
