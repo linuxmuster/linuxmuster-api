@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from utils.checks import get_schoolclass_or_404
 
 
 router = APIRouter(
@@ -9,11 +10,6 @@ router = APIRouter(
     tags=["Schoolclasses"],
     responses={404: {"description": "Not found"}},
 )
-
-def check_schoolclass(schoolclass):
-    schoolclasses = [s['cn'] for s in lr.get('/schoolclasses', attributes=['cn'])]
-    if schoolclass not in schoolclasses:
-        raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
 @router.get("/", name="List all schoolclasses")
 def get_all_schoolclasses(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -60,7 +56,7 @@ def get_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleCheck
 
 
     # TODO: Check group membership
-    check_schoolclass(schoolclass)
+    get_schoolclass_or_404(schoolclass)
 
     return lr.get(f'/schoolclasses/{schoolclass}')
 
@@ -92,7 +88,7 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
 
 
     # TODO: Check group membership
-    check_schoolclass(schoolclass)
+    get_schoolclass_or_404(schoolclass)
 
     return lr.get(f'/schoolclasses/{schoolclass}', dict=False).get_first_passwords()
 
@@ -117,6 +113,6 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
 
 
     # TODO: Check group membership
-    check_schoolclass(schoolclass)
+    get_schoolclass_or_404(schoolclass)
 
     return lr.get(f'/schoolclasses/{schoolclass}/students')

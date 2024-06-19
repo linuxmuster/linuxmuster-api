@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 
 from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from utils.checks import get_teacher_or_404
 
 
 router = APIRouter(
@@ -9,12 +10,6 @@ router = APIRouter(
     tags=["Teachers"],
     responses={404: {"description": "Not found"}},
 )
-
-
-def check_teacher(teacher):
-    teachers = [s['cn'] for s in lr.get('/roles/teacher', attributes=['cn'])]
-    if teacher not in teachers:
-        raise HTTPException(status_code=404, detail=f"Teacher {teacher} not found")
 
 @router.get("/", name='List all teachers')
 def get_all_teachers(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
@@ -53,7 +48,7 @@ def get_teacher(teacher: str, who: AuthenticatedUser = Depends(RoleChecker("GS")
     :rtype: list
     """
 
-    check_teacher(teacher)
+    get_teacher_or_404(teacher)
 
     return lr.get(f'/users/{teacher}')
 
