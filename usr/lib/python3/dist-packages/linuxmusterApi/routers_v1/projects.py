@@ -88,7 +88,6 @@ def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleCheck
     elif who.role == "teacher":
         # Only the teacher's project or not hidden projects or project in which the teacher is member of
         # TODO: read sophomorixMemberGroups and sophomorixAdminGroups too
-        response =  []
         if who.user in project_details['sophomorixAdmins'] or who.user in project_details['sophomorixMembers']:
             return project_details
         elif not project_details['sophomorixHidden']:

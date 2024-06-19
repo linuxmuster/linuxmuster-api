@@ -113,7 +113,7 @@ def delete_session(user:str, sessionsid: str, who: AuthenticatedUser = Depends(U
        raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
 
 @router.post("/{user}/{sessionname}", name="Create a new session for a specific user")
-def session_create(user: str, sessionname: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+def session_create(user: str, sessionname: str, userlist: UserList | None = None, who: AuthenticatedUser = Depends(UserChecker("GST"))):
     """
     ## Create a new session for a specific user.
 
@@ -139,7 +139,14 @@ def session_create(user: str, sessionname: str, who: AuthenticatedUser = Depends
         raise HTTPException(status_code=422, detail=f"{sessionname} is not a valid name. Valid chars are {STRING_RULES['session']}")
 
     sid = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    new_session = f"{sid};{sessionname};;"
+
+    members = ""
+    if userlist:
+        if userlist.users:
+            members = ",".join(set(userlist.users))
+
+    new_session = f"{sid};{sessionname};{members};"
+
     try:
         lw.set(user, 'user', {'sophomorixSessions': new_session}, add=True)
         return
