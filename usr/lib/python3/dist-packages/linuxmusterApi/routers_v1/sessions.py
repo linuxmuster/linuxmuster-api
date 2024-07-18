@@ -4,7 +4,7 @@ from datetime import datetime
 from security import UserChecker, UserListChecker, AuthenticatedUser
 from utils.checks import get_user_or_404
 from .body_schemas import UserList
-from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
+from linuxmusterTools.ldapconnector import LMNLdapWriter as lw, LMNLdapReader as lr
 from linuxmusterTools.common import Validator, STRING_RULES
 
 
@@ -39,11 +39,13 @@ def session_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))
     sessions = user_details.lmnsessions
     sessionsList = []
     for session in sessions:
+        members = {member: lr.get(f'/users/{member}') for member in
+                   session.members}
         s = {
             'sid': session.sid,
             'name': session.name,
             'membersCount': session.membersCount,
-            'members': session.members,
+            'members': members,
         }
         sessionsList.append(s)
     return sessionsList
@@ -74,11 +76,12 @@ def get_session_sessionname(user:str, sessionsid: str, who: AuthenticatedUser = 
     sessions = user_details.lmnsessions
     for session in sessions:
         if sessionsid == session.sid:
+            members = {member:lr.get(f'/users/{member}') for member in session.members}
             return {
                 'sid': session.sid,
                 'name': session.name,
                 'membersCount': session.membersCount,
-                'members': session.members,
+                'members': members,
             }
     raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
 
