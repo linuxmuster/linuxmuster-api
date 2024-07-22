@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.2.10) lmn72; urgency=medium
+
+  * Add users infos, mail and quota settings 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Mon, 22 Jul 2024 17:23:26 +0200
+
 linuxmuster-api7 (7.2.9) lmn72; urgency=medium
 
   * Refactor checks, body schemas and permissions
