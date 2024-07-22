@@ -54,6 +54,17 @@ You can get a valid JWT token by sending username and password via Basic auth at
 
 You are yet so far to launch your first request, just send a GET request with your JWT to https://SERVER:8001/v1/schoolclasses and you will get a whole list of all schoolclasses on the server ! Have fun with it :)
 
+## Maintainance Details
+    
+Linuxmuster.net official | ✅ YES
+:---: | :---: 
+[Community support](https://ask.linuxmuster.net) | ✅ YES**
+Actively developed | ✅ YES
+Maintainer organisation |  Linuxmuster.net / Netzint GmbH  
+Primary maintainer | arnaud@linuxmuster.net  
+    
+** The linuxmuster community consits of people who are nice and happy to help. They are not directly involved in the development though, and might not be able to help in any case.
+
 ## Development
 
 This project is pretty young and there's many room for improvement:
