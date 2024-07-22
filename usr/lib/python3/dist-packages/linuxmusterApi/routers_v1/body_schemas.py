@@ -11,6 +11,15 @@ class UserList(BaseModel):
 
     users: list | None = None
 
+class LMNShareQuota(BaseModel):
+    """
+    Model for quotas of shares.
+    """
+
+    comment: str | None = '---'
+    quota: int
+    share: str
+
 class NewProject(BaseModel):
     """
     Model to create a new project.
@@ -23,10 +32,10 @@ class NewProject(BaseModel):
     hide: bool = False
     mailalias: bool = False
     maillist: bool = False
-    mailquota: str = ''
+    mailquota: int | None = None
     members: list = []
     membergroups: list = []
-    quota: str = ''
+    quota: list[LMNShareQuota] | None = []
     school: str = 'default-school'
 
 class SetFirstPassword(BaseModel):
