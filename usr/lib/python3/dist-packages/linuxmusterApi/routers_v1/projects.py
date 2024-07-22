@@ -188,6 +188,16 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
     else:
         options.append('--nohide')
 
+    if project_details.mailalias:
+        options.append('--mailalias')
+    else:
+        options.append('--nomailalias')
+
+    if project_details.maillist:
+        options.append('--maillist')
+    else:
+        options.append('--nomaillist')
+
     for option in ['admins', 'members', 'admingroups', 'membergroups']:
         if getattr(project_details, option):
             options.extend([f'--{option}', ','.join(getattr(project_details, option))])
@@ -252,6 +262,16 @@ def modify_project(project: str, project_details: NewProject, who: Authenticated
         options.append('--hide')
     else:
         options.append('--nohide')
+
+    if project_details.mailalias:
+        options.append('--mailalias')
+    else:
+        options.append('--nomailalias')
+
+    if project_details.maillist:
+        options.append('--maillist')
+    else:
+        options.append('--nomaillist')
 
     for option in ['admins', 'members', 'admingroups', 'membergroups']:
         if getattr(project_details, option):
