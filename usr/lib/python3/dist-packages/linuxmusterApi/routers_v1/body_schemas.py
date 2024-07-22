@@ -16,15 +16,17 @@ class NewProject(BaseModel):
     Model to create a new project.
     """
 
-    description: str | None = ''
-    quota: str = ''
-    mailquota: str = ''
-    join: bool = True
-    hide: bool = False
     admins: list = []
     admingroups: list = []
+    description: str | None = ''
+    join: bool = True
+    hide: bool = False
+    mailalias: bool = False
+    maillist: bool = False
+    mailquota: str = ''
     members: list = []
     membergroups: list = []
+    quota: str = ''
     school: str = 'default-school'
 
 class SetFirstPassword(BaseModel):
