@@ -198,6 +198,16 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
     else:
         options.append('--nomaillist')
 
+    if project_details.mailquota is not None:
+        options.extend(['--addmailquota', f"{project_details.mailquota}:"])
+
+    if project_details.quota:
+        quota_to_add = ""
+        for q in project_details.quota:
+            quota_to_add += f"{q.share}:{q.quota}:{q.comment},"
+
+        options.extend(['--addquota', quota_to_add.strip(',')])
+
     for option in ['admins', 'members', 'admingroups', 'membergroups']:
         if getattr(project_details, option):
             options.extend([f'--{option}', ','.join(getattr(project_details, option))])
@@ -272,6 +282,16 @@ def modify_project(project: str, project_details: NewProject, who: Authenticated
         options.append('--maillist')
     else:
         options.append('--nomaillist')
+
+    if project_details.mailquota is not None:
+        options.extend(['--addmailquota', f"{project_details.mailquota}:"])
+
+    if project_details.quota:
+        quota_to_add = ""
+        for q in project_details.quota:
+            quota_to_add += f"{q.share}:{q.quota}:{q.comment},"
+
+        options.extend(['--addquota', quota_to_add.strip(',')])
 
     for option in ['admins', 'members', 'admingroups', 'membergroups']:
         if getattr(project_details, option):
