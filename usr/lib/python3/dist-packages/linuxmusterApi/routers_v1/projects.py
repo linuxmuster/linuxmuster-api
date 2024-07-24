@@ -222,6 +222,9 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
     if output.get("TYPE", "") == "ERROR":
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
+    if project_details.proxyAddresses:
+        lw.set(f"p_{project.lower()}", 'project', {'proxyAddresses': project_details.proxyAddresses})
+
     return result
 
 @router.patch("/{project}", name="Update the parameters of a specific project")
@@ -312,5 +315,8 @@ def modify_project(project: str, project_details: NewProject, who: Authenticated
     output = result.get("OUTPUT", [{}])[0]
     if output.get("TYPE", "") == "ERROR":
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
+
+    if project_details.proxyAddresses:
+        lw.set(f"p_{project.lower()}", 'project', {'proxyAddresses': project_details.proxyAddresses})
 
     return result

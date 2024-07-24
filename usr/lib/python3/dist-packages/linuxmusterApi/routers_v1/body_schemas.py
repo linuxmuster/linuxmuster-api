@@ -35,6 +35,7 @@ class NewProject(BaseModel):
     mailquota: int | None = None
     members: list = []
     membergroups: list = []
+    proxyAddresses: list | None = []
     quota: list[LMNShareQuota] | None = []
     school: str = 'default-school'
 
