@@ -58,7 +58,10 @@ def get_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleCheck
     # TODO: Check group membership
     get_schoolclass_or_404(schoolclass)
 
-    return lr.get(f'/schoolclasses/{schoolclass}')
+    schoolclass = lr.get(f'/schoolclasses/{schoolclass}')
+    schoolclass['members'] = {member:lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']}
+
+    return schoolclass
 
 @router.get("/{schoolclass}/first_passwords", name="Get all first passwords of the members of a specific schoolclass")
 def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
