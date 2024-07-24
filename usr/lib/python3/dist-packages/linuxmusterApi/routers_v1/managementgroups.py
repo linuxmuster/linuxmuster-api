@@ -1,3 +1,4 @@
+import ldap
 import logging
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -97,7 +98,12 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
     for member in userlist.users:
         dn = lr.getval(f'/users/{member}', 'dn')
         if dn:
-            lw.delete(group, 'managementgroup', {'member': dn})
+            try:
+                lw.delete(group, 'managementgroup', {'member': dn})
+            except ldap.UNWILLING_TO_PERFORM as e:
+                if 'Attribute member already deleted for target' in str(e):
+                    # User already deleted from the group, ignoring
+                    pass
         else:
             logging.warning(f"User {member} not found, will not delete from management group {group}")
 
@@ -135,7 +141,12 @@ def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = D
     for member in userlist.users:
         dn = lr.getval(f'/users/{member}', 'dn')
         if dn:
-            lw.set(group, 'managementgroup', {'member': dn}, add=True)
+            try:
+                lw.set(group, 'managementgroup', {'member': dn}, add=True)
+            except ldap.ALREADY_EXISTS as e:
+                if 'Attribute member already exists for target' in str(e):
+                    # User already deleted from the group, ignoring
+                    pass
         else:
             logging.warning(f"User {member} not found, will not add it to management group {group}")
 
