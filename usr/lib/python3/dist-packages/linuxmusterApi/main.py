@@ -65,6 +65,7 @@ from routers_v1 import (
     managementgroups,
     projects,
     roles,
+    samba,
     schoolclasses,
     sessions,
     teachers,
@@ -112,6 +113,7 @@ app.include_router(projects.router, prefix="/v1")
 app.include_router(groups.router, prefix="/v1")
 app.include_router(sessions.router, prefix="/v1")
 app.include_router(exam.router, prefix="/v1")
+app.include_router(samba.router, prefix="/v1")
 
 if __name__ == "__main__":
     secret = config.get('secret', None)
