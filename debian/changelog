@@ -1,3 +1,17 @@
+linuxmuster-api7 (7.2.11) lmn72; urgency=medium
+
+  * Add members details.
+  * Get common name.
+  * Students as dict.
+  * Members as list.
+  * Add UserInRoom endpoint.
+  * Catch bad requests.
+  * Set proxyAddresses in projects.
+  * Search for displayName too. 
+  * Wrong object type.
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 24 Jul 2024 17:31:14 +0200
+
 linuxmuster-api7 (7.2.10) lmn72; urgency=medium
 
   * Add users infos, mail and quota settings 
