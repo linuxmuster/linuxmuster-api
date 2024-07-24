@@ -118,5 +118,4 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
     # TODO: Check group membership
     get_schoolclass_or_404(schoolclass)
 
-    students = lr.get(f'/schoolclasses/{schoolclass}/students')
-    return  {student['cn']:student for student in students}
+    return lr.get(f'/schoolclasses/{schoolclass}/students')

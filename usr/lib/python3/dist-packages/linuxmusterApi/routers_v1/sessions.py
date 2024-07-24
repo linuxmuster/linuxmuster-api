@@ -39,8 +39,7 @@ def session_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))
     sessions = user_details.lmnsessions
     sessionsList = []
     for session in sessions:
-        members = {member: lr.get(f'/users/{member}') for member in
-                   session.members}
+        members = [lr.get(f'/users/{member}') for member in session.members]
         s = {
             'sid': session.sid,
             'name': session.name,
@@ -76,7 +75,7 @@ def get_session_sessionname(user:str, sessionsid: str, who: AuthenticatedUser = 
     sessions = user_details.lmnsessions
     for session in sessions:
         if sessionsid == session.sid:
-            members = {member:lr.get(f'/users/{member}') for member in session.members}
+            members = [lr.get(f'/users/{member}') for member in session.members]
             return {
                 'sid': session.sid,
                 'name': session.name,
