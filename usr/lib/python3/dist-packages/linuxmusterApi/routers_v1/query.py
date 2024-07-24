@@ -10,8 +10,8 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/{school}/{sam}", name="Search for an user in a specific school")
-def query_user(school: str='default-school', sam: str='', who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+@router.get("/{school}/{keyword}", name="Search for an user in a specific school")
+def query_user(school: str='default-school', keyword: str='', who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## Get basic informations of a specific user.
 
@@ -27,8 +27,8 @@ def query_user(school: str='default-school', sam: str='', who: AuthenticatedUser
     \f
     :param school: The school where to search, all schools if global is given
     :type school: basestring
-    :param sam: String to search for in the samaccountname field
-    :type sam: basestring
+    :param keyword: String to search for in the cn/displayName fields
+    :type keyword: basestring
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
     :return: List of user's basic details (not complete, as dict)
@@ -37,6 +37,6 @@ def query_user(school: str='default-school', sam: str='', who: AuthenticatedUser
 
 
     if school == 'global':
-        return lr.get(f'/search/{sam}')
+        return lr.get(f'/search/{keyword}')
 
-    return lr.get(f'/search/{sam}', school=school)
+    return lr.get(f'/search/{keyword}', school=school)
