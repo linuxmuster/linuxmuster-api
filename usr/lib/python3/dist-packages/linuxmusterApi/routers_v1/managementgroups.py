@@ -97,7 +97,7 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
     for member in userlist.users:
         dn = lr.getval(f'/users/{member}', 'dn')
         if dn:
-            lw.delete(group, 'group', {'member': dn})
+            lw.delete(group, 'managementgroup', {'member': dn})
         else:
             logging.warning(f"User {member} not found, will not delete from management group {group}")
 
@@ -135,7 +135,7 @@ def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = D
     for member in userlist.users:
         dn = lr.getval(f'/users/{member}', 'dn')
         if dn:
-            lw.set(group, 'group', {'member': dn}, add=True)
+            lw.set(group, 'managementgroup', {'member': dn}, add=True)
         else:
             logging.warning(f"User {member} not found, will not add it to management group {group}")
 
