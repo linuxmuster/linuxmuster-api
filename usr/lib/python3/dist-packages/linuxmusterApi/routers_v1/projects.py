@@ -170,8 +170,8 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
 
     # School specific request. For global-admins, it will return all projects from all schools
     projects = lr.get('/projects', attributes=['cn'], school=who.school)
-    if {'cn': project} in projects or {'cn': f"p_{project}"} in projects:
-        raise HTTPException(status_code=400, detail=f"Project {project} already exists on this server.")
+    # if {'cn': project} in projects or {'cn': f"p_{project}"} in projects:
+    #     raise HTTPException(status_code=400, detail=f"Project {project} already exists on this server.")
 
     options = []
 
@@ -216,7 +216,13 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
         options.extend(['--school', project_details.school])
 
     cmd = ['sophomorix-project',  *options, '--create', '-p', project.lower(), '-jj']
-    return lmn_getSophomorixValue(cmd, '')
+    result =  lmn_getSophomorixValue(cmd, '')
+
+    output = result.get("OUTPUT", [{}])[0]
+    if output.get("TYPE", "") == "ERROR":
+        raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
+
+    return result
 
 @router.patch("/{project}", name="Update the parameters of a specific project")
 def modify_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -301,4 +307,10 @@ def modify_project(project: str, project_details: NewProject, who: Authenticated
         options.extend(['--school', project_details.school])
 
     cmd = ['sophomorix-project',  *options, '-p', project.lower(), '-jj']
-    return lmn_getSophomorixValue(cmd, '')
+    result =  lmn_getSophomorixValue(cmd, '')
+
+    output = result.get("OUTPUT", [{}])[0]
+    if output.get("TYPE", "") == "ERROR":
+        raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
+
+    return result
