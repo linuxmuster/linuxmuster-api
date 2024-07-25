@@ -59,7 +59,7 @@ def get_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleCheck
     get_schoolclass_or_404(schoolclass)
 
     schoolclass = lr.get(f'/schoolclasses/{schoolclass}')
-    schoolclass['members'] = {member:lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']}
+    schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
 
     return schoolclass
 
