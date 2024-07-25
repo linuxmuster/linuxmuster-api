@@ -1,3 +1,10 @@
+linuxmuster-api7 (7.2.12) lmn72; urgency=medium
+
+  * Optional query parameter to get all members of a project
+  * Print passwords for schoolclasses 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Fri, 26 Jul 2024 01:03:27 +0200
+
 linuxmuster-api7 (7.2.11) lmn72; urgency=medium
 
   * Add members details.
