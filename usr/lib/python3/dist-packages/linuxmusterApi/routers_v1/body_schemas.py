@@ -66,3 +66,16 @@ class StopExam(BaseModel):
     users: list | None = None
     group_type: str | None = None
     group_name: str | None = None
+
+class PrintPasswordsParameter(BaseModel):
+    """
+    Parameter to fix the use of pdflatex or choose to print only one password per page.
+    The parameter school could be useful for global administrators.
+    format may be pdf or csv.
+    """
+
+    format: str | None = 'pdf'
+    one_per_page: bool | None = False
+    pdflatex: bool | None = False
+    school: str | None = ''
+    schoolclasses: list
