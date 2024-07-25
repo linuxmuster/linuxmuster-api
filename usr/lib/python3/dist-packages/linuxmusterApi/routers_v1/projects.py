@@ -53,7 +53,7 @@ def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
         return response
 
 @router.get("/{project}", name="Get all details from a specific project")
-def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+def get_project_details(project: str, all_members: bool = False, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## Get all details of a specific project.
 
@@ -76,7 +76,16 @@ def get_project_details(project: str, who: AuthenticatedUser = Depends(RoleCheck
 
 
     # School specific request. For global-admins, it will search in all projects from all schools
-    project_details = lr.get(f'/projects/{project}', school=who.school)
+    project_details = lr.get(f'/projects/{project}', school=who.school, dict=False)
+    
+    if all_members:
+        project_details.get_all_members()
+    
+    project_details = project_details.asdict()
+
+    if all_members:
+        project_details['members'] = [lr.get(f'/users/{member}') for member in project_details['all_members']]
+        project_details['admins'] = [lr.get(f'/users/{member}') for member in project_details['all_admins']]
 
     if not project_details:
         raise HTTPException(status_code=404, detail=f"Project {project} not found.")
