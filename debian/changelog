@@ -1,3 +1,10 @@
+linuxmuster-api7 (7.2.13) lmn72; urgency=medium
+
+  * Update documentation of print passwords
+  * Add one_per_page and pdflatex paramaters. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Fri, 26 Jul 2024 11:25:42 +0200
+
 linuxmuster-api7 (7.2.12) lmn72; urgency=medium
 
   * Optional query parameter to get all members of a project
