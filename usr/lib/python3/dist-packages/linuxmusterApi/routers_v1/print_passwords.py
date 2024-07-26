@@ -13,15 +13,27 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/schoolclasses", name="Print passwords from schoolclasses")
+@router.post("/schoolclasses", name="Print passwords from schoolclasses")
 def print_passwords_schoolclasses(config: PrintPasswordsParameter, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## Print passwords from multiple schoolclasses.
+
+    The body parameters are:
+        - format: pdf or csv (default pdf),
+        - schoolclasses: list of valid schoolclasses,
+        - one_per_page: boolean (print one password per page, default false),
+        - pdflatex: booolean (use pdflatex or not, default false),
+        - school: school of the user, may be necessary for globaladministrators.
 
     ### Access
     - global-administrators
     - school-administrators
     - teachers
+
+    ### This endpoint uses Sophomorix.
+
+    Unfortunately it's possible that the tex compilation failed, and in this case
+    we don't get any error message from the backend.
 
     \f
     :param who: User requesting the data, read from API Token
