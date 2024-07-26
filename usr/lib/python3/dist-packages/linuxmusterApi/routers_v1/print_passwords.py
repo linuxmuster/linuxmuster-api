@@ -62,6 +62,12 @@ def print_passwords_schoolclasses(config: PrintPasswordsParameter, who: Authenti
 
     cmd.extend(['--class', ','.join(config.schoolclasses)])
 
+    if config.pdflatex:
+        cmd.extend(['--command', 'pdflatex'])
+
+    if config.one_per_page:
+        cmd.extend(['--one-per-page'])
+
     try:
         shell_env = {'TERM': 'xterm', 'SHELL': '/bin/bash',  'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',  'HOME': '/root', '_': '/usr/bin/python3'}
         subprocess.check_call(cmd, shell=False, env=shell_env)
