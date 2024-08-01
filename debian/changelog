@@ -1,3 +1,15 @@
+linuxmuster-api7 (7.2.14) lmn72; urgency=medium
+
+  * Fix variable collsion in projects
+  * Add authenticated user as project admin when created
+  * List printers and get details
+  * Endpotins to join/quit a printer group
+  * Endpoints to join/quit a project 
+  * Endpoints to join/quit a schoolclass
+  * Add checks for projects, schoolclasses and printers 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Thu, 01 Aug 2024 23:00:21 +0200
+
 linuxmuster-api7 (7.2.13) lmn72; urgency=medium
 
   * Update documentation of print passwords
