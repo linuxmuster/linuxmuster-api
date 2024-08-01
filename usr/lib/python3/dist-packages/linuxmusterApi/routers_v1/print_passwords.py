@@ -58,7 +58,7 @@ def print_passwords_schoolclasses(config: PrintPasswordsParameter, who: Authenti
         raise HTTPException(status_code=400, detail=f"{config.format} is a wrong format")
 
     for schoolclass in config.schoolclasses:
-        get_schoolclass_or_404(schoolclass)
+        get_schoolclass_or_404(schoolclass, who.school)
 
     cmd.extend(['--class', ','.join(config.schoolclasses)])
 

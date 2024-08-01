@@ -9,12 +9,12 @@ def get_user_or_404(user, school):
         raise HTTPException(status_code=404, detail=f"User {user} not found in ldap tree.")
     return user_details
 
-def get_schoolclass_or_404(schoolclass):
-    schoolclasses = [s['cn'] for s in lr.get('/schoolclasses', attributes=['cn'])]
+def get_schoolclass_or_404(schoolclass, school):
+    schoolclasses = [s['cn'] for s in lr.get('/schoolclasses', attributes=['cn'], school=school)]
     if schoolclass not in schoolclasses:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
 def get_teacher_or_404(teacher):
-    teachers = [s['cn'] for s in lr.get('/roles/teacher', attributes=['cn'])]
+    teachers = [s['cn'] for s in lr.get('/roles/teacher', attributes=['cn'], school=school)]
     if teacher not in teachers:
         raise HTTPException(status_code=404, detail=f"Teacher {teacher} not found")

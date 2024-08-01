@@ -92,7 +92,7 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
 
 
     # TODO: Check group membership
-    get_schoolclass_or_404(schoolclass)
+    get_schoolclass_or_404(schoolclass, who.school)
 
     return lr.get(f'/schoolclasses/{schoolclass}', dict=False).get_first_passwords()
 
@@ -117,7 +117,7 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
 
 
     # TODO: Check group membership
-    get_schoolclass_or_404(schoolclass)
+    get_schoolclass_or_404(schoolclass, who.school)
 
     return lr.get(f'/schoolclasses/{schoolclass}/students')
 
@@ -141,7 +141,7 @@ def join_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChec
     :type who: AuthenticatedUser
     """
 
-    get_schoolclass_or_404(schoolclass)
+    get_schoolclass_or_404(schoolclass, who.school)
 
     cmd = ['sophomorix-class',  '--addmembers', who.user, '-c', schoolclass.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
@@ -172,7 +172,7 @@ def quit_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChec
     :type who: AuthenticatedUser
     """
 
-    get_schoolclass_or_404(schoolclass)
+    get_schoolclass_or_404(schoolclass, who.school)
 
     cmd = ['sophomorix-class',  '--removemembers', who.user, '-c', schoolclass.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
