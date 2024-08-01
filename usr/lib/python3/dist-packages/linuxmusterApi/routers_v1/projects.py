@@ -179,8 +179,8 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
 
     # School specific request. For global-admins, it will return all projects from all schools
     projects = lr.get('/projects', attributes=['cn'], school=who.school)
-    # if {'cn': project} in projects or {'cn': f"p_{project}"} in projects:
-    #     raise HTTPException(status_code=400, detail=f"Project {project} already exists on this server.")
+    if {'cn': project} in projects or {'cn': f"p_{project}"} in projects:
+        raise HTTPException(status_code=400, detail=f"Project {project} already exists on this server.")
 
     options = []
 
@@ -327,5 +327,49 @@ def modify_project(project: str, project_details: NewProject, who: Authenticated
 
     if project_details.proxyAddresses:
         lw.set(f"p_{project.lower()}", 'project', {'proxyAddresses': project_details.proxyAddresses})
+
+    return result
+
+@router.post("/{project}/join", name="Join an existing project")
+def join_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+    """
+    ## Join an existing project
+
+    This endpoint let the authenticated user join an existing project, where *project* is the cn of this project, only if
+    this project is joinable.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param project: cn of the project to create
+    :type project: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of all projects details (dict)
+    :rtype: list
+    """
+
+    # School specific request. For global-admins, it will search in all projects from all schools
+    project_details = lr.get(f'/projects/{project}', school=who.school)
+
+    if not project_details:
+       raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+
+    if who.role == "teacher":
+        # Teacher can only join a project if the project is joinable and visible
+        if project_details['sophomorixJoinable'] == False:
+            raise HTTPException(status_code=403, detail=f"Forbidden")
+
+    cmd = ['sophomorix-project',  '--addmembers', who.user, '-p', project.lower(), '-jj']
+    result =  lmn_getSophomorixValue(cmd, '')
+
+    output = result.get("OUTPUT", [{}])[0]
+    if output.get("TYPE", "") == "ERROR":
+        raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
     return result

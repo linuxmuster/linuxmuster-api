@@ -10,7 +10,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/{school}/{keyword}", name="Search for an user in a specific school")
+@router.get("/{school}/{keyword}", name="Search for an object in a specific school")
 def query_user(school: str='default-school', keyword: str='', who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## Get basic informations of a specific user.
