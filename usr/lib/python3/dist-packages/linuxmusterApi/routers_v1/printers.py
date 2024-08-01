@@ -64,6 +64,19 @@ def get_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("GST"
 
     return printer
 
+@router.patch("/{printer}", name="TODO")
+def patch_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
+    """
+    TODO
+
+    :param printer:
+    :type printer:
+    :param who:
+    :type who:
+    :return:
+    :rtype:
+    """
+
 @router.post("/{printer}/join", name="Join an existing printer group")
 def join_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
     """

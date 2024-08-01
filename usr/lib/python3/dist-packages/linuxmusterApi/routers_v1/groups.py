@@ -63,7 +63,7 @@ def get_group_details(group: str, who: AuthenticatedUser = Depends(RoleChecker("
 
     return group_details
 
-@router.delete("/{group}", status_code=204, name="Delete a specific group")
+@router.delete("/{group}", status_code=204, name="TODO Delete a specific group")
 def delete_group(group: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Delete a specific group
@@ -90,7 +90,7 @@ def delete_group(group: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))
 
     # TODO: add delete_unit in linuxmuster-tools
 
-@router.post("/{group}", name="Create a new group")
+@router.post("/{group}", name="TODO Create a new group")
 def create_group(group: str, group_details: NewGroup, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Create a new group
@@ -143,7 +143,7 @@ def create_group(group: str, group_details: NewGroup, who: AuthenticatedUser = D
 
     # TODO: add add_unit to linuxmuster-tools
 
-@router.patch("/{group}", name="Update the parameters of a specific group")
+@router.patch("/{group}", name="TODO Update the parameters of a specific group")
 def modify_group(group: str, group_details: NewGroup, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Update the parameters of a specific group
