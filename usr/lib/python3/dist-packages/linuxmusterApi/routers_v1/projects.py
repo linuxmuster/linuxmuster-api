@@ -210,6 +210,9 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
 
         options.extend(['--addquota', quota_to_add.strip(',')])
 
+    # Add authenticated user to project admins
+    project_details.admins = getattr(project_details, "admins", []) + [who.user]
+
     for option in ['admins', 'members', 'admingroups', 'membergroups']:
         if getattr(project_details, option):
             options.extend([f'--{option}', ','.join(getattr(project_details, option))])
