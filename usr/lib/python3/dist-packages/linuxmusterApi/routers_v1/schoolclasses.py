@@ -151,3 +151,34 @@ def join_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChec
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
     return result
+
+@router.post("/{schoolclass}/quit", name="Quit an existing schoolclass")
+def quit_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
+    """
+    ## Quit an existing schoolclass
+
+    This endpoint let the authenticated user quit an existing schoolclass, where *schoolclass* is the cn of this
+    schoolclass.
+
+    ### Access
+    - teachers
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param schoolclass: cn of the schoolclass to quit
+    :type schooclass: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
+    get_schoolclass_or_404(schoolclass)
+
+    cmd = ['sophomorix-class',  '--removemembers', who.user, '-c', schoolclass.lower(), '-jj']
+    result =  lmn_getSophomorixValue(cmd, '')
+
+    output = result.get("OUTPUT", [{}])[0]
+    if output.get("TYPE", "") == "ERROR":
+        raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
+
+    return result
