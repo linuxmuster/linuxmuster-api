@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from utils.checks import get_schoolclass_or_404
+from utils.sophomorix import lmn_getSophomorixValue
 
 
 router = APIRouter(
@@ -119,3 +120,34 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
     get_schoolclass_or_404(schoolclass)
 
     return lr.get(f'/schoolclasses/{schoolclass}/students')
+
+@router.post("/{schoolclass}/join", name="Join an existing schoolclass")
+def join_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
+    """
+    ## Join an existing schoolclass
+
+    This endpoint let the authenticated user join an existing schoolclass, where *schoolclass* is the cn of this
+    schoolclass.
+
+    ### Access
+    - teachers
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param schoolclass: cn of the schoolclass to join
+    :type schooclass: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
+    get_schoolclass_or_404(schoolclass)
+
+    cmd = ['sophomorix-class',  '--addmembers', who.user, '-c', schoolclass.lower(), '-jj']
+    result =  lmn_getSophomorixValue(cmd, '')
+
+    output = result.get("OUTPUT", [{}])[0]
+    if output.get("TYPE", "") == "ERROR":
+        raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
+
+    return result
