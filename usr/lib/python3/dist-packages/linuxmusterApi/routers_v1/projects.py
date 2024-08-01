@@ -373,3 +373,41 @@ def join_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
     return result
+
+@router.post("/{project}/quit", name="Quit an existing project")
+def quit_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+    """
+    ## Quit an existing project
+
+    This endpoint let the authenticated user quit an existing project.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param project: cn of the project to create
+    :type project: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of all projects details (dict)
+    :rtype: list
+    """
+
+    # School specific request. For global-admins, it will search in all projects from all schools
+    project_details = lr.get(f'/projects/{project}', school=who.school)
+
+    if not project_details:
+        raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+
+    cmd = ['sophomorix-project',  '--removemembers', who.user, '-p', project.lower(), '-jj']
+    result =  lmn_getSophomorixValue(cmd, '')
+
+    output = result.get("OUTPUT", [{}])[0]
+    if output.get("TYPE", "") == "ERROR":
+        raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
+
+    return result
