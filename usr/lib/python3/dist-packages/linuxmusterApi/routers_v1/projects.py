@@ -265,9 +265,9 @@ def modify_project(project: str, project_details: NewProject, who: Authenticated
 
 
     # School specific request. For global-admins, it will search in all projects from all schools
-    project_details = lr.get(f'/projects/{project}', school=who.school)
+    project_exists = lr.get(f'/projects/{project}', school=who.school)
 
-    if not project_details:
+    if not project_exists:
        raise HTTPException(status_code=404, detail=f"Project {project} not found.")
 
     if who.role == "teacher":
