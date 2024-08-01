@@ -63,3 +63,65 @@ def get_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("GST"
     printer['members'] = [lr.get(f'/users/{member}') for member in printer['sophomorixMembers']]
 
     return printer
+
+@router.post("/{printer}/join", name="Join an existing printer group")
+def join_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
+    """
+    ## Join an existing printer group
+
+    This endpoint let the authenticated user join an existing printer group, where *printer* is the cn of this
+    printer.
+
+    ### Access
+    - teachers
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param printer: cn of the printer to join
+    :type schooclass: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
+    get_printer_or_404(printer, who.school)
+
+    cmd = ['sophomorix-group',  '--addmembers', who.user, '--group', printer.lower(), '-jj']
+    result =  lmn_getSophomorixValue(cmd, '')
+
+    output = result.get("OUTPUT", [{}])[0]
+    if output.get("TYPE", "") == "ERROR":
+        raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
+
+    return result
+
+@router.post("/{printer}/quit", name="Quit an existing printer group")
+def quit_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
+    """
+    ## Quit an existing printer group
+
+    This endpoint let the authenticated user quit an existing printer group, where *printer* is the cn of this
+    printer.
+
+    ### Access
+    - teachers
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param printer: cn of the printer to quit
+    :type schooclass: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
+    get_printer_or_404(printer, who.school)
+
+    cmd = ['sophomorix-group',  '--removemembers', who.user, '--group', printer.lower(), '-jj']
+    result =  lmn_getSophomorixValue(cmd, '')
+
+    output = result.get("OUTPUT", [{}])[0]
+    if output.get("TYPE", "") == "ERROR":
+        raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
+
+    return result
