@@ -18,3 +18,9 @@ def get_teacher_or_404(teacher):
     teachers = [s['cn'] for s in lr.get('/roles/teacher', attributes=['cn'], school=school)]
     if teacher not in teachers:
         raise HTTPException(status_code=404, detail=f"Teacher {teacher} not found")
+
+def get_project_or_404(project, school):
+    project_details = lr.get(f'/projects/{project}', school=school, dict=False)
+    if not project_details.cn:
+        raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+    return project_details

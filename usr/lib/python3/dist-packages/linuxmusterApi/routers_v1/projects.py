@@ -1,10 +1,11 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, UserListChecker, AuthenticatedUser
-from .body_schemas import UserList, NewProject
+from .body_schemas import NewProject
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
 from linuxmusterTools.common import Validator, STRING_RULES
 from utils.sophomorix import lmn_getSophomorixValue
+from utils.checks import get_project_or_404
 
 
 router = APIRouter(
@@ -75,8 +76,7 @@ def get_project_details(project: str, all_members: bool = False, who: Authentica
     """
 
 
-    # School specific request. For global-admins, it will search in all projects from all schools
-    project_details = lr.get(f'/projects/{project}', school=who.school, dict=False)
+    project_details = get_project_or_404(project, who.school)
     
     if all_members:
         project_details.get_all_members()
@@ -86,9 +86,6 @@ def get_project_details(project: str, all_members: bool = False, who: Authentica
     if all_members:
         project_details['members'] = [lr.get(f'/users/{member}') for member in project_details['all_members']]
         project_details['admins'] = [lr.get(f'/users/{member}') for member in project_details['all_admins']]
-
-    if not project_details:
-        raise HTTPException(status_code=404, detail=f"Project {project} not found.")
 
     if who.role in ["schooladministrator", "globaladministrator"]:
         # No filter
@@ -128,11 +125,7 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
     """
 
 
-    # School specific request. For global-admins, it will search in all projects from all schools
-    project_details = lr.get(f'/projects/{project}', school=who.school)
-
-    if not project_details:
-       raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+    project_details = get_project_or_404(project, who.school)
 
     cmd = ['sophomorix-project', '--kill', '-p', project, '--school', who.school, '-jj']
 
@@ -143,7 +136,7 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
     elif who.role == "teacher":
         # Only if the teacher is admin of the project
         # TODO: read sophomorixAdminGroups too
-        if who.user in project_details['sophomorixAdmins']:
+        if who.user in project_details.sophomorixAdmins:
             return lmn_getSophomorixValue(cmd, '')
         raise HTTPException(status_code=403, detail=f"Forbidden")
 
@@ -264,16 +257,12 @@ def modify_project(project: str, project_details: NewProject, who: Authenticated
     """
 
 
-    # School specific request. For global-admins, it will search in all projects from all schools
-    project_exists = lr.get(f'/projects/{project}', school=who.school)
-
-    if not project_exists:
-       raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+    project_exists = get_project_or_404(project, who.school)
 
     if who.role == "teacher":
         # Only teacher admins of the group should be able to modify the project
         # TODO: read sophomorixAdminGroups too
-        if who.user not in project_details['sophomorixAdmins']:
+        if who.user not in project_exists.sophomorixAdmins:
             raise HTTPException(status_code=403, detail=f"Forbidden")
 
     options = []
@@ -350,19 +339,14 @@ def join_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST
     :type project: basestring
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
-    :return: List of all projects details (dict)
-    :rtype: list
     """
 
-    # School specific request. For global-admins, it will search in all projects from all schools
-    project_details = lr.get(f'/projects/{project}', school=who.school)
 
-    if not project_details:
-       raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+    project_details = get_project_or_404(project, who.school)
 
     if who.role == "teacher":
         # Teacher can only join a project if the project is joinable and visible
-        if project_details['sophomorixJoinable'] == False:
+        if project_details.sophomorixJoinable == False:
             raise HTTPException(status_code=403, detail=f"Forbidden")
 
     cmd = ['sophomorix-project',  '--addmembers', who.user, '-p', project.lower(), '-jj']
@@ -393,15 +377,10 @@ def quit_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST
     :type project: basestring
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
-    :return: List of all projects details (dict)
-    :rtype: list
     """
 
-    # School specific request. For global-admins, it will search in all projects from all schools
-    project_details = lr.get(f'/projects/{project}', school=who.school)
 
-    if not project_details:
-        raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+    get_project_or_404(project, who.school)
 
     cmd = ['sophomorix-project',  '--removemembers', who.user, '-p', project.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
