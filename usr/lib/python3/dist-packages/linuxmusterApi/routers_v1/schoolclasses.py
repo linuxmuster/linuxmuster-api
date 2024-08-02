@@ -57,7 +57,7 @@ def get_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleCheck
 
 
     # TODO: Check group membership
-    get_schoolclass_or_404(schoolclass)
+    get_schoolclass_or_404(schoolclass, who.school)
 
     schoolclass = lr.get(f'/schoolclasses/{schoolclass}')
     schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
