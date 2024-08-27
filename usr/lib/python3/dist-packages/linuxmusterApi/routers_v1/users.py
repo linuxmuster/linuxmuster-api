@@ -37,9 +37,12 @@ def get_all_users(who: AuthenticatedUser = Depends(RoleChecker("G"))):
     return lr.get('/users', attributes=['sn', 'givenName', 'sophomorixRole', 'sophomorixAdminClass'])
 
 @router.get("/{user}", name="User details")
-def get_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+def get_user(user: str, check_first_pw: bool = False, who: AuthenticatedUser = Depends(UserChecker("GST"))):
     """
     ## Get all informations of a specific user.
+    The optional query parameter `check_first_pw` is a boolean. If set to true, the endpoint will check if the first
+    password is still set, in a key `FirstPasswordSet`. If the permissions are not sufficient, the key
+    `FirstPasswordSet` will contain an error message.
 
     ### Access
     - global-administrators
@@ -56,7 +59,14 @@ def get_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
     """
 
 
-    return lr.get(f'/users/{user}')
+    if check_first_pw:
+        user_details = lr.get(f'/users/{user}', dict=False)
+        first_pw_set = user_details.test_first_password()
+        user_dict = user_details.asdict()
+        user_dict['FirstPasswordSet'] = first_pw_set
+        return user_dict
+    else:
+        return lr.get(f'/users/{user}')
 
 @router.post("/{user}/set-first-password", name="Set user's first password")
 def set_first_user_password(user: str, password: SetFirstPassword, who: AuthenticatedUser = Depends(UserChecker("GST"))):
