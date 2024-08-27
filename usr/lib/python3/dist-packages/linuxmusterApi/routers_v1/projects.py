@@ -60,6 +60,8 @@ def get_project_details(project: str, all_members: bool = False, who: Authentica
 
     The authenticated user can only see projects he's a member of, or not hidden.
     For global-administrators, the search will be done in all schools.
+    The optional query parameter `all_members` is a boolean. If set to true, this endpoint will search recusiverly for
+    all members in all nested groups (may take a while).
 
     ### Access
     - global-administrators
