@@ -20,6 +20,19 @@ class LMNShareQuota(BaseModel):
     quota: int
     share: str
 
+class Printer(BaseModel):
+    """
+    Model to handle a printer group.
+    """
+
+    description: str | None = ''
+    displayName: str | None = ''
+    join: bool = True
+    hide: bool = False
+    members: list = []
+    membergroups: list = []
+    school: str = 'default-school'
+
 class NewProject(BaseModel):
     """
     Model to create a new project.
