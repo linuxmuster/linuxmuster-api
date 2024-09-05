@@ -26,6 +26,7 @@ def get_project_or_404(project, school):
     return project_details
 
 def get_printer_or_404(printer, school):
-    printers = [p['cn'] for p in lr.get('/printers', attributes=['cn'], school=school)]
-    if printer not in printers:
+    printer_details = lr.get(f'/printers/{printer}', attributes=['cn'], school=school, dict=False)
+    if not printer_details.cn:
         raise HTTPException(status_code=404, detail=f"Printer {printer} not found")
+    return printer_details
