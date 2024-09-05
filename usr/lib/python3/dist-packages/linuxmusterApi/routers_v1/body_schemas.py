@@ -25,12 +25,14 @@ class Printer(BaseModel):
     Model to handle a printer group.
     """
 
+    addmembers: list = []
+    addmembergroups: list = []
     description: str | None = ''
     displayName: str | None = ''
     join: bool = True
     hide: bool = False
-    members: list = []
-    membergroups: list = []
+    removemembers: list = []
+    removemembergroups: list = []
     school: str = 'default-school'
 
 class NewProject(BaseModel):

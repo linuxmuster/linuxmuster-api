@@ -85,9 +85,42 @@ def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser
     """
 
 
-    get_printer_or_404(printer, who.school)
+    printer_exists = get_printer_or_404(printer, who.school)
 
-    to_change = {}
+    # for option in ['addmembers', 'removemembers', 'addmembergroups', 'removemembergroups']:
+    #     if getattr(printer_details, option):
+
+    printer_member = printer_exists.member
+    members_changed = False
+
+    for user in printer_details.addmembers:
+        user_dn = lr.getval(f'/users/{user}', 'distinguishedName')
+        if user_dn not in printer_member:
+            printer_member.append(user_dn)
+            members_changed = True
+
+    for user in printer_details.removemembers:
+        user_dn = lr.getval(f'/users/{user}', 'distinguishedName')
+        if user_dn in printer_member:
+            printer_member.remove(user_dn)
+            members_changed = True
+
+    for group in printer_details.addmembergroups:
+        group_dn = lr.getval(f'/units/{group}', 'distinguishedName')
+        if group_dn not in printer_member:
+            printer_member.append(group_dn)
+            members_changed = True
+
+    for group in printer_details.removemembergroups:
+        group_dn = lr.getval(f'/units/{group}', 'distinguishedName')
+        if group_dn in printer_member:
+            printer_member.remove(group_dn)
+            members_changed = True
+
+    if members_changed:
+        to_change = {'member': printer_member}
+    else:
+        to_change = {}
 
     if printer_details.description:
         to_change['description'] = printer_details.description
@@ -103,7 +136,7 @@ def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser
         to_change['sophomorixHidden'] = "FALSE"
 
     if printer_details.school:
-        to_change['sophomorixSchoolName'] = printer_details.school
+        to_change['sophomorixSchoolname'] = printer_details.school
 
     if printer_details.displayName:
         to_change['displayName'] = printer_details.displayName
