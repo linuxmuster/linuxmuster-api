@@ -1,3 +1,14 @@
+linuxmuster-api7 (7.2.15) lmn72; urgency=medium
+
+  * Check if first password is still set
+  * Fix missing school parameter
+  * Get users from cn list
+  * Set displayname for projects
+  * Patch printers (join, hide, members, ...)
+  * Query parameter all_members for printers 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Thu, 05 Sep 2024 21:22:33 +0200
+
 linuxmuster-api7 (7.2.14) lmn72; urgency=medium
 
   * Fix variable collsion in projects
