@@ -36,11 +36,13 @@ def get_all_printers(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     return lr.get('/printers')
 
 @router.get("/{printer}", name="Get details of a specific printer")
-def get_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+def get_printer(printer: str, all_members: bool = False, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## List all available informations of a specific schooclass.
 
     Output informations are e.g. cn, dn, members, etc...
+    The optional query parameter `all_members` is a boolean. If set to true, this endpoint will search recusiverly for
+    all members in all nested groups (may take a while).
 
     ### Access
     - global-administrators
@@ -58,12 +60,27 @@ def get_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("GST"
 
 
     # TODO: Check group membership
-    get_printer_or_404(printer, who.school)
+    printer_details = get_printer_or_404(printer, who.school)
 
-    printer = lr.get(f'/printers/{printer}')
-    printer['members'] = [lr.get(f'/users/{member}') for member in printer['sophomorixMembers']]
+    if all_members:
+        printer_details.get_all_members()
 
-    return printer
+    printer_details = printer_details.asdict()
+
+    if all_members:
+        printer_details['members'] = [lr.get(f'/users/{member}') for member in printer_details['all_members']]
+
+    if who.role in ["schooladministrator", "globaladministrator"]:
+        # No filter
+        return printer_details
+
+    elif who.role == "teacher":
+        # TODO: read sophomorixMemberGroups too
+        if who.user in printer_details['sophomorixMembers']:
+            return printer_details
+        elif not printer_details['sophomorixHidden']:
+            return printer_details
+        raise HTTPException(status_code=403, detail=f"Forbidden")
 
 @router.patch("/{printer}", status_code=204, name="Patch printer")
 def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
@@ -86,9 +103,6 @@ def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser
 
 
     printer_exists = get_printer_or_404(printer, who.school)
-
-    # for option in ['addmembers', 'removemembers', 'addmembergroups', 'removemembergroups']:
-    #     if getattr(printer_details, option):
 
     printer_member = printer_exists.member
     members_changed = False
