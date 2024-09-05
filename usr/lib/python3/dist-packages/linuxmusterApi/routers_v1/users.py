@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from security import RoleChecker, UserChecker, AuthenticatedUser
-from .body_schemas import SetFirstPassword, SetCurrentPassword
+from security import RoleChecker, UserChecker, AuthenticatedUser, UserListChecker
+from .body_schemas import SetFirstPassword, SetCurrentPassword, UserList
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
 from linuxmusterTools.samba_util import UserManager
@@ -67,6 +67,32 @@ def get_user(user: str, check_first_pw: bool = False, who: AuthenticatedUser = D
         return user_dict
     else:
         return lr.get(f'/users/{user}')
+
+@router.post("/get_users_from_cn", name="User details")
+def get_users_from_cn(userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
+    """
+    ## Get all informations of a specific user.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data and students)
+
+    \f
+    :param user: The user to get the details from (samaccountname)
+    :type user: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: All user's details
+    :rtype: dict
+    """
+
+    response = {}
+    for user in userlist.users:
+        if user not in response:
+            response[user] = lr.get(f'/users/{user}')
+
+    return response
 
 @router.post("/{user}/set-first-password", name="Set user's first password")
 def set_first_user_password(user: str, password: SetFirstPassword, who: AuthenticatedUser = Depends(UserChecker("GST"))):
