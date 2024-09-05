@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from security import RoleChecker, AuthenticatedUser
-from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
 from utils.checks import get_printer_or_404
 from utils.sophomorix import lmn_getSophomorixValue
+from .body_schemas import Printer
 
 
 router = APIRouter(
@@ -64,18 +65,52 @@ def get_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("GST"
 
     return printer
 
-@router.patch("/{printer}", name="TODO")
-def patch_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
+@router.patch("/{printer}", status_code=204, name="Patch printer")
+def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
-    TODO
+    ## Update the parameters of a specific printer
 
-    :param printer:
-    :type printer:
-    :param who:
-    :type who:
-    :return:
-    :rtype:
+    *printer_details* are the attribute of the printer, like *description*,
+    *join* if the printer should be joinable, *hide*, etc ... and can be partial.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param printer: The printer to modify
+    :type printer: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
     """
+
+
+    get_printer_or_404(printer, who.school)
+
+    to_change = {}
+
+    if printer_details.description:
+        to_change['description'] = printer_details.description
+
+    if printer_details.join:
+        to_change['sophomorixJoinable'] = "TRUE"
+    else:
+        to_change['sophomorixJoinable'] = "FALSE"
+
+    if printer_details.hide:
+        to_change['sophomorixHidden'] = "TRUE"
+    else:
+        to_change['sophomorixHidden'] = "FALSE"
+
+    if printer_details.school:
+        to_change['sophomorixSchoolName'] = printer_details.school
+
+    if printer_details.displayName:
+        to_change['displayName'] = printer_details.displayName
+
+    lw.set(printer.lower(), 'printer', to_change)
+
+    return
 
 @router.post("/{printer}/join", name="Join an existing printer group")
 def join_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
