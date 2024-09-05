@@ -232,6 +232,11 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
     if project_details.proxyAddresses:
         lw.set(f"p_{project.lower()}", 'project', {'proxyAddresses': project_details.proxyAddresses})
 
+    if project_details.displayName:
+        lw.set(f"p_{project.lower()}", 'project', {'displayName': project_details.displayName})
+    else:
+        lw.set(f"p_{project.lower()}", 'project', {'displayName': project})
+
     return result
 
 @router.patch("/{project}", name="Update the parameters of a specific project")
@@ -321,6 +326,9 @@ def modify_project(project: str, project_details: NewProject, who: Authenticated
 
     if project_details.proxyAddresses:
         lw.set(f"p_{project.lower()}", 'project', {'proxyAddresses': project_details.proxyAddresses})
+
+    if project_details.displayName:
+        lw.set(f"p_{project.lower()}", 'project', {'displayName': project_details.displayName})
 
     return result
 

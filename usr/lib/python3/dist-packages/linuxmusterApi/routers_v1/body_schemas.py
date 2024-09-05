@@ -28,6 +28,7 @@ class NewProject(BaseModel):
     admins: list = []
     admingroups: list = []
     description: str | None = ''
+    displayName: str | None = ''
     join: bool = True
     hide: bool = False
     mailalias: bool = False
