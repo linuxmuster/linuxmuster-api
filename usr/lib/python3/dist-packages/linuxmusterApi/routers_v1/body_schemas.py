@@ -35,7 +35,7 @@ class Printer(BaseModel):
     removemembergroups: list = []
     school: str = 'default-school'
 
-class NewProject(BaseModel):
+class Project(BaseModel):
     """
     Model to create a new project.
     """

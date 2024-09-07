@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, UserListChecker, AuthenticatedUser
-from .body_schemas import NewProject
+from .body_schemas import Project
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
 from linuxmusterTools.common import Validator, STRING_RULES
 from utils.sophomorix import lmn_getSophomorixValue
@@ -143,7 +143,7 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
         raise HTTPException(status_code=403, detail=f"Forbidden")
 
 @router.post("/{project}", name="Create a new project")
-def create_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+def create_project(project: str, project_details: Project, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## Create a new project
 
@@ -160,8 +160,8 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
     \f
     :param project: cn of the project to create
     :type project: basestring
-    :param project_details: Parameter of the project, see NewProject attributes
-    :type project_details: NewProject
+    :param project_details: Parameter of the project, see Project attributes
+    :type project_details: Project
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
     :return: List of all projects details (dict)
@@ -240,7 +240,7 @@ def create_project(project: str, project_details: NewProject, who: Authenticated
     return result
 
 @router.patch("/{project}", name="Update the parameters of a specific project")
-def modify_project(project: str, project_details: NewProject, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+def modify_project(project: str, project_details: Project, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## Update the parameters of a specific project
 
@@ -258,8 +258,8 @@ def modify_project(project: str, project_details: NewProject, who: Authenticated
     \f
     :param project: cn of the project to update
     :type project: basestring
-    :param project_details: Parameter of the project, see NewProject attributes
-    :type project_details: NewProject
+    :param project_details: Parameter of the project, see Project attributes
+    :type project_details: Project
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
     :return: List of all projects details (dict)
