@@ -145,5 +145,6 @@ if __name__ == "__main__":
     config['uvicorn'].setdefault('ssl_keyfile', '/etc/linuxmuster/api/lmnapi.pem')
     config['uvicorn'].setdefault('ssl_certfile', '/etc/linuxmuster/api/lmnapi.pem')
     config['uvicorn'].setdefault('log_level', 'info')
+    config['uvicorn'].setdefault('log_config', '/etc/linuxmuster/api/uvicorn_log_conf.yml')
 
     uvicorn.run("main:app", **config['uvicorn'])
