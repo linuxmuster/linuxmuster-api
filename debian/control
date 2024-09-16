@@ -7,5 +7,5 @@ Standards-Version: 5.0.0
 
 Package: linuxmuster-api7
 Architecture: all
-Depends: openssl, linuxmuster-tools7, python3
+Depends: openssl, linuxmuster-tools7 (>= 7.2.36), python3
 Description: Api for the linuxmuster.net 7 server.
