@@ -99,7 +99,7 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
         dn = lr.getval(f'/users/{member}', 'dn')
         if dn:
             try:
-                lw.delete(group, 'managementgroup', {'member': dn})
+                lw.delattr_managementgroup(group, data={'member': dn})
             except ldap.UNWILLING_TO_PERFORM as e:
                 if 'Attribute member already deleted for target' in str(e):
                     # User already deleted from the group, ignoring
@@ -142,7 +142,7 @@ def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = D
         dn = lr.getval(f'/users/{member}', 'dn')
         if dn:
             try:
-                lw.set(group, 'managementgroup', {'member': dn}, add=True)
+                lw.setattr_managementgroup(group, data={'member': dn}, add=True)
             except ldap.ALREADY_EXISTS as e:
                 if 'Attribute member already exists for target' in str(e):
                     # User already deleted from the group, ignoring

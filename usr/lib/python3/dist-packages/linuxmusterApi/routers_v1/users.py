@@ -121,7 +121,7 @@ def set_first_user_password(user: str, password: SetFirstPassword, who: Authenti
 
 
     # TODO : paswword constraints ?
-    lw.set(user, 'user', {'sophomorixFirstPassword': password.password})
+    lw.setattr_user(user, data={'sophomorixFirstPassword': password.password})
     if password.set_current:
         try:
             user_manager.set_password(user, password.password)
@@ -166,7 +166,7 @@ def set_current_user_password(user: str, password: SetCurrentPassword, who: Auth
         raise HTTPException(status_code=400, detail=str(e))
 
     if password.set_first:
-        lw.set(user, 'user', {'sophomorixFirstPassword': password.password})
+        lw.setattr_user(user, data={'sophomorixFirstPassword': password.password})
 
 
 @router.get("/{user}/quotas", name='Get the quotas of a specific user')

@@ -230,12 +230,12 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
     if project_details.proxyAddresses:
-        lw.set(f"p_{project.lower()}", 'project', {'proxyAddresses': project_details.proxyAddresses})
+        lw.setattr_project(f"p_{project.lower()}", data={'proxyAddresses': project_details.proxyAddresses})
 
     if project_details.displayName:
-        lw.set(f"p_{project.lower()}", 'project', {'displayName': project_details.displayName})
+        lw.setattr_project(f"p_{project.lower()}", data={'displayName': project_details.displayName})
     else:
-        lw.set(f"p_{project.lower()}", 'project', {'displayName': project})
+        lw.setattr_project(f"p_{project.lower()}", data={'displayName': project})
 
     return result
 
@@ -325,10 +325,10 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
     if project_details.proxyAddresses:
-        lw.set(f"p_{project.lower()}", 'project', {'proxyAddresses': project_details.proxyAddresses})
+        lw.setattr_project(f"p_{project.lower()}", data={'proxyAddresses': project_details.proxyAddresses})
 
     if project_details.displayName:
-        lw.set(f"p_{project.lower()}", 'project', {'displayName': project_details.displayName})
+        lw.setattr_project(f"p_{project.lower()}", data={'displayName': project_details.displayName})
 
     return result
 

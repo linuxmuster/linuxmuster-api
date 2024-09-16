@@ -155,7 +155,7 @@ def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser
     if printer_details.displayName:
         to_change['displayName'] = printer_details.displayName
 
-    lw.set(printer.lower(), 'printer', to_change)
+    lw.setattr_printer(printer.lower(), data=to_change)
 
     return
 

@@ -109,7 +109,7 @@ def delete_session(user:str, sessionsid: str, who: AuthenticatedUser = Depends(U
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
             old_session = f"{session.sid};{session.name};{','.join(session.members)};"
-            lw.delete(user, 'user', {'sophomorixSessions': old_session})
+            lw.delattr_user(user, data={'sophomorixSessions': old_session})
             return
     else:
        raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
@@ -150,7 +150,7 @@ def session_create(user: str, sessionname: str, userlist: UserList | None = None
     new_session = f"{sid};{sessionname};{members};"
 
     try:
-        lw.set(user, 'user', {'sophomorixSessions': new_session}, add=True)
+        lw.setattr_user(user, data={'sophomorixSessions': new_session}, add=True)
         return
     except Exception as e:
        raise HTTPException(status_code=404, detail=str(e))
@@ -187,7 +187,7 @@ def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who:
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
             old_session = f"{session.sid};{session.name};{','.join(session.members)};"
-            lw.delete(user, 'user', {'sophomorixSessions': old_session})
+            lw.delattr_user(user, data={'sophomorixSessions': old_session})
 
             to_delete = set(userlist.users)
             members_set = set(session.members)
@@ -195,7 +195,7 @@ def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who:
             session.members = list(members_set)
 
             new_session = f"{session.sid};{session.name};{','.join(session.members)};"
-            lw.set(user, 'user', {'sophomorixSessions': new_session}, add=True)
+            lw.setattr_user(user, data={'sophomorixSessions': new_session}, add=True)
 
             return
     else:
@@ -233,13 +233,13 @@ def add_user_to_session(user: str, sessionsid: str, userlist: UserList, who: Aut
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
             old_session = f"{session.sid};{session.name};{','.join(session.members)};"
-            lw.delete(user, 'user', {'sophomorixSessions': old_session})
+            lw.delattr_user(user, data={'sophomorixSessions': old_session})
 
             session.members += userlist.users
             session.members = list(set(session.members))
 
             new_session = f"{session.sid};{session.name};{','.join(session.members)};"
-            lw.set(user, 'user', {'sophomorixSessions': new_session}, add=True)
+            lw.setattr_user(user, data={'sophomorixSessions': new_session}, add=True)
 
             return
     else:
