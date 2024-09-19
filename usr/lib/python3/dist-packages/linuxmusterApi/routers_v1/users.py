@@ -91,11 +91,11 @@ def post_user_data(user: str, user_details: User, who: AuthenticatedUser = Depen
     :type who: AuthenticatedUser
     """
 
-    if user_details.proxyAddresses:
-        lw.setattr_user(f"{user.lower()}", data={'proxyAddresses': user_details.proxyAddresses})
 
-    if user_details.displayName:
-        lw.setattr_user(f"{user.lower()}", data={'displayName': user_details.displayName})
+    data = {k:v for k, v in user_details.__dict__.items() if v}
+
+    lw.setattr_user(f"{user.lower()}", data=data)
+
 
 @router.post("/get_users_from_cn", name="User details")
 def get_users_from_cn(userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):

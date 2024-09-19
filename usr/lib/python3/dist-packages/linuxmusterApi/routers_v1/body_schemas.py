@@ -60,8 +60,22 @@ class User(BaseModel):
     Model to patch user's data.
     """
 
+    givenName: str | None = ''
     displayName: str | None = ''
+    mailalias: bool = False
+    name: str | None = ''
     proxyAddresses: list | None = []
+    sn: str | None = ''
+    sophomorixCustom1: str | None = ''
+    sophomorixCustom2: str | None = ''
+    sophomorixCustom3: str | None = ''
+    sophomorixCustom4: str | None = ''
+    sophomorixCustom5: str | None = ''
+    sophomorixCustomMulti1: list | None = []
+    sophomorixCustomMulti2: list | None = []
+    sophomorixCustomMulti3: list | None = []
+    sophomorixCustomMulti4: list | None = []
+    sophomorixCustomMulti5: list | None = []
 
 class SetFirstPassword(BaseModel):
     """
