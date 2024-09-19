@@ -36,7 +36,7 @@ You are yet so far to launch your first request, just send a GET request with yo
 
 app = FastAPI(
     title = "Linuxmuster.net API",
-    version="7.2.17",
+    version="7.2.18",
     description = description,
     swagger_ui_parameters = {"tryItOutEnabled": True, "swagger_favicon_url": "/static/favicon.png"},
     license_info={
