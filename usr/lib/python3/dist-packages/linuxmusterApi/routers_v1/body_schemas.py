@@ -55,6 +55,14 @@ class Project(BaseModel):
     quota: list[LMNShareQuota] | None = []
     school: str = 'default-school'
 
+class User(BaseModel):
+    """
+    Model to patch user's data.
+    """
+
+    displayName: str | None = ''
+    proxyAddresses: list | None = []
+
 class SetFirstPassword(BaseModel):
     """
     Wenn setting the first password, the set_current boolean flag indicates if the current password must be overwritten

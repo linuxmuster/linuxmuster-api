@@ -244,7 +244,7 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
     """
     ## Update the parameters of a specific project
 
-    *project_details* are the attribute of the project, like *description*,
+    *project_details* are the attributes of the project, like *description*,
     *join* if the project should be joinable, *hide*, etc ... and can be partial.
     Teachers can only modify a project of which they are admin.
 
@@ -262,8 +262,6 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
     :type project_details: Project
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
-    :return: List of all projects details (dict)
-    :rtype: list
     """
 
 

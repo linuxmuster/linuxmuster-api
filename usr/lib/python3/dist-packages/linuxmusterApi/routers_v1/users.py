@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from security import RoleChecker, UserChecker, AuthenticatedUser, UserListChecker
-from .body_schemas import SetFirstPassword, SetCurrentPassword, UserList
+from .body_schemas import SetFirstPassword, SetCurrentPassword, UserList, User
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.ldapconnector import LMNLdapWriter as lw
 from linuxmusterTools.samba_util import UserManager
@@ -67,6 +67,35 @@ def get_user(user: str, check_first_pw: bool = False, who: AuthenticatedUser = D
         return user_dict
     else:
         return lr.get(f'/users/{user}')
+
+@router.post("/{user}", name="Update user's data")
+def post_user_data(user: str, user_details: User, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+    """
+    ## Update the data of a specific user
+
+    *user_details* are the attributes of the user, like *displayName*,
+    *proxyAddresses*, etc...
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+    - students
+
+    \f
+    :param user: cn of the user to update
+    :type user: basestring
+    :param user_details: Parameter of the user, see User attributes
+    :type user_details: User
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
+    if user_details.proxyAddresses:
+        lw.setattr_user(f"{user.lower()}", data={'proxyAddresses': user_details.proxyAddresses})
+
+    if user_details.displayName:
+        lw.setattr_user(f"{user.lower()}", data={'displayName': user_details.displayName})
 
 @router.post("/get_users_from_cn", name="User details")
 def get_users_from_cn(userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
