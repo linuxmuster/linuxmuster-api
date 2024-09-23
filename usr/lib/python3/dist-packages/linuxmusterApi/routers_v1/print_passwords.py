@@ -13,6 +13,56 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+def sophomorixprint_cmd(who, config, schoolclasses=[], users=[]):
+    """
+    Run sophomorix-print with the given configuration and users.
+
+
+    :param who: the caller
+    :type who: AuthenticatedUser
+    :param config: the print configuration (format, users, ...)
+    :type config: PrintPasswords...Parameter
+    :param schoolclasses: set of schoolclasses names
+    :type schoolclasses: set
+    :param users: set of user's cn
+    :type users: set
+    """
+
+
+    cmd =  ['sophomorix-print', '--caller', who.user]
+
+    if who.school == 'global' and config.school:
+        cmd.extend(['--school', config.school])
+    elif who.school != 'global':
+        cmd.extend(['--school', who.school])
+
+    if config.format == 'pdf':
+        mtype = 'application/pdf'
+    elif config.format == 'csv':
+        # CSV
+        mtype = 'text/csv'
+    else:
+        raise HTTPException(status_code=400, detail=f"{config.format} is a wrong format")
+
+    if schoolclasses:
+        cmd.extend(['--class', ','.join(config.schoolclasses)])
+    elif users:
+        cmd.extend(['--user', ','.join(users)])
+    else:
+        raise HTTPException(status_code=400, detail=f"This group does not contain users whose passwords can be printed out.")
+
+    if config.pdflatex:
+        cmd.extend(['--command', 'pdflatex'])
+
+    if config.one_per_page:
+        cmd.extend(['--one-per-page'])
+
+    try:
+        shell_env = {'TERM': 'xterm', 'SHELL': '/bin/bash',  'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',  'HOME': '/root', '_': '/usr/bin/python3'}
+        subprocess.check_call(cmd, shell=False, env=shell_env)
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
 @router.post("/schoolclasses", name="Print passwords from schoolclasses")
 def print_passwords_schoolclasses(config: PrintPasswordsSchoolclassesParameter, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
@@ -42,13 +92,6 @@ def print_passwords_schoolclasses(config: PrintPasswordsSchoolclassesParameter, 
     :rtype: list
     """
 
-    cmd =  ['sophomorix-print', '--caller', who.user]
-
-    if who.school == 'global' and config.school:
-        cmd.extend(['--school', config.school])
-    elif who.school != 'global':
-        cmd.extend(['--school', who.school])
-
     if config.format == 'pdf':
         mtype = 'application/pdf'
     elif config.format == 'csv':
@@ -60,19 +103,7 @@ def print_passwords_schoolclasses(config: PrintPasswordsSchoolclassesParameter, 
     for schoolclass in config.schoolclasses:
         get_schoolclass_or_404(schoolclass, who.school)
 
-    cmd.extend(['--class', ','.join(config.schoolclasses)])
-
-    if config.pdflatex:
-        cmd.extend(['--command', 'pdflatex'])
-
-    if config.one_per_page:
-        cmd.extend(['--one-per-page'])
-
-    try:
-        shell_env = {'TERM': 'xterm', 'SHELL': '/bin/bash',  'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',  'HOME': '/root', '_': '/usr/bin/python3'}
-        subprocess.check_call(cmd, shell=False, env=shell_env)
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    sophomorixprint_cmd(who, config, schoolclasses=schoolclass)
 
     if len(config.schoolclasses) == 1:
         prefix = 'add'
@@ -120,14 +151,7 @@ def print_passwords_projects(config: PrintPasswordsProjectsParameter, who: Authe
     """
 
 
-    cmd =  ['sophomorix-print', '--caller', who.user]
-
     users_to_print = set()
-
-    if who.school == 'global' and config.school:
-        cmd.extend(['--school', config.school])
-    elif who.school != 'global':
-        cmd.extend(['--school', who.school])
 
     if config.format == 'pdf':
         mtype = 'application/pdf'
@@ -144,22 +168,7 @@ def print_passwords_projects(config: PrintPasswordsProjectsParameter, who: Authe
 
     users_to_print = check_print_permissions(who, users_to_print)
 
-    if users_to_print:
-        cmd.extend(['--user', ','.join(users_to_print)])
-    else:
-        raise HTTPException(status_code=400, detail=f"These projects do not have any users.")
-
-    if config.pdflatex:
-        cmd.extend(['--command', 'pdflatex'])
-
-    if config.one_per_page:
-        cmd.extend(['--one-per-page'])
-
-    try:
-        shell_env = {'TERM': 'xterm', 'SHELL': '/bin/bash',  'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',  'HOME': '/root', '_': '/usr/bin/python3'}
-        subprocess.check_call(cmd, shell=False, env=shell_env)
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    sophomorixprint_cmd(who, config, users=users_to_print)
 
     filename = f'user-{who.user}.{config.format}'
     file_path = f'/var/lib/sophomorix/print-data/{filename}'
@@ -201,14 +210,7 @@ def print_passwords_users(config: PrintPasswordsUsersParameter, who: Authenticat
     """
 
 
-    cmd =  ['sophomorix-print', '--caller', who.user]
-
     users_to_print = set(config.users)
-
-    if who.school == 'global' and config.school:
-        cmd.extend(['--school', config.school])
-    elif who.school != 'global':
-        cmd.extend(['--school', who.school])
 
     if config.format == 'pdf':
         mtype = 'application/pdf'
@@ -220,22 +222,7 @@ def print_passwords_users(config: PrintPasswordsUsersParameter, who: Authenticat
 
     users_to_print = check_print_permissions(who, users_to_print)
 
-    if users_to_print:
-        cmd.extend(['--user', ','.join(users_to_print)])
-    else:
-        raise HTTPException(status_code=400, detail=f"These projects do not have any users.")
-
-    if config.pdflatex:
-        cmd.extend(['--command', 'pdflatex'])
-
-    if config.one_per_page:
-        cmd.extend(['--one-per-page'])
-
-    try:
-        shell_env = {'TERM': 'xterm', 'SHELL': '/bin/bash',  'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',  'HOME': '/root', '_': '/usr/bin/python3'}
-        subprocess.check_call(cmd, shell=False, env=shell_env)
-    except subprocess.CalledProcessError as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    sophomorixprint_cmd(who, config, users=users_to_print)
 
     filename = f'user-{who.user}.{config.format}'
     file_path = f'/var/lib/sophomorix/print-data/{filename}'
