@@ -131,7 +131,7 @@ class PrintPasswordsProjectsParameter(BaseModel):
     school: str | None = ''
     projects: list
 
-class PrintPasswordsGroupsParameter(BaseModel):
+class PrintPasswordsUsersParameter(BaseModel):
     """
     Parameter to fix the use of pdflatex or choose to print only one password per page.
     The parameter school could be useful for global administrators.
@@ -142,4 +142,4 @@ class PrintPasswordsGroupsParameter(BaseModel):
     one_per_page: bool | None = False
     pdflatex: bool | None = False
     school: str | None = ''
-    groups: list
+    users: list
