@@ -154,3 +154,51 @@ class UserListChecker(BasicChecker):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail='Permissions denied')
+
+def check_print_permissions(who, users):
+    """
+    Basic checks to print passwords:
+     - Teachers can only see student's passwords
+     - schooladministrators and globaladministrators must be removed from the
+    list (sophomorix does not accept to print admin password for security
+    reasons)
+
+    :param who: the user requesting to print the passwords
+    :type who: AuthenticatedUser
+    :param users: set of the users to print passwords
+    :type users: set
+    :return: set of accepted users to print passwords
+    :rtype: set
+    """
+
+
+    to_remove = set()
+
+    for user in users:
+
+        # Ignore own password
+        if user == who.user:
+            to_remove.add(user)
+            continue
+
+        # Ensure the requested user exists in LDAP
+        if user.endswith('-exam'):
+            user_role = lr.getval(f'/users/exam/{user}', 'sophomorixRole')
+        else:
+            user_role = lr.getval(f'/users/{user}', 'sophomorixRole')
+
+        # Ignoring unknow users
+        if user_role is None:
+            to_remove.add(user)
+
+        # Do not print admins password
+        elif user_role in ['globaladministrator', 'schooladministrator']:
+            to_remove.add(user)
+
+        # As a teacher, do not see other teacher's password
+        elif who.role == 'teacher' and user_role == 'teacher':
+            to_remove.add(user)
+
+    users.difference_update(to_remove)
+
+    return users
