@@ -35,7 +35,7 @@ def get_management_groups_list(who: AuthenticatedUser = Depends(RoleChecker("GST
     """
 
 
-    return [group['cn'] for group in lr.get('/managementgroups', attributes=['cn'])]
+    return lr.getval('/managementgroups', 'cn', school=who.school)
 
 @router.get("/{group}", name="Get details of a specific management group")
 def get_group_details(group: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
@@ -59,7 +59,7 @@ def get_group_details(group: str, who: AuthenticatedUser = Depends(RoleChecker("
     """
 
 
-    group_details = lr.get(f'/managementgroups/{group}')
+    group_details = lr.get(f'/managementgroups/{group}', school=who.school)
 
     if group_details:
         return group_details
@@ -90,7 +90,7 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
         # Nothing to do
         raise HTTPException(status_code=400, detail=f"Missing userlist of members to delete")
 
-    group_details = lr.get(f'/managementgroups/{group}')
+    group_details = lr.get(f'/managementgroups/{group}', school=who.school)
 
     if not group_details:
         raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
@@ -133,7 +133,7 @@ def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = D
         # Nothing to do
         raise HTTPException(status_code=400, detail=f"Missing userlist of members to add")
 
-    group_details = lr.get(f'/managementgroups/{group}')
+    group_details = lr.get(f'/managementgroups/{group}', school=who.school)
 
     if not group_details:
         raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
