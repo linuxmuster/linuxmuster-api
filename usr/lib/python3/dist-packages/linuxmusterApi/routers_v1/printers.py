@@ -33,7 +33,7 @@ def get_all_printers(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
 
 
-    return lr.get('/printers')
+    return lr.get('/printers', school=who.school)
 
 @router.get("/{printer}", name="Get details of a specific printer")
 def get_printer(printer: str, all_members: bool = False, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
