@@ -13,11 +13,13 @@ def get_schoolclass_or_404(schoolclass, school):
     schoolclasses = [s['cn'] for s in lr.get('/schoolclasses', attributes=['cn'], school=school)]
     if schoolclass not in schoolclasses:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
+    return schoolclasses
 
 def get_teacher_or_404(teacher, school):
     teachers = [s['cn'] for s in lr.get('/roles/teacher', attributes=['cn'], school=school)]
     if teacher not in teachers:
         raise HTTPException(status_code=404, detail=f"Teacher {teacher} not found")
+    return teachers
 
 def get_project_or_404(project, school):
     project_details = lr.get(f'/projects/{project}', school=school, dict=False)
