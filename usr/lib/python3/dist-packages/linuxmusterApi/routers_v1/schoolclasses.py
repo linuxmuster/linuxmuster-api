@@ -32,7 +32,7 @@ def get_all_schoolclasses(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
 
 
-    return lr.get('/schoolclasses')
+    return lr.get('/schoolclasses', school=who.school)
 
 @router.get("/{schoolclass}", name="Get details of a specific schoolclass")
 def get_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -57,9 +57,7 @@ def get_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleCheck
 
 
     # TODO: Check group membership
-    get_schoolclass_or_404(schoolclass, who.school)
-
-    schoolclass = lr.get(f'/schoolclasses/{schoolclass}')
+    schoolclass = get_schoolclass_or_404(schoolclass, who.school)
     schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
 
     return schoolclass
