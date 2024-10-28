@@ -141,7 +141,7 @@ def join_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChec
 
     get_schoolclass_or_404(schoolclass, who.school)
 
-    cmd = ['sophomorix-class',  '--addmembers', who.user, '-c', schoolclass.lower(), '-jj']
+    cmd = ['sophomorix-class',  '--addadmins', who.user, '-c', schoolclass.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
 
     output = result.get("OUTPUT", [{}])[0]
@@ -172,7 +172,7 @@ def quit_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChec
 
     get_schoolclass_or_404(schoolclass, who.school)
 
-    cmd = ['sophomorix-class',  '--removemembers', who.user, '-c', schoolclass.lower(), '-jj']
+    cmd = ['sophomorix-class',  '--removeadmins', who.user, '-c', schoolclass.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
 
     output = result.get("OUTPUT", [{}])[0]
