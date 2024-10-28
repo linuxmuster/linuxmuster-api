@@ -219,8 +219,10 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
         if getattr(project_details, option):
             options.extend([f'--{option}', ','.join(getattr(project_details, option))])
 
+    prefix = "p_"
     if project_details.school:
         options.extend(['--school', project_details.school])
+        prefix = f"p_{project_details.school}-"
 
     cmd = ['sophomorix-project',  *options, '--create', '-p', project.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
@@ -230,12 +232,12 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
     if project_details.proxyAddresses:
-        lw.setattr_project(f"p_{project.lower()}", data={'proxyAddresses': project_details.proxyAddresses})
+        lw.setattr_project(f"{prefix}{project.lower()}", data={'proxyAddresses': project_details.proxyAddresses})
 
     if project_details.displayName:
-        lw.setattr_project(f"p_{project.lower()}", data={'displayName': project_details.displayName})
+        lw.setattr_project(f"{prefix}{project.lower()}", data={'displayName': project_details.displayName})
     else:
-        lw.setattr_project(f"p_{project.lower()}", data={'displayName': project})
+        lw.setattr_project(f"{prefix}{project.lower()}", data={'displayName': project})
 
     return result
 
