@@ -421,7 +421,7 @@ def quit_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST
 
     get_project_or_404(project, who.school)
 
-    cmd = ['sophomorix-project',  '--removemembers', who.user, '-p', project.lower(), '-jj']
+    cmd = ['sophomorix-project',  '--removemembers', who.user, '--removeadmins', who.user, '-p', project.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
 
     output = result.get("OUTPUT", [{}])[0]
