@@ -157,6 +157,19 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
 
     ### This endpoint uses Sophomorix.
 
+    ### Attributes for quota
+
+    - `mailquota` is an attribute to add quota for email, as integer (e.g. "mailquota": 100)
+    - `quota` is an attribute to add quota per share, as an object. Examples:
+
+    "quota": [{"quota":50,"share":"default-school", "comment":"Need this for videos"}]
+
+    or
+
+    "quota": [{"quota":500,"share":"agy"}, [{"quota":300,"share":"linuxmuster-global"}]
+
+    `comment` is optional.
+
     \f
     :param project: cn of the project to create
     :type project: basestring
@@ -256,6 +269,19 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
     - teachers
 
     ### This endpoint uses Sophomorix.
+
+    ### Attributes for quota
+
+    - `mailquota` is an attribute to add quota for email, as integer (e.g. "mailquota": 100)
+    - `quota` is an attribute to add quota per share, as an object. Examples:
+
+    "quota": [{"quota":50,"share":"default-school", "comment":"Need this for videos"}]
+
+    or
+
+    "quota": [{"quota":500,"share":"agy"}, [{"quota":300,"share":"linuxmuster-global"}]
+
+    `comment` is optional.
 
     \f
     :param project: cn of the project to update
