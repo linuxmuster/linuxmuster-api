@@ -69,6 +69,7 @@ from routers_v1 import (
     roles,
     samba,
     schoolclasses,
+    schools,
     sessions,
     teachers,
     users,
@@ -105,6 +106,7 @@ def home():
     """
 
 app.include_router(auth.router, prefix="/v1")
+app.include_router(schools.router, prefix="/v1")
 app.include_router(roles.router, prefix="/v1")
 app.include_router(users.router, prefix="/v1")
 app.include_router(teachers.router, prefix="/v1")
