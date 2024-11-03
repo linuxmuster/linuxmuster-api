@@ -1,3 +1,18 @@
+linuxmuster-api7 (7.2.19) lmn72; urgency=medium
+
+  * Permissions check when printing passwords
+  * Print passwords for projects
+  * Print passwords from cn list
+  * Fix some school specific requests
+  * Fix prefix for projects in multischool
+  * Forbid teachers to change admins in mgmt groups
+  * Set teachers as admins in schoolclasses
+  * Documentation for quotas
+  * Remove user from project as admin too
+  * New endpoint to list schools  
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 03 Nov 2024 11:03:04 +0100
+
 linuxmuster-api7 (7.2.18) lmn72; urgency=medium
 
   * Patch user's data.
