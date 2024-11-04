@@ -44,5 +44,18 @@ def get_all_schools(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
     :rtype: list
     """
 
+    school = lr.get(f'/schools/{school}')
+    if not school:
+        raise HTTPException(status_code=404, detail=f"School {school} not found")
 
-    return lr.get(f'/schools/{school}')
+    for item in ["schoolclasses", "projects"]:
+        items = lr.getval(f'/{item}', 'cn')
+        school[item] = {
+            "number": len(items),
+            "list": items
+        }
+
+    for role in ["student", "teacher", "globaladministrator", "schooladministrator"]:
+        school[role] = len(lr.get(f'/roles/{role}'))
+
+    return school
