@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from security import RoleChecker, AuthenticatedUser
-from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr, PrinterWriter
 from utils.checks import get_printer_or_404
 from utils.sophomorix import lmn_getSophomorixValue
 from .body_schemas import Printer
@@ -155,7 +155,7 @@ def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser
     if printer_details.displayName:
         to_change['displayName'] = printer_details.displayName
 
-    lw.setattr_printer(printer.lower(), data=to_change)
+    PrinterWriter.setattr(printer.lower(), data=to_change)
 
     return
 
