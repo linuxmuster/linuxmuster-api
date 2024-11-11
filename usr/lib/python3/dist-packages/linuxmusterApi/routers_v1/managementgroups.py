@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, UserListChecker, AuthenticatedUser
 from .body_schemas import UserList
-from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr, MgmtGroupWriter
 
 
 router = APIRouter(
@@ -102,7 +102,7 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
         dn = lr.getval(f'/users/{member}', 'dn')
         if dn:
             try:
-                lw.delattr_managementgroup(group, data={'member': dn})
+                MgmtGroupWriter.delattr(group, data={'member': dn})
             except ldap.UNWILLING_TO_PERFORM as e:
                 if 'Attribute member already deleted for target' in str(e):
                     # User already deleted from the group, ignoring
@@ -148,7 +148,7 @@ def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = D
         dn = lr.getval(f'/users/{member}', 'dn')
         if dn:
             try:
-                lw.setattr_managementgroup(group, data={'member': dn}, add=True)
+                MgmtGroupWriter.setattr(group, data={'member': dn}, add=True)
             except ldap.ALREADY_EXISTS as e:
                 if 'Attribute member already exists for target' in str(e):
                     # User already deleted from the group, ignoring
