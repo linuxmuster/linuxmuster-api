@@ -16,10 +16,10 @@ def get_schoolclass_or_404(schoolclass, school):
     return schoolclass
 
 def get_teacher_or_404(teacher, school):
-    teachers = [s['cn'] for s in lr.get('/roles/teacher', attributes=['cn'], school=school)]
-    if teacher not in teachers:
+    user = lr.get(f'/users/{teacher}', school=school)
+    if user.get('sophomorixAdminClass', '') != "teachers":
         raise HTTPException(status_code=404, detail=f"Teacher {teacher} not found")
-    return teachers
+    return user
 
 def get_project_or_404(project, school):
     project_details = lr.get(f'/projects/{project}', school=school, dict=False)

@@ -48,7 +48,5 @@ def get_teacher(teacher: str, who: AuthenticatedUser = Depends(RoleChecker("GS")
     :rtype: list
     """
 
-    get_teacher_or_404(teacher, who.school)
-
-    return lr.get(f'/users/{teacher}')
+    return get_teacher_or_404(teacher, who.school)
 
