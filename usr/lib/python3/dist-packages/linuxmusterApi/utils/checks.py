@@ -10,10 +10,10 @@ def get_user_or_404(user, school):
     return user_details
 
 def get_schoolclass_or_404(schoolclass, school):
-    schoolclasses = [s['cn'] for s in lr.get('/schoolclasses', attributes=['cn'], school=school)]
-    if schoolclass not in schoolclasses:
+    schoolclass = lr.get(f'/schoolclasses/{schoolclass}', school=school)
+    if not schoolclass:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
-    return schoolclasses
+    return schoolclass
 
 def get_teacher_or_404(teacher, school):
     teachers = [s['cn'] for s in lr.get('/roles/teacher', attributes=['cn'], school=school)]
