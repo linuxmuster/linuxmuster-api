@@ -1,3 +1,11 @@
+linuxmuster-api7 (7.2.20) lmn72; urgency=medium
+
+  * Use new writers from linuxmuster-tools
+  * Fix teacher and schoolclass checks
+  * Fix some specific school requests 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Mon, 18 Nov 2024 18:16:46 +0100
+
 linuxmuster-api7 (7.2.19) lmn72; urgency=medium
 
   * Permissions check when printing passwords
