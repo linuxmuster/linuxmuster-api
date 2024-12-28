@@ -28,7 +28,7 @@ def get_all_teachers(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
 
 
-    return lr.get('/roles/teacher')
+    return lr.get('/roles/teacher', school=who.school)
 
 @router.get("/{teacher}", name="Get informations of a specific teacher")
 def get_teacher(teacher: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
