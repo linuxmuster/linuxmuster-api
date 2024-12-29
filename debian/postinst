@@ -54,13 +54,6 @@ EOF
         systemctl daemon-reload
         systemctl restart linuxmuster-api
 
-        msg "####################################################################################
-#                                                                                  #
-# CAUTION: THIS PACKAGE IS NOT SECURE AND ONLY PUBLISHED FOR DEVELOPMENT PURPOSES  #
-# DON'T USE IT ON A PRODUCTION SERVER!                                             #
-#                                                                                  #
-####################################################################################"
-
     ;;
 
     *)
