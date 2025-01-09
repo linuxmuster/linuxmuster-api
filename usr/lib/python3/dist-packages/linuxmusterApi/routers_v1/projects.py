@@ -340,8 +340,9 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
         if getattr(project_details, option):
             options.extend([f'--{option}', ','.join(getattr(project_details, option))])
 
-    if project_details.school:
-        options.extend(['--school', project_details.school])
+    # If --school is specified, sophomorix throw an error 0 project found
+    # if project_details.school:
+    #     options.extend(['--school', project_details.school])
 
     cmd = ['sophomorix-project',  *options, '-p', project.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
