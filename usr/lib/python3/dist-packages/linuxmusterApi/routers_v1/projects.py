@@ -166,7 +166,7 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
 
     or
 
-    "quota": [{"quota":500,"share":"agy"}, [{"quota":300,"share":"linuxmuster-global"}]
+    "quota": [{"quota":500,"share":"agy"}, {"quota":300,"share":"linuxmuster-global"}]
 
     `comment` is optional.
 
@@ -279,7 +279,7 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
 
     or
 
-    "quota": [{"quota":500,"share":"agy"}, [{"quota":300,"share":"linuxmuster-global"}]
+    "quota": [{"quota":500,"share":"agy"}, {"quota":300,"share":"linuxmuster-global"}]
 
     `comment` is optional.
 
