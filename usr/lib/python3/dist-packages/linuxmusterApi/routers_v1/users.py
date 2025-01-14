@@ -6,6 +6,7 @@ from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.ldapconnector import UserWriter
 from linuxmusterTools.samba_util import UserManager
 import linuxmusterTools.quotas
+from utils.checks import get_user_or_404
 
 
 user_manager = UserManager()
@@ -59,6 +60,8 @@ def get_user(user: str, check_first_pw: bool = False, who: AuthenticatedUser = D
     """
 
 
+    user_details = get_user_or_404(user, who.school)
+
     if check_first_pw:
         user_details = lr.get(f'/users/{user}', dict=False)
         first_pw_set = user_details.test_first_password()
@@ -66,7 +69,7 @@ def get_user(user: str, check_first_pw: bool = False, who: AuthenticatedUser = D
         user_dict['FirstPasswordSet'] = first_pw_set
         return user_dict
     else:
-        return lr.get(f'/users/{user}')
+        return user_details
 
 @router.post("/{user}", name="Update user's data")
 def post_user_data(user: str, user_details: User, who: AuthenticatedUser = Depends(UserChecker("GST"))):
@@ -91,6 +94,8 @@ def post_user_data(user: str, user_details: User, who: AuthenticatedUser = Depen
     :type who: AuthenticatedUser
     """
 
+
+    get_user_or_404(user, who.school)
 
     data = {k:v for k, v in user_details.__dict__.items() if v}
 
@@ -149,6 +154,8 @@ def set_first_user_password(user: str, password: SetFirstPassword, who: Authenti
     """
 
 
+    get_user_or_404(user, who.school)
+
     # TODO : paswword constraints ?
     UserWriter.setattr(user, data={'sophomorixFirstPassword': password.password})
     if password.set_current:
@@ -189,6 +196,8 @@ def set_current_user_password(user: str, password: SetCurrentPassword, who: Auth
     """
 
 
+    get_user_or_404(user, who.school)
+
     try:
         user_manager.set_password(user, password.password)
     except Exception as e:
@@ -219,6 +228,8 @@ def get_user_quotas(user: str, who: AuthenticatedUser = Depends(UserChecker("GST
     :rtype: dict
     """
 
+
+    get_user_or_404(user, who.school)
 
     try:
        return linuxmusterTools.quotas.get_user_quotas(user)
