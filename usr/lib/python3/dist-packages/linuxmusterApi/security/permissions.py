@@ -48,10 +48,13 @@ class BasicChecker:
                 return True
 
             # Ensure the requested user exists in LDAP
-            if requested_user.endswith('-exam'):
-                user_role = lr.getval(f'/users/exam/{requested_user}', 'sophomorixRole')
-            else:
-                user_role = lr.getval(f'/users/{requested_user}', 'sophomorixRole')
+            try:
+                if requested_user.endswith('-exam'):
+                    user_role = lr.getval(f'/users/exam/{requested_user}', 'sophomorixRole')
+                else:
+                    user_role = lr.getval(f'/users/{requested_user}', 'sophomorixRole')
+            except Exception:
+                raise HTTPException(status_code=404, detail=f"Requested user {requested_user} not found")
 
             # Is it really a valid user ?
             if user_role is None:
