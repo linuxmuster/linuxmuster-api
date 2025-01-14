@@ -97,7 +97,10 @@ def post_user_data(user: str, user_details: User, who: AuthenticatedUser = Depen
 
     get_user_or_404(user, who.school)
 
-    data = {k:v for k, v in user_details.__dict__.items() if v}
+    data = {}
+    for key, value in user_details.__dict__.items():
+        if (key == "thumbnailPhoto" and value is not None) or value:
+            data[key] = value
 
     UserWriter.setattr(f"{user.lower()}", data=data)
 
