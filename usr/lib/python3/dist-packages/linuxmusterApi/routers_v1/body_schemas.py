@@ -76,7 +76,7 @@ class User(BaseModel):
     sophomorixCustomMulti3: list | None = []
     sophomorixCustomMulti4: list | None = []
     sophomorixCustomMulti5: list | None = []
-    thumbnailPhoto: str | None = ''
+    thumbnailPhoto: str | None = None
 
 class SetFirstPassword(BaseModel):
     """
