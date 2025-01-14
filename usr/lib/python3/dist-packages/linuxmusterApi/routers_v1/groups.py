@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from security import RoleChecker, UserListChecker, AuthenticatedUser
 from .body_schemas import UserList, Project as NewGroup
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNLdapWriter as lw
-from linuxmusterTools.common import Validator, STRING_RULES
+from linuxmusterTools.common import Validator, NAME_RULES
 
 
 router = APIRouter(
@@ -112,7 +112,7 @@ def create_group(group: str, group_details: NewGroup, who: AuthenticatedUser = D
 
 
     if not Validator.check_group_name(group):
-        raise HTTPException(status_code=422, detail=f"{group} is not a valid name. Valid chars are {STRING_RULES['group']}")
+        raise HTTPException(status_code=422, detail=f"{group} is not a valid name. Valid chars are {NAME_RULES['group']}")
 
     # School specific request. For global-admins, it will return all groups from all schools
     groups = lr.get('/groups', attributes=['cn'], school=who.school)

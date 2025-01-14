@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from security import RoleChecker, UserListChecker, AuthenticatedUser
 from .body_schemas import Project
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, ProjectWriter
-from linuxmusterTools.common import Validator, STRING_RULES
+from linuxmusterTools.common import Validator, NAME_RULES
 from utils.sophomorix import lmn_getSophomorixValue
 from utils.checks import get_project_or_404
 
@@ -183,7 +183,7 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
 
 
     if not Validator.check_project_name(project):
-        raise HTTPException(status_code=422, detail=f"{project} is not a valid name. Valid chars are {STRING_RULES['project']}")
+        raise HTTPException(status_code=422, detail=f"{project} is not a valid name. Valid chars are {NAME_RULES['project']}")
 
     # School specific request. For global-admins, it will return all projects from all schools
     projects = lr.get('/projects', attributes=['cn'], school=who.school)

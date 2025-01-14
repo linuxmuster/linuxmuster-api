@@ -5,7 +5,7 @@ from security import UserChecker, UserListChecker, AuthenticatedUser
 from utils.checks import get_user_or_404
 from .body_schemas import UserList
 from linuxmusterTools.ldapconnector import UserWriter, LMNLdapReader as lr
-from linuxmusterTools.common import Validator, STRING_RULES
+from linuxmusterTools.common import Validator, NAME_RULES
 
 
 router = APIRouter(
@@ -138,7 +138,7 @@ def session_create(user: str, sessionname: str, userlist: UserList | None = None
 
 
     if not Validator.check_session_name(sessionname):
-        raise HTTPException(status_code=422, detail=f"{sessionname} is not a valid name. Valid chars are {STRING_RULES['session']}")
+        raise HTTPException(status_code=422, detail=f"{sessionname} is not a valid name. Valid chars are {NAME_RULES['session']}")
 
     sid = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
