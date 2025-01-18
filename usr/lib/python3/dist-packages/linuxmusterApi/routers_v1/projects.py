@@ -234,8 +234,9 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
 
     prefix = "p_"
     if project_details.school:
-        options.extend(['--school', project_details.school])
-        prefix = f"p_{project_details.school}-"
+        if project_details.school != "default-school":
+            options.extend(['--school', project_details.school])
+            prefix = f"p_{project_details.school}-"
 
     cmd = ['sophomorix-project',  *options, '--create', '-p', project.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
@@ -352,10 +353,10 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
     if project_details.proxyAddresses:
-        ProjectWriter.setattr(f"p_{project.lower()}", data={'proxyAddresses': project_details.proxyAddresses})
+        ProjectWriter.setattr(f"{project.lower()}", data={'proxyAddresses': project_details.proxyAddresses})
 
     if project_details.displayName:
-        ProjectWriter.setattr(f"p_{project.lower()}", data={'displayName': project_details.displayName})
+        ProjectWriter.setattr(f"{project.lower()}", data={'displayName': project_details.displayName})
 
     return result
 
