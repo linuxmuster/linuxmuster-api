@@ -33,7 +33,6 @@ loggers:
 root:
   level: DEBUG
   handlers:
-    - default
     - filelog
   propagate: no
 

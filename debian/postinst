@@ -40,9 +40,7 @@ EOF
 
         msg "Checking log files"
         mkdir -p /var/log/linuxmuster/api
-        if [ ! -f "/etc/linuxmuster/api/uvicorn_log_conf.yml" ] ; then
-          cp /usr/lib/python3/dist-packages/linuxmusterApi/templates/uvicorn_log_conf.yml /etc/linuxmuster/api/uvicorn_log_conf.yml
-        fi
+        cp /usr/lib/python3/dist-packages/linuxmusterApi/templates/uvicorn_log_conf.yml /etc/linuxmuster/api/uvicorn_log_conf.yml
 
         msg "Checking certificate"
         if [ ! -f "/etc/linuxmuster/api/lmnapi.pem" ] ; then
