@@ -1,3 +1,13 @@
+linuxmuster-api7 (7.2.21) lmn72; urgency=medium
+
+  * Fix missing school for teachers requests
+  * Add thumbnailPhoto for users
+  * Avoid school bug in projects
+  * More checks and exceptions catching
+  * Fix logging 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Mon, 20 Jan 2025 12:36:56 +0100
+
 linuxmuster-api7 (7.2.20) lmn72; urgency=medium
 
   * Use new writers from linuxmuster-tools
