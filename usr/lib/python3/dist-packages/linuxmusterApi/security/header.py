@@ -37,7 +37,8 @@ def check_authentication_header(request: Request) -> AuthenticatedUser:
         return check_user_header(apikey)
 
     if hostkey:
-        return check_host_header(hostkey)
+        client_ip = request.client.host
+        return check_host_header(hostkey, client_ip)
 
     raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -79,13 +80,21 @@ def check_user_header(apikey) -> AuthenticatedUser:
     )
 
 
-def check_host_header(hostkey) -> AuthenticatedUser:
+def check_host_header(hostkey, client_ip) -> AuthenticatedUser:
 
     with open('/etc/linuxmuster/api/config.yml', 'r') as config_file:
         keys = yaml.load(config_file, Loader=yaml.SafeLoader).get('host_keys', {})
 
     if hostkey in keys:
         user = keys[hostkey]['user']
+        valid_ips = keys[hostkey].get('ips', [])
+
+        if valid_ips and client_ip not in valid_ips:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Invalid API Key IP",
+            )
+
 
     # No memory leak
     keys = ''
