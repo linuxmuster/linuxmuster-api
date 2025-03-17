@@ -11,7 +11,7 @@ from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 BASIC_AUTH = HTTPBasic()
 
-def generate_jwt(user):
+def generate_jwt(user, role, school):
     """
     Generate a valid jwt for a specific user.
 
@@ -22,11 +22,6 @@ def generate_jwt(user):
     """
 
 
-    user_details = lr.get(f'/users/{user}')
-    if not user_details:
-        # User not found in ldap tree, discarding request
-        return ''
-
     with open('/etc/linuxmuster/api/config.yml', 'r') as config_file:
         config = yaml.load(config_file, Loader=yaml.SafeLoader)
 
@@ -34,8 +29,8 @@ def generate_jwt(user):
 
     payload  = {
         'user': user,
-        'role': user_details['sophomorixRole'],
-        'school': user_details['sophomorixSchoolname']
+        'role': role,
+        'school': school
     }
 
     token = jwt.encode(payload, secret, algorithm="HS512")
@@ -61,7 +56,7 @@ class BasicAuthChecker:
             )
 
         if user.test_password(password=credentials.password):
-            return generate_jwt(user.cn)
+            return generate_jwt(user.cn, user.sophomorixRole, user.sophomorixSchoolname)
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
