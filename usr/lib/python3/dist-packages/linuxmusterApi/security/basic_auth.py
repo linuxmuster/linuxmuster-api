@@ -9,7 +9,6 @@ from typing_extensions import Annotated
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
-X_API_KEY = APIKeyHeader(name='X-API-Key')
 BASIC_AUTH = HTTPBasic()
 
 def generate_jwt(user):
@@ -21,6 +20,7 @@ def generate_jwt(user):
     :return: jwt
     :rtype: basestring
     """
+
 
     user_details = lr.get(f'/users/{user}')
     if not user_details:
@@ -50,8 +50,16 @@ class BasicAuthChecker:
     Check username and password from basic auth.
     """
 
+
     def __call__(self, credentials: Annotated[HTTPBasicCredentials, Depends(BASIC_AUTH)]) -> str:
-        user = lr.get(f'/users/{credentials.username}', dict=False)
+        try:
+            user = lr.get(f'/users/{credentials.username}', dict=False)
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Malformated username, please send a valid username and password.'
+            )
+
         if user.test_password(password=credentials.password):
             return generate_jwt(user.cn)
 
