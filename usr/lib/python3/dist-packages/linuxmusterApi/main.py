@@ -70,6 +70,7 @@ from routers_v1 import (
     samba,
     schoolclasses,
     schools,
+    server,
     sessions,
     teachers,
     users,
@@ -120,6 +121,7 @@ app.include_router(exam.router, prefix="/v1")
 app.include_router(samba.router, prefix="/v1")
 app.include_router(print_passwords.router, prefix="/v1")
 app.include_router(printers.router, prefix="/v1")
+app.include_router(server.router, prefix="/v1")
 
 if __name__ == "__main__":
     secret = config.get('secret', None)
