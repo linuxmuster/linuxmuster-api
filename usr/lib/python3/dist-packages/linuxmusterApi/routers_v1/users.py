@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from security import RoleChecker, UserChecker, AuthenticatedUser, UserListChecker
 from .body_schemas import SetFirstPassword, SetCurrentPassword, UserList, User
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
-from linuxmusterTools.ldapconnector import UserWriter
+from linuxmusterTools.ldapconnector import LMNUser
 from linuxmusterTools.samba_util import UserManager
 import linuxmusterTools.quotas
 from utils.checks import get_user_or_404
@@ -102,7 +102,8 @@ def post_user_data(user: str, user_details: User, who: AuthenticatedUser = Depen
         if (key == "thumbnailPhoto" and value is not None) or value:
             data[key] = value
 
-    UserWriter.setattr(f"{user.lower()}", data=data)
+    UserWriter = LMNUser(user.lower())
+    UserWriter.setattr(data=data)
 
 
 @router.post("/get_users_from_cn", name="User details")
@@ -160,7 +161,8 @@ def set_first_user_password(user: str, password: SetFirstPassword, who: Authenti
     get_user_or_404(user, who.school)
 
     # TODO : paswword constraints ?
-    UserWriter.setattr(user, data={'sophomorixFirstPassword': password.password})
+    UserWriter = LMNUser(user)
+    UserWriter.setattr(data={'sophomorixFirstPassword': password.password})
     if password.set_current:
         try:
             user_manager.set_password(user, password.password)
@@ -207,7 +209,8 @@ def set_current_user_password(user: str, password: SetCurrentPassword, who: Auth
         raise HTTPException(status_code=400, detail=str(e))
 
     if password.set_first:
-        UserWriter.setattr(user, data={'sophomorixFirstPassword': password.password})
+        UserWriter = LMNUser(user.lower())
+        UserWriter.setattr(data={'sophomorixFirstPassword': password.password})
 
 
 @router.get("/{user}/quotas", name='Get the quotas of a specific user')
