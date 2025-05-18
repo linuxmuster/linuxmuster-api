@@ -102,7 +102,7 @@ def post_user_data(user: str, user_details: User, who: AuthenticatedUser = Depen
         if (key == "thumbnailPhoto" and value is not None) or value:
             data[key] = value
 
-    UserWriter = LMNUser(user.lower())
+    UserWriter = LMNUser(user.lower(), who.school)
     UserWriter.setattr(data=data)
 
 
@@ -161,7 +161,7 @@ def set_first_user_password(user: str, password: SetFirstPassword, who: Authenti
     get_user_or_404(user, who.school)
 
     # TODO : paswword constraints ?
-    UserWriter = LMNUser(user)
+    UserWriter = LMNUser(user, who.school)
     UserWriter.setattr(data={'sophomorixFirstPassword': password.password})
     if password.set_current:
         try:
@@ -209,7 +209,7 @@ def set_current_user_password(user: str, password: SetCurrentPassword, who: Auth
         raise HTTPException(status_code=400, detail=str(e))
 
     if password.set_first:
-        UserWriter = LMNUser(user.lower())
+        UserWriter = LMNUser(user.lower(), school=who.school)
         UserWriter.setattr(data={'sophomorixFirstPassword': password.password})
 
 
