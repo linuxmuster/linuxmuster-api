@@ -109,7 +109,7 @@ def delete_session(user:str, sessionsid: str, who: AuthenticatedUser = Depends(U
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
             old_session = f"{session.sid};{session.name};{','.join(session.members)};"
-            UserWriter = LMNUser(user.lower())
+            UserWriter = LMNUser(user.lower(), school=who.school)
             UserWriter.delattr(data={'sophomorixSessions': old_session})
             return
     else:
@@ -151,7 +151,7 @@ def session_create(user: str, sessionname: str, userlist: UserList | None = None
     new_session = f"{sid};{sessionname};{members};"
 
     try:
-        UserWriter = LMNUser(user.lower())
+        UserWriter = LMNUser(user.lower(), school=who.school)
         UserWriter.setattr(data={'sophomorixSessions': new_session}, add=True)
         return
     except Exception as e:
@@ -188,7 +188,7 @@ def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who:
 
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
-            UserWriter = LMNUser(user.lower())
+            UserWriter = LMNUser(user.lower(), school=who.school)
             old_session = f"{session.sid};{session.name};{','.join(session.members)};"
             UserWriter.delattr(data={'sophomorixSessions': old_session})
 
@@ -235,7 +235,7 @@ def add_user_to_session(user: str, sessionsid: str, userlist: UserList, who: Aut
 
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
-            UserWriter = LMNUser(user.lower())
+            UserWriter = LMNUser(user.lower(), school=who.school)
             old_session = f"{session.sid};{session.name};{','.join(session.members)};"
             UserWriter.delattr(data={'sophomorixSessions': old_session})
 
