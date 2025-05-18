@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, UserListChecker, AuthenticatedUser
 from .body_schemas import UserList
-from linuxmusterTools.ldapconnector import LMNLdapReader as lr, MgmtGroupWriter
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNMgmtGroup
 
 
 router = APIRouter(
@@ -99,15 +99,14 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
         raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
 
     for member in userlist.users:
-        dn = lr.getval(f'/users/{member}', 'dn')
-        if dn:
-            try:
-                MgmtGroupWriter.delattr(group, data={'member': dn})
-            except ldap.UNWILLING_TO_PERFORM as e:
-                if 'Attribute member already deleted for target' in str(e):
-                    # User already deleted from the group, ignoring
-                    pass
-        else:
+        try:
+            GroupWriter = LMNMgmtGroup(group)
+            GroupWriter.remove_member(member)
+        except ldap.UNWILLING_TO_PERFORM as e:
+            if 'Attribute member already deleted for target' in str(e):
+                # User already deleted from the group, ignoring
+                pass
+        except Exception as e:
             logging.warning(f"User {member} not found, will not delete from management group {group}")
 
     return
@@ -145,15 +144,14 @@ def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = D
         raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
 
     for member in userlist.users:
-        dn = lr.getval(f'/users/{member}', 'dn')
-        if dn:
-            try:
-                MgmtGroupWriter.setattr(group, data={'member': dn}, add=True)
-            except ldap.ALREADY_EXISTS as e:
-                if 'Attribute member already exists for target' in str(e):
-                    # User already deleted from the group, ignoring
-                    pass
-        else:
+        try:
+            GroupWriter = LMNMgmtGroup(group)
+            GroupWriter.add_member(member)
+        except ldap.ALREADY_EXISTS as e:
+            if 'Attribute member already exists for target' in str(e):
+                # User already deleted from the group, ignoring
+                pass
+        except Exception as e:
             logging.warning(f"User {member} not found, will not add it to management group {group}")
 
     return
