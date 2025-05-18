@@ -245,7 +245,7 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
     if output.get("TYPE", "") == "ERROR":
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
-    ProjectWriter = LMNProject(f"{prefix}{project.lower()}")
+    ProjectWriter = LMNProject(f"{prefix}{project.lower()}", school=who.school)
 
     if project_details.proxyAddresses:
         ProjectWriter.setattr(data={'proxyAddresses': project_details.proxyAddresses})
@@ -354,7 +354,7 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
     if output.get("TYPE", "") == "ERROR":
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
-    ProjectWriter = LMNProject(f"{project.lower()}")
+    ProjectWriter = LMNProject(f"{project.lower()}", school=who.school)
 
     if project_details.proxyAddresses:
         ProjectWriter.setattr(data={'proxyAddresses': project_details.proxyAddresses})
