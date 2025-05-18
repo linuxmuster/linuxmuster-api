@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, UserListChecker, AuthenticatedUser
 from .body_schemas import Project
-from linuxmusterTools.ldapconnector import LMNLdapReader as lr, ProjectWriter
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNProject
 from linuxmusterTools.common import Validator, NAME_RULES
 from utils.sophomorix import lmn_getSophomorixValue
 from utils.checks import get_project_or_404
@@ -245,13 +245,15 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
     if output.get("TYPE", "") == "ERROR":
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
+    ProjectWriter = LMNProject(f"{prefix}{project.lower()}")
+
     if project_details.proxyAddresses:
-        ProjectWriter.setattr(f"{prefix}{project.lower()}", data={'proxyAddresses': project_details.proxyAddresses})
+        ProjectWriter.setattr(data={'proxyAddresses': project_details.proxyAddresses})
 
     if project_details.displayName:
-        ProjectWriter.setattr(f"{prefix}{project.lower()}", data={'displayName': project_details.displayName})
+        ProjectWriter.setattr(data={'displayName': project_details.displayName})
     else:
-        ProjectWriter.setattr(f"{prefix}{project.lower()}", data={'displayName': project})
+        ProjectWriter.setattr(data={'displayName': project})
 
     return result
 
@@ -352,11 +354,13 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
     if output.get("TYPE", "") == "ERROR":
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
+    ProjectWriter = LMNProject(f"{project.lower()}")
+
     if project_details.proxyAddresses:
-        ProjectWriter.setattr(f"{project.lower()}", data={'proxyAddresses': project_details.proxyAddresses})
+        ProjectWriter.setattr(data={'proxyAddresses': project_details.proxyAddresses})
 
     if project_details.displayName:
-        ProjectWriter.setattr(f"{project.lower()}", data={'displayName': project_details.displayName})
+        ProjectWriter.setattr(data={'displayName': project_details.displayName})
 
     return result
 
