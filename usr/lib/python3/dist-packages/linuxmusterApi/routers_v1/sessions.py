@@ -4,7 +4,7 @@ from datetime import datetime
 from security import UserChecker, UserListChecker, AuthenticatedUser
 from utils.checks import get_user_or_404
 from .body_schemas import UserList
-from linuxmusterTools.ldapconnector import UserWriter, LMNLdapReader as lr
+from linuxmusterTools.ldapconnector import LMNUser, LMNLdapReader as lr
 from linuxmusterTools.common import Validator, NAME_RULES
 
 
@@ -109,7 +109,8 @@ def delete_session(user:str, sessionsid: str, who: AuthenticatedUser = Depends(U
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
             old_session = f"{session.sid};{session.name};{','.join(session.members)};"
-            UserWriter.delattr(user, data={'sophomorixSessions': old_session})
+            UserWriter = LMNUser(user.lower())
+            UserWriter.delattr(data={'sophomorixSessions': old_session})
             return
     else:
        raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
@@ -150,7 +151,8 @@ def session_create(user: str, sessionname: str, userlist: UserList | None = None
     new_session = f"{sid};{sessionname};{members};"
 
     try:
-        UserWriter.setattr(user, data={'sophomorixSessions': new_session}, add=True)
+        UserWriter = LMNUser(user.lower())
+        UserWriter.setattr(data={'sophomorixSessions': new_session}, add=True)
         return
     except Exception as e:
        raise HTTPException(status_code=404, detail=str(e))
@@ -186,8 +188,9 @@ def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who:
 
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
+            UserWriter = LMNUser(user.lower())
             old_session = f"{session.sid};{session.name};{','.join(session.members)};"
-            UserWriter.delattr(user, data={'sophomorixSessions': old_session})
+            UserWriter.delattr(data={'sophomorixSessions': old_session})
 
             to_delete = set(userlist.users)
             members_set = set(session.members)
@@ -195,7 +198,7 @@ def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who:
             session.members = list(members_set)
 
             new_session = f"{session.sid};{session.name};{','.join(session.members)};"
-            UserWriter.setattr(user, data={'sophomorixSessions': new_session}, add=True)
+            UserWriter.setattr(data={'sophomorixSessions': new_session}, add=True)
 
             return
     else:
@@ -232,14 +235,15 @@ def add_user_to_session(user: str, sessionsid: str, userlist: UserList, who: Aut
 
     for index, session in enumerate(sessions):
         if sessionsid == session.sid:
+            UserWriter = LMNUser(user.lower())
             old_session = f"{session.sid};{session.name};{','.join(session.members)};"
-            UserWriter.delattr(user, data={'sophomorixSessions': old_session})
+            UserWriter.delattr(data={'sophomorixSessions': old_session})
 
             session.members += userlist.users
             session.members = list(set(session.members))
 
             new_session = f"{session.sid};{session.name};{','.join(session.members)};"
-            UserWriter.setattr(user, data={'sophomorixSessions': new_session}, add=True)
+            UserWriter.setattr(data={'sophomorixSessions': new_session}, add=True)
 
             return
     else:
