@@ -100,7 +100,7 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
 
     for member in userlist.users:
         try:
-            GroupWriter = LMNMgmtGroup(group)
+            GroupWriter = LMNMgmtGroup(group, school=who.school)
             GroupWriter.remove_member(member)
         except ldap.UNWILLING_TO_PERFORM as e:
             if 'Attribute member already deleted for target' in str(e):
@@ -145,7 +145,7 @@ def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = D
 
     for member in userlist.users:
         try:
-            GroupWriter = LMNMgmtGroup(group)
+            GroupWriter = LMNMgmtGroup(group, school=who.school)
             GroupWriter.add_member(member)
         except ldap.ALREADY_EXISTS as e:
             if 'Attribute member already exists for target' in str(e):
