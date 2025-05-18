@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.4) lmn73; urgency=medium
+
+  * Use new writers with support for multischool. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 18 May 2025 21:00:21 +0200
+
 linuxmuster-api7 (7.3.3) lmn73; urgency=medium
 
   * Add host api key. 
