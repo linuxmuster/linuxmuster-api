@@ -64,6 +64,7 @@ class User(BaseModel):
     displayName: str | None = ''
     mailalias: bool = False
     name: str | None = ''
+    parents: list | None = []
     proxyAddresses: list | None = []
     sn: str | None = ''
     sophomorixCustom1: str | None = ''
