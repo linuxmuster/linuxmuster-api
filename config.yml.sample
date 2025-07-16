@@ -1,0 +1,33 @@
+# Uvicorn configuration
+uvicorn:
+  reload: true
+  port: 8001
+  host: 0.0.0.0
+  ssl_certfile: /etc/linuxmuster/api/lmnapi.pem
+  ssl_keyfile: /etc/linuxmuster/api/lmnapi.pem
+  log_level: info
+  log_config: /etc/linuxmuster/api/log_conf.yaml
+# Secret key used to encode and decode the JWT
+secret: LONG_AND_SECURE_BASE64_ENCODED_STRING
+# Enable host key auth or not (default to false)
+host_key_auth: false
+host_keys:
+  my_server: # Name of the key
+    ips: [127.0.0.1, 192.168.1.1] # List of ips allowed
+    user: global-admin # cn of a valid ldap user to isolate the permissions
+    secret: LONG_AND_SECURE_BASE64_ENCODED_STRING
+  my_server2: # Name of the key
+    ips: [] # All ip allowed
+    user: lmn-teacher # cn of a valid ldap user to isolate the permissions
+    secret: LONG_AND_SECURE_BASE64_ENCODED_STRING
+# CORS configuration
+cors:
+  allow_origins:
+    - http://example.net
+    - https://localhost:8001
+  allow_credentials: true
+  allow_methods: 
+    - GET
+    - POST
+  allow_headers: ['*']
+
