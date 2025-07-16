@@ -85,7 +85,15 @@ def check_host_header(hostkey, client_ip) -> AuthenticatedUser:
     user = None
 
     with open('/etc/linuxmuster/api/config.yml', 'r') as config_file:
-        keys = yaml.load(config_file, Loader=yaml.SafeLoader).get('host_keys', {})
+        config = yaml.load(config_file, Loader=yaml.SafeLoader)
+        keys = config.get('host_keys', {})
+        host_key_auth_enable = config.get('host_key_auth', False)
+
+    if not host_key_auth_enable:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid Auth method",
+        )
 
     for name, key in keys.items():
         secret = key.get('secret', None)
