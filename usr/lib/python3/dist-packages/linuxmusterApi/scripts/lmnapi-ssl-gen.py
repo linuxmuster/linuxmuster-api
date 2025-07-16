@@ -1,5 +1,15 @@
 #! /usr/bin/env python3
 
+
+"""
+This script simply generates a self-signed certificate for running linuxmmuster-api.
+The certificate will then be located in /etc/linuxmuster/api.
+
+If you want to use your own certificates, just mention it in /etc/linuxmuster/api/config under
+uvicorn --> ssl_certfile and ssl_keyfile, and then restart the API.
+"""
+
+
 import sys
 import socket
 import random
