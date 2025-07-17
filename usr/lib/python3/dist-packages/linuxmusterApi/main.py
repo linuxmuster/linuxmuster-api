@@ -16,6 +16,7 @@ from fastapi.staticfiles import StaticFiles
 config = {}
 config_path = '/etc/linuxmuster/api/config.yml'
 if os.path.isfile(config_path):
+    os.chmod(config_path, 384)
     with open(config_path, 'r') as config_file:
         config = yaml.load(config_file, Loader=yaml.SafeLoader)
 
