@@ -1,3 +1,13 @@
+linuxmuster-api7 (7.3.8) lmn73; urgency=medium
+
+  * Add sample config file
+  * Consolidate host authentication
+  * Add config parameter to enable or disable host authentication
+  * Add parents to students responses
+  * Ensure config file permissions
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 23 Jul 2025 19:27:02 +0200
+
 linuxmuster-api7 (7.3.7) lmn73; urgency=medium
 
   * Fix escape sequence. 
