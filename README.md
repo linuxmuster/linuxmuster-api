@@ -6,7 +6,6 @@ Based on the wonderful [FastAPI](https://fastapi.tiangolo.com/), it will give th
 ## Installation
 
 Simply install the package `linumxuster-api7` from our [deb repository](https://github.com/linuxmuster/deb).
-Beware: this package is only published for developing purpose, DON'T USE IT ON A 7.2 PRODUCTION SERVER.
 
 After the installation, the `uvicorn` server should start automatically ans listen on port 8001.
 You can manage it via `systemctl`:
