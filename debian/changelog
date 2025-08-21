@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.9) lmn73; urgency=medium
+
+  * Optional flag members_details for session members 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Thu, 21 Aug 2025 11:30:51 +0200
+
 linuxmuster-api7 (7.3.8) lmn73; urgency=medium
 
   * Add sample config file
