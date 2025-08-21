@@ -16,7 +16,7 @@ router = APIRouter(
 
 
 @router.get("/{user}", name="Get all sessions of a specific user")
-def session_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+def session_user(user: str, members_details: bool = False, who: AuthenticatedUser = Depends(UserChecker("GST"))):
     """
     ## Get all sessions details of a specific user and return a list of sessions.
 
@@ -39,7 +39,10 @@ def session_user(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))
     sessions = user_details.lmnsessions
     sessionsList = []
     for session in sessions:
-        members = [lr.get(f'/users/{member}') for member in session.members]
+        if members_details:
+            members = [lr.get(f'/users/{member}') for member in session.members]
+        else:
+            members = session.members
         s = {
             'sid': session.sid,
             'name': session.name,
