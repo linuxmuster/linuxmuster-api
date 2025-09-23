@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.10) lmn73; urgency=medium
+
+  * Fix delete of project as global-admin 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Tue, 23 Sep 2025 17:40:43 +0200
+
 linuxmuster-api7 (7.3.9) lmn73; urgency=medium
 
   * Optional flag members_details for session members 
