@@ -38,7 +38,7 @@ def get_all_printers(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
 @router.get("/{printer}", name="Get details of a specific printer")
 def get_printer(printer: str, all_members: bool = False, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
-    ## List all available informations of a specific schooclass.
+    ## List all available informations of a specific printer.
 
     Output informations are e.g. cn, dn, members, etc...
     The optional query parameter `all_members` is a boolean. If set to true, this endpoint will search recusiverly for
