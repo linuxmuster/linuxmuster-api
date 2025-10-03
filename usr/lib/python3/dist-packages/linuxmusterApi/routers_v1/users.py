@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from security import RoleChecker, UserChecker, AuthenticatedUser, UserListChecker
 from .body_schemas import SetFirstPassword, SetCurrentPassword, UserList, User
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
-from linuxmusterTools.ldapconnector import LMNUser
+from linuxmusterTools.ldapconnector import LMNUser, LMNStudent
 from linuxmusterTools.samba_util import UserManager
 import linuxmusterTools.quotas
 from utils.checks import get_user_or_404
@@ -241,3 +241,30 @@ def get_user_quotas(user: str, who: AuthenticatedUser = Depends(UserChecker("GST
        return linuxmusterTools.quotas.get_user_quotas(user)
     except Exception as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+@router.post("/{user}/parents", name='Add parents to a specific user')
+def add_user_parent(user: str, parents: UserList, who: AuthenticatedUser = Depends(UserChecker("GS"))):
+    """
+    ## Add parents to a specific user.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param user: samaccountname of the user to check
+    :type user: basestring
+    :param parents: samaccountname of the parents to add
+    :type parents: list
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
+
+    if not parents:
+        raise HTTPException(status_code=400, detail=f"You need to specify at least one parent cn.")
+
+    get_user_or_404(user, who.school)
+
+    UserWriter = LMNStudent(user.lower(), school=who.school)
+    UserWriter.add_parents(parents.users)
