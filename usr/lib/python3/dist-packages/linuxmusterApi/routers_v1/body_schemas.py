@@ -9,12 +9,14 @@ class UserList(BaseModel):
     A list of samaccountname from users, for starting a project, add to wifi group, etc ...
     """
 
+
     users: list | None = None
 
 class LMNShareQuota(BaseModel):
     """
     Model for quotas of shares.
     """
+
 
     comment: str | None = '---'
     quota: int
@@ -24,6 +26,7 @@ class Printer(BaseModel):
     """
     Model to handle a printer group.
     """
+
 
     addmembers: list = []
     addmembergroups: list = []
@@ -39,6 +42,7 @@ class Project(BaseModel):
     """
     Model to create a new project.
     """
+
 
     admins: list = []
     admingroups: list = []
@@ -60,6 +64,8 @@ class User(BaseModel):
     Model to patch user's data.
     """
 
+
+    children: str | None = []
     givenName: str | None = ''
     displayName: str | None = ''
     mailalias: bool = False
@@ -85,6 +91,7 @@ class SetFirstPassword(BaseModel):
     too.
     """
 
+
     password: str
     set_current: bool = Field(default= False)
 
@@ -94,6 +101,7 @@ class SetCurrentPassword(BaseModel):
     too.
     """
 
+
     password: str
     set_first: bool= Field(default= False)
 
@@ -102,6 +110,7 @@ class StopExam(BaseModel):
     users is a list of samaccountname from whom stop the exam. The attribute group_type (like "schoolclass") and
     group_name (like "8a") are used to build the path name of the directory which will contain the collected files.
     """
+
 
     users: list | None = None
     group_type: str | None = None
@@ -113,6 +122,7 @@ class PrintPasswordsSchoolclassesParameter(BaseModel):
     The parameter school could be useful for global administrators.
     format may be pdf or csv.
     """
+
 
     format: str | None = 'pdf'
     one_per_page: bool | None = False
@@ -127,6 +137,7 @@ class PrintPasswordsProjectsParameter(BaseModel):
     format may be pdf or csv.
     """
 
+
     format: str | None = 'pdf'
     one_per_page: bool | None = False
     pdflatex: bool | None = False
@@ -139,6 +150,7 @@ class PrintPasswordsUsersParameter(BaseModel):
     The parameter school could be useful for global administrators.
     format may be pdf or csv.
     """
+
 
     format: str | None = 'pdf'
     one_per_page: bool | None = False
