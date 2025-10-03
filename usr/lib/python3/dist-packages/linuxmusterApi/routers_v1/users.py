@@ -268,3 +268,30 @@ def add_user_parent(user: str, parents: UserList, who: AuthenticatedUser = Depen
 
     UserWriter = LMNStudent(user.lower(), school=who.school)
     UserWriter.add_parents(parents.users)
+
+@router.delete("/{user}/parents", name='Delete parents from a specific user')
+def delete_user_parents(user: str, parents: UserList, who: AuthenticatedUser = Depends(UserChecker("GS"))):
+    """
+    ## Delete parents from a specific user.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param user: samaccountname of the user to check
+    :type user: basestring
+    :param parents: samaccountname of the parents to delete
+    :type parents: list
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
+
+    if not parents:
+        raise HTTPException(status_code=400, detail=f"You need to specify at least one parent cn.")
+
+    get_user_or_404(user, who.school)
+
+    UserWriter = LMNStudent(user.lower(), school=who.school)
+    UserWriter.remove_parents(parents.users)
