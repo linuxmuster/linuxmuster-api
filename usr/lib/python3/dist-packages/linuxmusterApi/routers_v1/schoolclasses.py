@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi.responses import FileResponse
 
 from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
@@ -180,3 +181,33 @@ def quit_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChec
         raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
 
     return result
+
+@router.get("/{schoolclass}/csv_students_list", name="Generate a students csv list from a specific schoolclass")
+def schoolclass_students_csv(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+    """
+    ## Generate a students csv list from a specific schoolclass
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    \f
+    :param schoolclass: cn of the schoolclass
+    :type schooclass: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: CSV list of all students in the schoolclass
+    :rtype: csv
+    """
+
+
+    schoolclass = lr.get(f'/schoolclasses/{schoolclass}', school=who.school, dict=False)
+
+    if not schoolclass:
+        raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
+
+    file_path = schoolclass.students_csv()
+    filename = file_path.split('/')[-1]
+
+    return FileResponse(path=file_path, filename=filename, media_type='csv')
