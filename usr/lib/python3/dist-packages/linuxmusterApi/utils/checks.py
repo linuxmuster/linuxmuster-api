@@ -36,6 +36,22 @@ def get_teacher_or_404(teacher, school):
 
 
 def get_project_or_404(project, school):
+    """
+
+    :param project: project cn with prefix
+    :param school: school name
+    :return:
+    """
+
+
+    # Ensure prefix is given
+    prefix = "p_"
+    if school != "default-school":
+        prefix = f"p_{school}-"
+
+    if not project.startswith(prefix):
+        project = prefix + project
+
     try:
         project_details = lr.get(f'/projects/{project}', school=school, dict=False)
         if not project_details.cn:
