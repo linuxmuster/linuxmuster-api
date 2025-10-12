@@ -254,7 +254,11 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
     project = project.replace(prefix, "")
 
     cmd = ['sophomorix-project',  *options, '--create', '-p', project.lower(), '-jj']
-    result =  lmn_getSophomorixValue(cmd, '')
+    print(' '.join(cmd))
+    try:
+        result =  lmn_getSophomorixValue(cmd, '')
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
 
     output = result.get("OUTPUT", [{}])[0]
     if output.get("TYPE", "") == "ERROR":

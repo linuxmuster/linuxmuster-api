@@ -57,7 +57,11 @@ def lmn_getSophomorixValue(sophomorixCommand, jsonpath, ignoreErrors=False, sens
 
     # Some commands get many dicts, we just want the first
     output = output.replace('\n', '').split('# JSON-end')[0]
-    output = output.split('# JSON-begin')[1]
+    try:
+        output = output.split('# JSON-begin')[1]
+    except IndexError:
+        raise Exception(f"A problem occur with sophomorix, full output is: {t.stdout}{t.stderr}")
+
     output = re.sub('# JSON-begin', '', output)
     logging.debug(f"Sophomorix filter result time : {time()-s}")
 
