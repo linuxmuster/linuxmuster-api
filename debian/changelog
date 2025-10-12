@@ -1,3 +1,13 @@
+linuxmuster-api7 (7.3.11) lmn73; urgency=medium
+
+  * Add children to user response
+  * Endpoints to add/remove parents to an existing user
+  * Better checks on project prefix
+  * Trying to catch sophomorix's errors
+  * Endpoint to export students list as CSV
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 12 Oct 2025 21:14:45 +0200
+
 linuxmuster-api7 (7.3.10) lmn73; urgency=medium
 
   * Fix delete of project as global-admin 

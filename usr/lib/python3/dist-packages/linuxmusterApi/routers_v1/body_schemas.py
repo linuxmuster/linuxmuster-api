@@ -128,6 +128,7 @@ class PrintPasswordsSchoolclassesParameter(BaseModel):
     one_per_page: bool | None = False
     pdflatex: bool | None = False
     school: str | None = ''
+    nosplit_names: bool | None = False
     schoolclasses: list
 
 class PrintPasswordsProjectsParameter(BaseModel):

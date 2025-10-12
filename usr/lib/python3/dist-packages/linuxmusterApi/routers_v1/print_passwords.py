@@ -49,6 +49,9 @@ def sophomorixprint_cmd(who, config, schoolclasses=[], users=[]):
     if config.one_per_page:
         cmd.extend(['--one-per-page'])
 
+    if config.nosplit_names:
+        cmd.extend(['--nosplit-names'])
+
     try:
         shell_env = {'TERM': 'xterm', 'SHELL': '/bin/bash',  'PATH': '/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin',  'HOME': '/root', '_': '/usr/bin/python3'}
         subprocess.check_call(cmd, shell=False, env=shell_env)
