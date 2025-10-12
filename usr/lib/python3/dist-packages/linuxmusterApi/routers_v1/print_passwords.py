@@ -36,14 +36,6 @@ def sophomorixprint_cmd(who, config, schoolclasses=[], users=[]):
     elif who.school != 'global':
         cmd.extend(['--school', who.school])
 
-    if config.format == 'pdf':
-        mtype = 'application/pdf'
-    elif config.format == 'csv':
-        # CSV
-        mtype = 'text/csv'
-    else:
-        raise HTTPException(status_code=400, detail=f"{config.format} is a wrong format")
-
     if schoolclasses:
         cmd.extend(['--class', ','.join(config.schoolclasses)])
     elif users:
