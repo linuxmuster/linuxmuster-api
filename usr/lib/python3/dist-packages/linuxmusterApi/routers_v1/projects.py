@@ -69,7 +69,7 @@ def get_project_details(project: str, all_members: bool = False, who: Authentica
     - teachers
 
     \f
-    :param project: cn of the project to describe
+    :param project: cn of the project to describe with prefix
     :type project: basestring
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
@@ -118,7 +118,7 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
     ### This endpoint uses Sophomorix.
 
     \f
-    :param project: cn of the project to delete
+    :param project: cn of the project to delete with prefix
     :type project: basestring
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
@@ -126,6 +126,14 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
     :rtype: list
     """
 
+
+    # Ensure prefix is given
+    prefix = "p_"
+    if who.school != "default-school":
+        prefix = f"p_{who.school}-"
+
+    if not project.startswith(prefix):
+        project = prefix + project
 
     project_details = get_project_or_404(project, who.school)
 
@@ -175,7 +183,7 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
     `comment` is optional.
 
     \f
-    :param project: cn of the project to create
+    :param project: cn of the project to create without prefix p_
     :type project: basestring
     :param project_details: Parameter of the project, see Project attributes
     :type project_details: Project
@@ -186,15 +194,21 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
     """
 
 
+    options = []
+
     if not Validator.check_project_name(project):
         raise HTTPException(status_code=422, detail=f"{project} is not a valid name. Valid chars are {NAME_RULES['project']}")
 
+    prefix = "p_"
+    if project_details.school:
+        if project_details.school != "default-school":
+            options.extend(['--school', project_details.school])
+            prefix = f"p_{project_details.school}-"
+
     # School specific request. For global-admins, it will return all projects from all schools
     projects = lr.get('/projects', attributes=['cn'], school=who.school)
-    if {'cn': project} in projects or {'cn': f"p_{project}"} in projects:
+    if {'cn': project} in projects or {'cn': f"{prefix}{project}"} in projects:
         raise HTTPException(status_code=400, detail=f"Project {project} already exists on this server.")
-
-    options = []
 
     if project_details.description:
         options.extend(['--description', project_details.description])
@@ -236,11 +250,8 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
         if getattr(project_details, option):
             options.extend([f'--{option}', ','.join(getattr(project_details, option))])
 
-    prefix = "p_"
-    if project_details.school:
-        if project_details.school != "default-school":
-            options.extend(['--school', project_details.school])
-            prefix = f"p_{project_details.school}-"
+    # Remove prefix from project name if necessary
+    project = project.replace(prefix, "")
 
     cmd = ['sophomorix-project',  *options, '--create', '-p', project.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
@@ -291,7 +302,7 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
     `comment` is optional.
 
     \f
-    :param project: cn of the project to update
+    :param project: cn of the project to update with prefix
     :type project: basestring
     :param project_details: Parameter of the project, see Project attributes
     :type project_details: Project
@@ -351,6 +362,7 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
     # if project_details.school:
     #     options.extend(['--school', project_details.school])
 
+    # project can be given with or without prefix here
     cmd = ['sophomorix-project',  *options, '-p', project.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
 
@@ -398,6 +410,7 @@ def join_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST
         if project_details.sophomorixJoinable == False:
             raise HTTPException(status_code=403, detail=f"Forbidden")
 
+    # project can be given with or without prefix here
     cmd = ['sophomorix-project',  '--addmembers', who.user, '-p', project.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
 
@@ -431,6 +444,7 @@ def quit_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST
 
     get_project_or_404(project, who.school)
 
+    # project can be given with or without prefix here
     cmd = ['sophomorix-project',  '--removemembers', who.user, '--removeadmins', who.user, '-p', project.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
 
