@@ -254,7 +254,6 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
     project = project.replace(prefix, "")
 
     cmd = ['sophomorix-project',  *options, '--create', '-p', project.lower(), '-jj']
-    print(' '.join(cmd))
     try:
         result =  lmn_getSophomorixValue(cmd, '')
     except Exception as e:
@@ -314,6 +313,15 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
     :type who: AuthenticatedUser
     """
 
+
+
+    prefix = "p_"
+    if project_details.school:
+        if project_details.school != "default-school":
+            prefix = f"p_{project_details.school}-"
+
+    if not project.startswith(prefix):
+        project = prefix + project
 
     project_exists = get_project_or_404(project, who.school)
 
