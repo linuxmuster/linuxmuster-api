@@ -2,6 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, UserListChecker, AuthenticatedUser
 from utils.sophomorix import lmn_getSophomorixValue
+from linuxmusterTools.samba_util.smbstatus import SMBConnections
 
 
 router = APIRouter(
@@ -55,6 +56,30 @@ def get_groups_list(username: str, who: AuthenticatedUser = Depends(RoleChecker(
             "name": '',
             "objects": {},
         }
+
+@router.get("/smbstatus", name="Parsed output of smbstatus")
+def get_smbstatus(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+    """
+    ## Give the parsed output of smbstatus
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: Dict containing usernames and objects
+    :rtype: dict
+    """
+
+
+    connections = SMBConnections()
+
+    return {
+        user: details.asdict()
+        for user,details in connections.users.items()
+    }
 
 
 
