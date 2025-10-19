@@ -11,6 +11,7 @@ from fastapi import FastAPI, Depends, Request
 from fastapi.responses import HTMLResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
+from fastapi.openapi.utils import get_openapi
 
 
 config = {}
@@ -37,7 +38,7 @@ You are yet so far to launch your first request, just send a GET request with yo
 
 app = FastAPI(
     title = "Linuxmuster.net API",
-    version="7.2.21",
+    version="7.3.12",
     description = description,
     swagger_ui_parameters = {"tryItOutEnabled": True, "swagger_favicon_url": "/static/favicon.png"},
     license_info={
@@ -123,6 +124,31 @@ app.include_router(samba.router, prefix="/v1")
 app.include_router(print_passwords.router, prefix="/v1")
 app.include_router(printers.router, prefix="/v1")
 app.include_router(server.router, prefix="/v1")
+
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    openapi_schema = get_openapi(
+        title = "Linuxmuster.net API",
+        version = "7.3.13",
+        summary = "Linuxmuster.net API",
+        description = description,
+        routes=app.routes,
+    )
+    openapi_schema["components"]["securitySchemes"] = {
+        'HTTPBasic': {'type': 'http', 'scheme': 'basic'},
+        'ApiKeyUserAuth': {'type': 'apiKey', 'in': 'header', 'name': 'X-API-Key'},
+        'ApiKeyHostAuth': {'type': 'apiKey', 'in': 'header', 'name': 'X-HOST-Key'},
+    }
+    for path, details in openapi_schema["paths"].items():
+        if path != '/v1/auth/' and path != '/':
+            for method in details.keys():
+                details[method]['security'] = [{'ApiKeyUserAuth': [], 'ApiKeyHostAuth': []}]
+
+    app.openapi_schema = openapi_schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
 
 if __name__ == "__main__":
     secret = config.get('secret', None)
