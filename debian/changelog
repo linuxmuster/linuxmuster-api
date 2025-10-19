@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.13) lmn73; urgency=medium
+
+  * Fix Swagger UI authentication 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 19 Oct 2025 17:24:07 +0200
+
 linuxmuster-api7 (7.3.12) lmn73; urgency=medium
 
   * Add endpoint for smbstatus 
