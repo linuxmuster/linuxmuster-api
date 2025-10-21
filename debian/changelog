@@ -1,3 +1,11 @@
+linuxmuster-api7 (7.3.14) lmn73; urgency=medium
+
+  * Fix error handling of sophomorix in smbstatus
+  * Ensure access permissions of smbstatus for teachers
+  * Filter smbstatus output for teachers 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Tue, 21 Oct 2025 14:42:57 +0200
+
 linuxmuster-api7 (7.3.13) lmn73; urgency=medium
 
   * Fix Swagger UI authentication 
