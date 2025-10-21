@@ -52,7 +52,7 @@ def get_groups_list(username: str, who: AuthenticatedUser = Depends(RoleChecker(
             "name": room,
             "objects": response,
         }
-    except IndexError as e:
+    except (IndexError, Exception) as e:
         # response is an empty dict, not able to detect the room
         # or the other users in room
         return {
