@@ -32,6 +32,10 @@ def get_groups_list(username: str, who: AuthenticatedUser = Depends(RoleChecker(
 
     school = who.school
 
+    if who.role == 'teacher':
+        if username != who.user:
+            raise HTTPException(status_code=403, detail=f"Forbidden")
+
     try:
         sophomorixCommand = [
             'sophomorix-query', '-jj', '--smbstatus',
