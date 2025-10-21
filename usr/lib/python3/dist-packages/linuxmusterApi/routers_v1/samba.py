@@ -62,13 +62,15 @@ def get_groups_list(username: str, who: AuthenticatedUser = Depends(RoleChecker(
         }
 
 @router.get("/smbstatus", name="Parsed output of smbstatus")
-def get_smbstatus(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def get_smbstatus(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
-    ## Give the parsed output of smbstatus
+    ## Give the parsed output of smbstatus.
+    Asking as a teacher only retrieve the informations of the same room.
 
     ### Access
     - global-administrators
     - school-administrators
+    - teachers
 
     \f
     :param who: User requesting the data, read from API Token
@@ -78,12 +80,29 @@ def get_smbstatus(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
 
 
-    connections = SMBConnections()
+    smb_connections = SMBConnections()
 
-    return {
+    connections = {
         user: details.asdict()
-        for user,details in connections.users.items()
+        for user,details in smb_connections.users.items()
     }
+
+    if who.role == "teacher":
+        if who.user not in connections:
+            # Teacher not found in samba connections
+            return {}
+        else:
+            user_room = connections[who.user].room
+            return {
+                user: details
+                for user,details in connections.items()
+                if details.room == user_room
+            }
+    else:
+        return {
+            user: details.asdict()
+            for user,details in connections.users.items()
+        }
 
 
 
