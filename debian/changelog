@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.15) lmn73; urgency=medium
+
+  * Fix version number 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Thu, 23 Oct 2025 14:38:16 +0200
+
 linuxmuster-api7 (7.3.14) lmn73; urgency=medium
 
   * Fix error handling of sophomorix in smbstatus
