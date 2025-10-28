@@ -137,10 +137,12 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
 
     project_details = get_project_or_404(project, who.school)
 
+    projectname = project.replace(prefix, "")
+
     if who.school != "global":
-        cmd = ['sophomorix-project', '--kill', '-p', project, '--school', who.school, '-jj']
+        cmd = ['sophomorix-project', '--kill', '-p', projectname, '--school', who.school, '-jj']
     else:
-        cmd = ['sophomorix-project', '--kill', '-p', project, '-jj']
+        cmd = ['sophomorix-project', '--kill', '-p', projectname, '-jj']
 
 
     if who.role in ["schooladministrator", "globaladministrator"]:
