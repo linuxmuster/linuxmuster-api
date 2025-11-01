@@ -39,6 +39,7 @@ def start_exam_mode(userlist: UserList, who: AuthenticatedUser = Depends(UserLis
         raise HTTPException(status_code=400, detail=f"Missing userlist of members to handle")
 
     try:
+        # Since the cn of the users are given and uniq across schools, no need to specify the school
         sophomorixCommand = [
             'sophomorix-exam-mode',
             '--set',
@@ -81,6 +82,7 @@ def stop_exam_mode(stopexam: StopExam, who: AuthenticatedUser = Depends(UserList
     target = f'EXAM_{stopexam.group_type}_{stopexam.group_name}_{now}'
 
     try:
+        # Since the cn of the users are given and uniq across schools, no need to specify the school
         sophomorixCommand = [
             'sophomorix-exam-mode',
             '--unset',

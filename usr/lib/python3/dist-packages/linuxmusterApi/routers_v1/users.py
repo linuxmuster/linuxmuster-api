@@ -63,7 +63,7 @@ def get_user(user: str, check_first_pw: bool = False, who: AuthenticatedUser = D
     user_details = get_user_or_404(user, who.school)
 
     if check_first_pw:
-        user_details = lr.get(f'/users/{user}', dict=False)
+        user_details = lr.get(f'/users/{user}', dict=False, school=who.school)
         first_pw_set = user_details.test_first_password()
         user_dict = user_details.asdict()
         user_dict['FirstPasswordSet'] = first_pw_set
@@ -125,9 +125,11 @@ def get_users_from_cn(userlist: UserList, who: AuthenticatedUser = Depends(UserL
     :rtype: dict
     """
 
+
     response = {}
     for user in userlist.users:
         if user not in response:
+            # Since the cn is given and uniq across schools, no need to specify the school
             response[user] = lr.get(f'/users/{user}')
 
     return response
