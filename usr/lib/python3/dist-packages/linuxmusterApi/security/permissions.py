@@ -15,7 +15,9 @@ class BasicChecker:
         'G': 'globaladministrator',
         'S': 'schooladministrator',
         'T': 'teacher',
-        's': 'student'
+        's': 'student',
+        'P': 'parent',
+        'F': 'staff',
     }
 
     def __init__(self, roles) -> None:
@@ -38,6 +40,8 @@ class BasicChecker:
                 'teacher': 2,
                 'student': 1,
                 'examuser': 1,
+                'parent': 1,
+                'staff': 1
             }
 
             identity = who.user
