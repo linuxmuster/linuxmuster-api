@@ -13,6 +13,8 @@ You can manage it via `systemctl`:
     systemctl start linuxmuster-api
     systemctl stop linuxmuster-api
 
+It is then necessary to configure your firewall in order to restrict the access to `linuxmuster-api`, please read the paragraph "Security" bellow.
+
 ## Configuration
 
 Some configurations options are stored in `/etc/linuxmuster/api/config.yml`:
@@ -44,10 +46,17 @@ FastApi provides two complete documentations to learn the API:
 
 ### Security
 
+#### Firewall
+
+> [!WARNING]
+> In his default configuration, `linuxmuster-api` listen on port 8001. Since the API can provide sensitive information, it's **very important** to restrict the access to this port to only the clients or machines who need it.
+
+#### Authentication
+
 The endpoints are per role and per user secured. 
 Each request MUST provide a valid **JWT (JSON Web Token)** in the header (key `X-Api-Key`) to get the data.
 
-You can get a valid JWT token by sending username and password via Basic auth at the endpoint https://SERVER:8001/v1/auth.
+An user can get a valid JWT token by sending username and password via Basic auth at the endpoint https://SERVER:8001/v1/auth.
 
 ### First request
 
@@ -62,7 +71,7 @@ Actively developed | ✅ YES
 Maintainer organisation |  Linuxmuster.net / Netzint GmbH  
 Primary maintainer | [@kiarn](https://github.com/kiarn)
     
-* The linuxmuster community consits of people who are nice and happy to help. They are not directly involved in the development though, and might not be able to help in any case.
+* The linuxmuster community consists of people who are nice and happy to help. They are not directly involved in the development though, and might not be able to help in any case.
 
 ## Development
 
