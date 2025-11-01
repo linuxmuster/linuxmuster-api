@@ -171,6 +171,7 @@ def quit_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChec
     :type who: AuthenticatedUser
     """
 
+
     get_schoolclass_or_404(schoolclass, who.school)
 
     cmd = ['sophomorix-class',  '--removeadmins', who.user, '-c', schoolclass.lower(), '-jj']
@@ -211,3 +212,62 @@ def schoolclass_students_csv(schoolclass: str, who: AuthenticatedUser = Depends(
     filename = file_path.split('/')[-1]
 
     return FileResponse(path=file_path, filename=filename, media_type='csv')
+
+@router.get("/{schoolclass}/parents", name="Get the list of parents from a specific schoolclass")
+def schoolclass_parents(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+    """
+    ## List the parents from a specific schoolclass
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param schoolclass: cn of the schoolclass
+    :type schooclass: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of all parents in the schoolclass
+    :rtype: list
+    """
+
+
+    get_schoolclass_or_404(schoolclass, who.school)
+
+    members = lr.getval(f'/units/{schoolclass}-parents', 'member')
+    response = []
+
+    for member_dn in members:
+        response.append(lr.get(f'/dn/{member_dn}'))
+
+    return response
+
+@router.get("/{schoolclass}/teachers", name="Get the list of teachers from a specific schoolclass")
+def schoolclass_teachers(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+    """
+    ## List the teachers from a specific schoolclass
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    \f
+    :param schoolclass: cn of the schoolclass
+    :type schooclass: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of all teachers in the schoolclass
+    :rtype: list
+    """
+
+
+    get_schoolclass_or_404(schoolclass, who.school)
+
+    members = lr.getval(f'/units/{schoolclass}-teachers', 'member')
+    response = []
+
+    for member_dn in members:
+        response.append(lr.get(f'/dn/{member_dn}'))
+
+    return response
