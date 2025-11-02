@@ -1,3 +1,13 @@
+linuxmuster-api7 (7.3.16) lmn73; urgency=medium
+
+  * No prefix for delete requests in projects
+  * Centralize vars 
+  * Handle staff and parents permissions
+  * Add endpoints for teachers and parents from a schoolclass
+  * More checks about multischool
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 02 Nov 2025 21:52:19 +0100
+
 linuxmuster-api7 (7.3.15) lmn73; urgency=medium
 
   * Fix version number 
