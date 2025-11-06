@@ -34,11 +34,11 @@ def check_authentication_header(request: Request) -> AuthenticatedUser:
         )
 
     if apikey:
-        return check_user_header(apikey)
+        return check_user_header(apikey.strip('"').strip("'"))
 
     if hostkey:
         client_ip = request.client.host
-        return check_host_header(hostkey, client_ip)
+        return check_host_header(hostkey.strip('"').strip("'"), client_ip)
 
     raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
