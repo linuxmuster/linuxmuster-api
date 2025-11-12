@@ -5,6 +5,7 @@ from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from utils.checks import get_schoolclass_or_404
 from utils.sophomorix import lmn_getSophomorixValue
+from linuxmusterTools.print import print_schoolclass_list
 
 
 router = APIRouter(
@@ -212,6 +213,40 @@ def schoolclass_students_csv(schoolclass: str, who: AuthenticatedUser = Depends(
     filename = file_path.split('/')[-1]
 
     return FileResponse(path=file_path, filename=filename, media_type='csv')
+
+@router.get("/{schoolclass}/pdf_students_list", name="Generate a students list as PDF from a specific schoolclass")
+def schoolclass_students_pdf(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+    """
+    ## Generate a students list as PDF from a specific schoolclass
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    \f
+    :param schoolclass: cn of the schoolclass
+    :type schooclass: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: CSV list of all students in the schoolclass
+    :rtype: csv
+    """
+
+
+    schoolclass = lr.get(f'/schoolclasses/{schoolclass}', school=who.school, dict=False)
+
+    if not schoolclass:
+        raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
+
+    try:
+        file_path = print_schoolclass_list(schoolclass.cn, who.user, school=who.school)
+        filename = file_path.split('/')[-1]
+    except Exception as e:
+        # Temporary 500, must be better filtered
+        raise HTTPException(status_code=500, detail=f"Failed to generate list: {str(e)}")
+
+    return FileResponse(path=file_path, filename=filename, media_type='pdf')
 
 @router.get("/{schoolclass}/parents", name="Get the list of parents from a specific schoolclass")
 def schoolclass_parents(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
