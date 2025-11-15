@@ -1,3 +1,10 @@
+linuxmuster-api7 (7.3.17) lmn73; urgency=medium
+
+  * Remove quote in keys for simplier auth in SwaggerUI
+  * New endpoint /schoolclass/9a/pdf_students_list for students' lists
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sat, 15 Nov 2025 13:13:52 +0100
+
 linuxmuster-api7 (7.3.16) lmn73; urgency=medium
 
   * No prefix for delete requests in projects
