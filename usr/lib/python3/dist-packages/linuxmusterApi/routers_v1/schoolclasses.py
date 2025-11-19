@@ -58,11 +58,13 @@ def get_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleCheck
     """
 
 
-    # TODO: Check group membership
     schoolclass = get_schoolclass_or_404(schoolclass, who.school)
-    schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
 
-    return schoolclass
+    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
+        schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
+        return schoolclass
+
+    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
 
 @router.get("/{schoolclass}/first_passwords", name="Get all first passwords of the members of a specific schoolclass")
 def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -94,7 +96,10 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
     # TODO: Check group membership
     get_schoolclass_or_404(schoolclass, who.school)
 
-    return lr.get(f'/schoolclasses/{schoolclass}', dict=False).get_first_passwords()
+    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
+        return lr.get(f'/schoolclasses/{schoolclass}', dict=False).get_first_passwords()
+
+    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
 
 @router.get("/{schoolclass}/students", name="Details of students of a specific schoolclass")
 def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -119,7 +124,10 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
     # TODO: Check group membership
     get_schoolclass_or_404(schoolclass, who.school)
 
-    return lr.get(f'/schoolclasses/{schoolclass}/students')
+    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
+        return lr.get(f'/schoolclasses/{schoolclass}/students')
+
+    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
 
 @router.post("/{schoolclass}/join", name="Join an existing schoolclass")
 def join_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
@@ -209,10 +217,13 @@ def schoolclass_students_csv(schoolclass: str, who: AuthenticatedUser = Depends(
     if not schoolclass:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
-    file_path = schoolclass.students_csv()
-    filename = file_path.split('/')[-1]
+    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
+        file_path = schoolclass.students_csv()
+        filename = file_path.split('/')[-1]
 
-    return FileResponse(path=file_path, filename=filename, media_type='csv')
+        return FileResponse(path=file_path, filename=filename, media_type='csv')
+
+    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
 
 @router.get("/{schoolclass}/pdf_students_list", name="Generate a students list as PDF from a specific schoolclass")
 def schoolclass_students_pdf(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -239,17 +250,20 @@ def schoolclass_students_pdf(schoolclass: str, who: AuthenticatedUser = Depends(
     if not schoolclass:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
-    try:
-        file_path = print_schoolclass_list(schoolclass.cn, who.user, school=who.school)
-        filename = file_path.split('/')[-1]
-    except Exception as e:
-        # Temporary 500, must be better filtered
-        raise HTTPException(status_code=500, detail=f"Failed to generate list: {str(e)}")
+    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
+        try:
+            file_path = print_schoolclass_list(schoolclass.cn, who.user, school=who.school)
+            filename = file_path.split('/')[-1]
+        except Exception as e:
+            # Temporary 500, must be better filtered
+            raise HTTPException(status_code=500, detail=f"Failed to generate list: {str(e)}")
 
-    return FileResponse(path=file_path, filename=filename, media_type='pdf')
+        return FileResponse(path=file_path, filename=filename, media_type='pdf')
+
+    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
 
 @router.get("/{schoolclass}/parents", name="Get the list of parents from a specific schoolclass")
-def schoolclass_parents(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def schoolclass_parents(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## List the parents from a specific schoolclass
 
@@ -269,13 +283,16 @@ def schoolclass_parents(schoolclass: str, who: AuthenticatedUser = Depends(RoleC
 
     get_schoolclass_or_404(schoolclass, who.school)
 
-    members = lr.getval(f'/units/{schoolclass}-parents', 'member')
-    response = []
+    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
+        members = lr.getval(f'/units/{schoolclass}-parents', 'member')
+        response = []
 
-    for member_dn in members:
-        response.append(lr.get(f'/dn/{member_dn}'))
+        for member_dn in members:
+            response.append(lr.get(f'/dn/{member_dn}'))
 
-    return response
+        return response
+
+    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
 
 @router.get("/{schoolclass}/teachers", name="Get the list of teachers from a specific schoolclass")
 def schoolclass_teachers(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
