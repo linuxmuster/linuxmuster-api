@@ -46,7 +46,7 @@ def get_project_or_404(project, school):
 
     # Ensure prefix is given
     prefix = "p_"
-    if school != "default-school":
+    if school not in ["default-school", "global"]:
         prefix = f"p_{school}-"
 
     if not project.startswith(prefix):

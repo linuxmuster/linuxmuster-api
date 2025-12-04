@@ -129,7 +129,7 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
 
     # Ensure prefix is given
     prefix = "p_"
-    if who.school != "default-school":
+    if who.school not in ["default-school","global"]:
         prefix = f"p_{who.school}-"
 
     if not project.startswith(prefix):
@@ -203,7 +203,7 @@ def create_project(project: str, project_details: Project, who: AuthenticatedUse
 
     prefix = "p_"
     if project_details.school:
-        if project_details.school != "default-school":
+        if project_details.school not in ["default-school","global"]:
             options.extend(['--school', project_details.school])
             prefix = f"p_{project_details.school}-"
 
@@ -319,7 +319,7 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
 
     prefix = "p_"
     if project_details.school:
-        if project_details.school != "default-school":
+        if project_details.school not in ["default-school","global"]:
             prefix = f"p_{project_details.school}-"
 
     if not project.startswith(prefix):
