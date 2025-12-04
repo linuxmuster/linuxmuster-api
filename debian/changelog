@@ -1,3 +1,10 @@
+linuxmuster-api7 (7.3.18) lmn73; urgency=medium
+
+  * Check teacher membership for schoolclass access.
+  * Remove prefix in projects for global-admins requests. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Thu, 04 Dec 2025 12:43:54 +0100
+
 linuxmuster-api7 (7.3.17) lmn73; urgency=medium
 
   * Remove quote in keys for simplier auth in SwaggerUI
