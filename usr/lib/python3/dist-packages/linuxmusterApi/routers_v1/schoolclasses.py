@@ -93,13 +93,12 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
     """
 
 
-    # TODO: Check group membership
-    get_schoolclass_or_404(schoolclass, who.school)
+    schoolclass_data = get_schoolclass_or_404(schoolclass, who.school)
 
-    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
+    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass_data['sophomorixAdmins']:
         return lr.get(f'/schoolclasses/{schoolclass}', dict=False).get_first_passwords()
 
-    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
+    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass_data['cn']}")
 
 @router.get("/{schoolclass}/students", name="Details of students of a specific schoolclass")
 def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -121,13 +120,12 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
     """
 
 
-    # TODO: Check group membership
-    get_schoolclass_or_404(schoolclass, who.school)
+    schoolclass_data = get_schoolclass_or_404(schoolclass, who.school)
 
-    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
+    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass_data['sophomorixAdmins']:
         return lr.get(f'/schoolclasses/{schoolclass}/students')
 
-    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
+    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass_data['cn']}")
 
 @router.post("/{schoolclass}/join", name="Join an existing schoolclass")
 def join_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
@@ -217,13 +215,13 @@ def schoolclass_students_csv(schoolclass: str, who: AuthenticatedUser = Depends(
     if not schoolclass:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
-    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
+    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass.sophomorixAdmins:
         file_path = schoolclass.students_csv()
         filename = file_path.split('/')[-1]
 
         return FileResponse(path=file_path, filename=filename, media_type='csv')
 
-    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
+    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass.cn}")
 
 @router.get("/{schoolclass}/pdf_students_list", name="Generate a students list as PDF from a specific schoolclass")
 def schoolclass_students_pdf(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -250,7 +248,7 @@ def schoolclass_students_pdf(schoolclass: str, who: AuthenticatedUser = Depends(
     if not schoolclass:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
-    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
+    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass.sophomorixAdmins:
         try:
             file_path = print_schoolclass_list(schoolclass.cn, who.user, school=who.school)
             filename = file_path.split('/')[-1]
@@ -260,7 +258,7 @@ def schoolclass_students_pdf(schoolclass: str, who: AuthenticatedUser = Depends(
 
         return FileResponse(path=file_path, filename=filename, media_type='pdf')
 
-    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
+    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass.cn}")
 
 @router.get("/{schoolclass}/parents", name="Get the list of parents from a specific schoolclass")
 def schoolclass_parents(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -281,18 +279,19 @@ def schoolclass_parents(schoolclass: str, who: AuthenticatedUser = Depends(RoleC
     """
 
 
-    get_schoolclass_or_404(schoolclass, who.school)
+    schoolclass_data = get_schoolclass_or_404(schoolclass, who.school)
 
-    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
+    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass_data['sophomorixAdmins']:
         members = lr.getval(f'/units/{schoolclass}-parents', 'member')
         response = []
 
-        for member_dn in members:
-            response.append(lr.get(f'/dn/{member_dn}'))
+        if members is not None:
+            for member_dn in members:
+                response.append(lr.get(f'/dn/{member_dn}'))
 
         return response
 
-    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
+    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass_data['cn']}")
 
 @router.get("/{schoolclass}/teachers", name="Get the list of teachers from a specific schoolclass")
 def schoolclass_teachers(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -319,7 +318,8 @@ def schoolclass_teachers(schoolclass: str, who: AuthenticatedUser = Depends(Role
     members = lr.getval(f'/units/{schoolclass}-teachers', 'member')
     response = []
 
-    for member_dn in members:
-        response.append(lr.get(f'/dn/{member_dn}'))
+    if members is not None:
+        for member_dn in members:
+            response.append(lr.get(f'/dn/{member_dn}'))
 
     return response
