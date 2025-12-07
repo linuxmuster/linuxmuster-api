@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.19) lmn73; urgency=medium
+
+  * Wrong data types. Fix #11. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 07 Dec 2025 11:49:53 +0100
+
 linuxmuster-api7 (7.3.18) lmn73; urgency=medium
 
   * Check teacher membership for schoolclass access.
