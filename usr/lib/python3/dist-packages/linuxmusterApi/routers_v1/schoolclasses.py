@@ -60,11 +60,8 @@ def get_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleCheck
 
     schoolclass = get_schoolclass_or_404(schoolclass, who.school)
 
-    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass['sophomorixAdmins']:
-        schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
-        return schoolclass
-
-    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass['cn']}")
+    schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
+    return schoolclass
 
 @router.get("/{schoolclass}/first_passwords", name="Get all first passwords of the members of a specific schoolclass")
 def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -120,12 +117,9 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
     """
 
 
-    schoolclass_data = get_schoolclass_or_404(schoolclass, who.school)
+    get_schoolclass_or_404(schoolclass, who.school)
 
-    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass_data['sophomorixAdmins']:
-        return lr.get(f'/schoolclasses/{schoolclass}/students')
-
-    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass_data['cn']}")
+    return lr.get(f'/schoolclasses/{schoolclass}/students')
 
 @router.post("/{schoolclass}/join", name="Join an existing schoolclass")
 def join_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
