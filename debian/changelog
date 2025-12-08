@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.20) lmn73; urgency=medium
+
+  * Not so restrictive for teachers. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Mon, 08 Dec 2025 20:47:31 +0100
+
 linuxmuster-api7 (7.3.19) lmn73; urgency=medium
 
   * Wrong data types. Fix #11. 
