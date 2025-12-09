@@ -209,13 +209,10 @@ def schoolclass_students_csv(schoolclass: str, who: AuthenticatedUser = Depends(
     if not schoolclass:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
-    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass.sophomorixAdmins:
-        file_path = schoolclass.students_csv()
-        filename = file_path.split('/')[-1]
+    file_path = schoolclass.students_csv()
+    filename = file_path.split('/')[-1]
 
-        return FileResponse(path=file_path, filename=filename, media_type='csv')
-
-    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass.cn}")
+    return FileResponse(path=file_path, filename=filename, media_type='csv')
 
 @router.get("/{schoolclass}/pdf_students_list", name="Generate a students list as PDF from a specific schoolclass")
 def schoolclass_students_pdf(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -242,17 +239,14 @@ def schoolclass_students_pdf(schoolclass: str, who: AuthenticatedUser = Depends(
     if not schoolclass:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
-    if who.role in ["schooladministrator", "globaladministrator"] or who.user in schoolclass.sophomorixAdmins:
-        try:
-            file_path = print_schoolclass_list(schoolclass.cn, who.user, school=who.school)
-            filename = file_path.split('/')[-1]
-        except Exception as e:
-            # Temporary 500, must be better filtered
-            raise HTTPException(status_code=500, detail=f"Failed to generate list: {str(e)}")
+    try:
+        file_path = print_schoolclass_list(schoolclass.cn, who.user, school=who.school)
+        filename = file_path.split('/')[-1]
+    except Exception as e:
+        # Temporary 500, must be better filtered
+        raise HTTPException(status_code=500, detail=f"Failed to generate list: {str(e)}")
 
-        return FileResponse(path=file_path, filename=filename, media_type='pdf')
-
-    return HTTPException(status_code=401, detail=f"Teacher {who.user} is not member of schoolclass {schoolclass.cn}")
+    return FileResponse(path=file_path, filename=filename, media_type='pdf')
 
 @router.get("/{schoolclass}/parents", name="Get the list of parents from a specific schoolclass")
 def schoolclass_parents(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
