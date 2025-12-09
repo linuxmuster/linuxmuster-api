@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.21) lmn73; urgency=medium
+
+  * Allow access to pdf and csv too. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Tue, 09 Dec 2025 16:15:52 +0100
+
 linuxmuster-api7 (7.3.20) lmn73; urgency=medium
 
   * Not so restrictive for teachers. 
