@@ -47,6 +47,7 @@ if config.get("cors", {}):
 from routers_v1 import (
     auth,
     exam,
+    extraclasses,
     groups,
     query,
     managementgroups,
@@ -84,21 +85,22 @@ def home():
     return HTML_HOME
 
 app.include_router(auth.router, prefix="/v1")
-app.include_router(schools.router, prefix="/v1")
-app.include_router(roles.router, prefix="/v1")
-app.include_router(users.router, prefix="/v1")
-app.include_router(teachers.router, prefix="/v1")
-app.include_router(query.router, prefix="/v1")
-app.include_router(schoolclasses.router, prefix="/v1")
-app.include_router(managementgroups.router, prefix="/v1")
-app.include_router(projects.router, prefix="/v1")
-app.include_router(groups.router, prefix="/v1")
-app.include_router(sessions.router, prefix="/v1")
 app.include_router(exam.router, prefix="/v1")
-app.include_router(samba.router, prefix="/v1")
+app.include_router(extraclasses.router, prefix="/v1")
+app.include_router(groups.router, prefix="/v1")
+app.include_router(managementgroups.router, prefix="/v1")
 app.include_router(print_passwords.router, prefix="/v1")
 app.include_router(printers.router, prefix="/v1")
+app.include_router(projects.router, prefix="/v1")
+app.include_router(query.router, prefix="/v1")
+app.include_router(roles.router, prefix="/v1")
+app.include_router(samba.router, prefix="/v1")
+app.include_router(schoolclasses.router, prefix="/v1")
 app.include_router(server.router, prefix="/v1")
+app.include_router(sessions.router, prefix="/v1")
+app.include_router(schools.router, prefix="/v1")
+app.include_router(teachers.router, prefix="/v1")
+app.include_router(users.router, prefix="/v1")
 
 def custom_openapi():
     if app.openapi_schema:
