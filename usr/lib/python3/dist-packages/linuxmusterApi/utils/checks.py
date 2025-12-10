@@ -16,10 +16,10 @@ def get_user_or_404(user, school):
 
 def get_schoolclass_or_404(schoolclass, school):
     try:
-        schoolclass = lr.get(f'/schoolclasses/{schoolclass}', school=school)
-        if not schoolclass:
+        schoolclass_data = lr.get(f'/schoolclasses/{schoolclass}', school=school)
+        if not schoolclass_data:
             raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
-        return schoolclass
+        return schoolclass_data
     except Exception:
         raise HTTPException(status_code=404,
                             detail=f"Schoolclass {schoolclass} not found")
