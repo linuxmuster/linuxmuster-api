@@ -37,11 +37,13 @@ def get_all_schoolclasses(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     return lr.get('/schoolclasses', school=who.school)
 
 @router.get("/{schoolclass}", name="Get details of a specific schoolclass")
-def get_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+def get_schoolclass(schoolclass: str, all_members: bool = False, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## List all available informations of a specific schooclass.
 
     Output informations are e.g. cn, dn, members, etc...
+    The optional query parameter `all_members` is a boolean. If set to true, this endpoint will get all students
+    informations.
 
     ### Access
     - global-administrators
@@ -60,7 +62,11 @@ def get_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleCheck
 
     schoolclass = get_schoolclass_or_404(schoolclass, who.school)
 
-    schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
+    schoolclass['members'] = []
+
+    if all_members:
+        schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
+
     return schoolclass
 
 @router.get("/{schoolclass}/first_passwords", name="Get all first passwords of the members of a specific schoolclass")
