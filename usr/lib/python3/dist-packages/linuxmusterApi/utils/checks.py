@@ -13,7 +13,6 @@ def get_user_or_404(user, school):
         raise HTTPException(status_code=404,
                             detail=f"User {user} not found in ldap tree.")
 
-
 def get_schoolclass_or_404(schoolclass, school):
     try:
         schoolclass_data = lr.get(f'/schoolclasses/{schoolclass}', school=school)
@@ -24,6 +23,15 @@ def get_schoolclass_or_404(schoolclass, school):
         raise HTTPException(status_code=404,
                             detail=f"Schoolclass {schoolclass} not found")
 
+def get_extraclass_or_404(schoolclass, school):
+    try:
+        schoolclass_data = lr.get(f'/extraclasses/{schoolclass}', school=school)
+        if not schoolclass_data:
+            raise HTTPException(status_code=404, detail=f"Extraclass {schoolclass} not found")
+        return schoolclass_data
+    except Exception:
+        raise HTTPException(status_code=404,
+                            detail=f"Extraclass {schoolclass} not found")
 
 def get_teacher_or_404(teacher, school):
     try:
@@ -33,7 +41,6 @@ def get_teacher_or_404(teacher, school):
         return user
     except Exception:
         raise HTTPException(status_code=404, detail=f"Teacher {teacher} not found")
-
 
 def get_project_or_404(project, school):
     """
@@ -60,7 +67,6 @@ def get_project_or_404(project, school):
     except Exception:
         raise HTTPException(status_code=404,
                             detail=f"Project {project} not found.")
-
 
 def get_printer_or_404(printer, school):
     try:
