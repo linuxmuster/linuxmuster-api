@@ -33,7 +33,15 @@ def get_all_printers(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
 
 
-    return lr.get('/printers', school=who.school)
+    if who.role in ["schooladministrator", "globaladministrator"]:
+        return lr.get('/printers', school=who.school)
+    else:
+        printers = []
+        for printer in lr.get('/printers', school=who.school):
+            if not printer['sophomorixHidden'] or who.dn in printer['member']:
+                printers.append(printer)
+
+        return printers
 
 @router.get("/{printer}", name="Get details of a specific printer")
 def get_printer(printer: str, all_members: bool = False, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -75,11 +83,16 @@ def get_printer(printer: str, all_members: bool = False, who: AuthenticatedUser 
         return printer_details
 
     elif who.role == "teacher":
-        # TODO: read sophomorixMemberGroups too
         if who.user in printer_details['sophomorixMembers']:
             return printer_details
         elif not printer_details['sophomorixHidden']:
             return printer_details
+        else:
+            # Maybe the user is member of a group contained in the member attribute of the printer
+            memberof = lr.getval(f'/users/{who.user}', 'memberOf')
+            for dn in printer_details['member']:
+                if dn in memberof:
+                    return printer_details
         raise HTTPException(status_code=403, detail=f"Forbidden")
 
 @router.patch("/{printer}", status_code=204, name="Patch printer")
