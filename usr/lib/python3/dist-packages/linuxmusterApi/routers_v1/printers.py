@@ -207,7 +207,7 @@ def join_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
                 member = True
 
     if member:
-        return
+        return f"Already member of the group of {printer}"
 
     if not printer_data.sophomorixJoinable:
         raise HTTPException(status_code=401, detail=f"Printer {printer} is not joinable.")
@@ -255,7 +255,7 @@ def quit_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
                 member = True
 
     if not member:
-        return
+        return f"Already not a member of the group of {printer}"
 
     if not printer_data.sophomorixJoinable:
         raise HTTPException(status_code=401, detail=f"Printer {printer} is not joinable and cannot be quitted.")
