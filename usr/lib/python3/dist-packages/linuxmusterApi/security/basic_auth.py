@@ -11,12 +11,10 @@ from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 BASIC_AUTH = HTTPBasic()
 
-def generate_jwt(user, role, school):
+def generate_jwt(user, role, dn, school):
     """
     Generate a valid jwt for a specific user.
 
-    :param user: concerned user
-    :type user: basestring
     :return: jwt
     :rtype: basestring
     """
@@ -30,6 +28,7 @@ def generate_jwt(user, role, school):
     payload  = {
         'user': user,
         'role': role,
+        'dn': dn,
         'school': school
     }
 
@@ -56,7 +55,7 @@ class BasicAuthChecker:
             )
 
         if user.test_password(password=credentials.password):
-            return generate_jwt(user.cn, user.sophomorixRole, user.sophomorixSchoolname)
+            return generate_jwt(user.cn, user.sophomorixRole, user.dn, user.sophomorixSchoolname)
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

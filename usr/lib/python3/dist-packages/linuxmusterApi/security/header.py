@@ -10,6 +10,7 @@ from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
 class AuthenticatedUser(BaseModel):
+    dn: str
     user: str
     role: str | None = None
     school: str | None = None
@@ -65,7 +66,7 @@ def check_user_header(apikey) -> AuthenticatedUser:
     secret = ''
 
     # role may be eventually None
-    user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole','sophomorixSchoolname'])
+    user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole', 'sophomorixSchoolname', 'distinguishedName'])
 
     if user_details.get('sophomorixRole', None) is None:
         raise HTTPException(
@@ -74,6 +75,7 @@ def check_user_header(apikey) -> AuthenticatedUser:
         )
 
     return AuthenticatedUser(
+        dn=user_details['distinguishedName'],
         user=user,
         role=user_details['sophomorixRole'],
         school=user_details.get('sophomorixSchoolname', "")
@@ -123,7 +125,7 @@ def check_host_header(hostkey, client_ip) -> AuthenticatedUser:
     keys = ''
 
     # role may be eventually None
-    user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole','sophomorixSchoolname'])
+    user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole', 'sophomorixSchoolname', 'distinguishedName'])
 
     if user_details.get('sophomorixRole', None) is None:
         raise HTTPException(
@@ -132,6 +134,7 @@ def check_host_header(hostkey, client_ip) -> AuthenticatedUser:
         )
 
     return AuthenticatedUser(
+        dn=user_details['distinguishedName'],
         user=user,
         role=user_details['sophomorixRole'],
         school=user_details.get('sophomorixSchoolname', "")
