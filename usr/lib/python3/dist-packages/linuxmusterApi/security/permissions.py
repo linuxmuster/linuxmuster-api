@@ -11,6 +11,7 @@ class BasicChecker:
     This class can not be used directly, its only purpose is code factoring.
     """
 
+
     ROLES_MAPPING = {
         'G': 'globaladministrator',
         'S': 'schooladministrator',
@@ -89,6 +90,7 @@ class RoleChecker(BasicChecker):
     access its own informations.
     """
 
+
     def __init__(self, roles) -> None:
         BasicChecker.__init__(self, roles)
 
@@ -110,6 +112,7 @@ class UserChecker(BasicChecker):
     Check role and user for permission access.
     globaladmin can access all user informations, and an user is able to access its own informations.
     """
+
 
     def __init__(self, roles) -> None:
         BasicChecker.__init__(self, roles)
@@ -136,6 +139,7 @@ class UserListChecker(BasicChecker):
     globaladmin can access all user informations, and an user is able to access its own informations, and to access
     informations of users from a bellow roles.
     """
+
 
     def __init__(self, roles) -> None:
         BasicChecker.__init__(self, roles)
