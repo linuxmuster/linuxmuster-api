@@ -210,7 +210,7 @@ def join_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
         return f"Already member of the group of {printer}"
 
     if not printer_data.sophomorixJoinable:
-        raise HTTPException(status_code=401, detail=f"Printer {printer} is not joinable.")
+        raise HTTPException(status_code=403, detail=f"Printer {printer} is not joinable.")
 
     cmd = ['sophomorix-group',  '--addmembers', who.user, '--group', printer.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
@@ -258,7 +258,7 @@ def quit_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
         return f"Already not a member of the group of {printer}"
 
     if not printer_data.sophomorixJoinable:
-        raise HTTPException(status_code=401, detail=f"Printer {printer} is not joinable and cannot be quitted.")
+        raise HTTPException(status_code=403, detail=f"Printer {printer} is not joinable and cannot be quitted.")
 
     cmd = ['sophomorix-group',  '--removemembers', who.user, '--group', printer.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')

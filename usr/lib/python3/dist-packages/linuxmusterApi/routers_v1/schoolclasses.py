@@ -155,7 +155,7 @@ def join_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChec
 
     if who.role == "teacher":
         if not schoolclass_data['sophomorixJoinable']:
-            raise HTTPException(status_code=401, detail=f"Schoolclass {schoolclass} is not joinable.")
+            raise HTTPException(status_code=403, detail=f"Schoolclass {schoolclass} is not joinable.")
 
     cmd = ['sophomorix-class',  '--addadmins', who.user, '-c', schoolclass.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
@@ -193,7 +193,7 @@ def quit_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChec
         return f"Already not a member of {schoolclass}"
 
     if not schoolclass_data['sophomorixJoinable']:
-        raise HTTPException(status_code=401, detail=f"Schoolclass {schoolclass} is not joinable, and cannot be quitted.")
+        raise HTTPException(status_code=403, detail=f"Schoolclass {schoolclass} is not joinable, and cannot be quitted.")
 
     cmd = ['sophomorix-class',  '--removeadmins', who.user, '-c', schoolclass.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
