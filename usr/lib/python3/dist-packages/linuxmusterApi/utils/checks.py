@@ -10,8 +10,7 @@ def get_user_or_404(user, school):
             raise HTTPException(status_code=404, detail=f"User {user} not found in ldap tree.")
         return user_details
     except Exception:
-        raise HTTPException(status_code=404,
-                            detail=f"User {user} not found in ldap tree.")
+        raise HTTPException(status_code=404, detail=f"User {user} not found in ldap tree.")
 
 def get_schoolclass_or_404(schoolclass, school):
     try:
@@ -20,8 +19,7 @@ def get_schoolclass_or_404(schoolclass, school):
             raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
         return schoolclass_data
     except Exception:
-        raise HTTPException(status_code=404,
-                            detail=f"Schoolclass {schoolclass} not found")
+        raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
 def get_extraclass_or_404(schoolclass, school):
     try:
@@ -30,8 +28,7 @@ def get_extraclass_or_404(schoolclass, school):
             raise HTTPException(status_code=404, detail=f"Extraclass {schoolclass} not found")
         return schoolclass_data
     except Exception:
-        raise HTTPException(status_code=404,
-                            detail=f"Extraclass {schoolclass} not found")
+        raise HTTPException(status_code=404, detail=f"Extraclass {schoolclass} not found")
 
 def get_teacher_or_404(teacher, school):
     try:
@@ -65,8 +62,7 @@ def get_project_or_404(project, school):
             raise HTTPException(status_code=404, detail=f"Project {project} not found.")
         return project_details
     except Exception:
-        raise HTTPException(status_code=404,
-                            detail=f"Project {project} not found.")
+        raise HTTPException(status_code=404, detail=f"Project {project} not found.")
 
 def get_printer_or_404(printer, school):
     try:
@@ -75,6 +71,5 @@ def get_printer_or_404(printer, school):
             raise HTTPException(status_code=404, detail=f"Printer {printer} not found")
         return printer_details
     except Exception:
-        raise HTTPException(status_code=404,
-                            detail=f"Printer {printer} not found")
+        raise HTTPException(status_code=404, detail=f"Printer {printer} not found")
 

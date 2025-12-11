@@ -193,7 +193,24 @@ def join_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
     :type who: AuthenticatedUser
     """
 
-    get_printer_or_404(printer, who.school)
+
+    printer_data = get_printer_or_404(printer, who.school)
+
+    member = False
+    if who.dn in printer_data.member:
+        member = True
+    else:
+        # Maybe the user is member of a group contained in the member attribute of the printer
+        memberof = lr.getval(f'/users/{who.user}', 'memberOf')
+        for dn in printer_data.member:
+            if dn in memberof:
+                member = True
+
+    if member:
+        return
+
+    if not printer_data.sophomorixJoinable:
+        raise HTTPException(status_code=401, detail=f"Printer {printer} is not joinable.")
 
     cmd = ['sophomorix-group',  '--addmembers', who.user, '--group', printer.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
@@ -224,7 +241,24 @@ def quit_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
     :type who: AuthenticatedUser
     """
 
-    get_printer_or_404(printer, who.school)
+
+    printer_data = get_printer_or_404(printer, who.school)
+
+    member = False
+    if who.dn in printer_data.member:
+        member = True
+    else:
+        # Maybe the user is member of a group contained in the member attribute of the printer
+        memberof = lr.getval(f'/users/{who.user}', 'memberOf')
+        for dn in printer_data.member:
+            if dn in memberof:
+                member = True
+
+    if not member:
+        return
+
+    if not printer_data.sophomorixJoinable:
+        raise HTTPException(status_code=401, detail=f"Printer {printer} is not joinable and cannot be quitted.")
 
     cmd = ['sophomorix-group',  '--removemembers', who.user, '--group', printer.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
