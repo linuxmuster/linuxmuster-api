@@ -420,9 +420,9 @@ def join_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST
     project_details = get_project_or_404(project, who.school)
 
     if who.role == "teacher":
-        # Teacher can only join a project if the project is joinable and visible
+        # Teacher can only join a project if the project is joinable
         if project_details.sophomorixJoinable == False:
-            raise HTTPException(status_code=403, detail=f"Forbidden")
+            raise HTTPException(status_code=403, detail=f"Project {project} is not joinable.")
 
     # project can be given with or without prefix here
     cmd = ['sophomorix-project',  '--addmembers', who.user, '-p', project.lower(), '-jj']
@@ -456,7 +456,12 @@ def quit_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST
     """
 
 
-    get_project_or_404(project, who.school)
+    project_details = get_project_or_404(project, who.school)
+
+    if who.role == "teacher":
+        # Teacher can only join a project if the project is joinable
+        if project_details.sophomorixJoinable == False:
+            raise HTTPException(status_code=403, detail=f"Project {project} is not joinable, and cannot be quitted.")
 
     # project can be given with or without prefix here
     cmd = ['sophomorix-project',  '--removemembers', who.user, '--removeadmins', who.user, '-p', project.lower(), '-jj']

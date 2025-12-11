@@ -153,8 +153,9 @@ def join_schoolclass(schoolclass: str, who: AuthenticatedUser = Depends(RoleChec
     if who.dn in schoolclass_data['member']:
         return f"Already member of {schoolclass}"
 
-    if not schoolclass_data['sophomorixJoinable']:
-        raise HTTPException(status_code=401, detail=f"Schoolclass {schoolclass} is not joinable.")
+    if who.role == "teacher":
+        if not schoolclass_data['sophomorixJoinable']:
+            raise HTTPException(status_code=401, detail=f"Schoolclass {schoolclass} is not joinable.")
 
     cmd = ['sophomorix-class',  '--addadmins', who.user, '-c', schoolclass.lower(), '-jj']
     result =  lmn_getSophomorixValue(cmd, '')
