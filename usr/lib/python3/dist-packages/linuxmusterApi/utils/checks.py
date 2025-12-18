@@ -6,11 +6,13 @@ from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 def get_user_or_404(user, school):
     try:
         user_details = lr.get(f'/users/{user}', school=school, dict=False)
-        if not user_details.cn:
-            raise HTTPException(status_code=404, detail=f"User {user} not found in ldap tree.")
-        return user_details
-    except Exception:
+    except Exception as err:
+        raise HTTPException(status_code=404, detail=f"User {user} not found in ldap tree: {str(err)}")
+
+    if not user_details.cn:
         raise HTTPException(status_code=404, detail=f"User {user} not found in ldap tree.")
+
+    return user_details
 
 def get_schoolclass_or_404(schoolclass, who, dict=True):
     """
@@ -51,20 +53,24 @@ def get_schoolclass_or_404(schoolclass, who, dict=True):
 def get_extraclass_or_404(schoolclass, school):
     try:
         schoolclass_data = lr.get(f'/extraclasses/{schoolclass}', school=school)
-        if not schoolclass_data:
-            raise HTTPException(status_code=404, detail=f"Extraclass {schoolclass} not found")
-        return schoolclass_data
-    except Exception:
+    except Exception as err:
+        raise HTTPException(status_code=404, detail=f"Extraclass {schoolclass} not found: {str(err)}")
+
+    if not schoolclass_data:
         raise HTTPException(status_code=404, detail=f"Extraclass {schoolclass} not found")
+
+    return schoolclass_data
 
 def get_teacher_or_404(teacher, school):
     try:
         user = lr.get(f'/users/{teacher}', school=school)
-        if user.get('sophomorixAdminClass', '') != "teachers":
-            raise HTTPException(status_code=404, detail=f"Teacher {teacher} not found")
-        return user
-    except Exception:
+    except Exception as err:
+        raise HTTPException(status_code=404, detail=f"Teacher {teacher} not found: {str(err)}")
+
+    if user.get('sophomorixAdminClass', '') != "teachers":
         raise HTTPException(status_code=404, detail=f"Teacher {teacher} not found")
+
+    return user
 
 def get_project_or_404(project, who, dict=True):
     """
@@ -116,9 +122,11 @@ def get_project_or_404(project, who, dict=True):
 def get_printer_or_404(printer, school):
     try:
         printer_details = lr.get(f'/printers/{printer}', attributes=['cn'], school=school, dict=False)
-        if not printer_details.cn:
-            raise HTTPException(status_code=404, detail=f"Printer {printer} not found")
-        return printer_details
-    except Exception:
+    except Exception as err:
+        raise HTTPException(status_code=404, detail=f"Printer {printer} not found: {str(err)}")
+
+    if not printer_details.cn:
         raise HTTPException(status_code=404, detail=f"Printer {printer} not found")
+
+    return printer_details
 
