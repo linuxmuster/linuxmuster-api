@@ -96,7 +96,7 @@ def print_passwords_schoolclasses(config: PrintPasswordsSchoolclassesParameter, 
         raise HTTPException(status_code=400, detail=f"{config.format} is a wrong format")
 
     for schoolclass in config.schoolclasses:
-        get_schoolclass_or_404(schoolclass, who.school)
+        get_schoolclass_or_404(schoolclass, who)
 
     sophomorixprint_cmd(who, config, schoolclasses=schoolclass)
 
