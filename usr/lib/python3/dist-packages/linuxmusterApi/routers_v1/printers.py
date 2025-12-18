@@ -16,9 +16,9 @@ router = APIRouter(
 @router.get("/", name="List all printers")
 def get_all_printers(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
-    ## List all printers with all available informations.
+    ## List all printers with all available information.
 
-    Output informations are e.g. cn, dn, members, etc...
+    Output information are e.g. cn, dn, members, etc...
 
     ### Access
     - global-administrators
@@ -46,10 +46,10 @@ def get_all_printers(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
 @router.get("/{printer}", name="Get details of a specific printer")
 def get_printer(printer: str, all_members: bool = False, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
-    ## List all available informations of a specific printer.
+    ## List all available information of a specific printer.
 
-    Output informations are e.g. cn, dn, members, etc...
-    The optional query parameter `all_members` is a boolean. If set to true, this endpoint will search recusiverly for
+    Output information are e.g. cn, dn, members, etc...
+    The optional query parameter `all_members` is a boolean. If set to true, this endpoint will search recursively for
     all members in all nested groups (may take a while).
 
     ### Access
