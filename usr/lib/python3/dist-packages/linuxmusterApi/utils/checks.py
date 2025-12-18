@@ -12,13 +12,40 @@ def get_user_or_404(user, school):
     except Exception:
         raise HTTPException(status_code=404, detail=f"User {user} not found in ldap tree.")
 
-def get_schoolclass_or_404(schoolclass, school):
+def get_schoolclass_or_404(schoolclass, who, dict=False):
+    """
+    Check if a schoolclass exist and if the authenticated user can see it: only if the attribute sophomorixHidden is
+    not true, or if the user is already admin of the schoolclass.
+
+    :param schoolclass: Schoolclass name
+    :param who: Authenticated user
+    :return: Schoolclass details
+    """
+
+
     try:
-        schoolclass_data = lr.get(f'/schoolclasses/{schoolclass}', school=school)
+        schoolclass_data = lr.get(f'/schoolclasses/{schoolclass}', school=who.school, dict=dict)
+
+        if dict:
+            admins = schoolclass_data['sophomorixAdmins']
+            hidden = schoolclass_data['sophomorixHidden']
+        else:
+            admins = schoolclass_data.sophomorixAdmins
+            hidden = schoolclass_data.sophomorixHidden
+
         if not schoolclass_data:
             raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
-        return schoolclass_data
-    except Exception:
+        if who.role in ["schooladministrator", "globaladministrator"]:
+            return schoolclass_data
+        elif who.role == "teacher":
+            if who.user in admins:
+                return schoolclass_data
+            elif not hidden:
+                return schoolclass_data
+        else:
+            raise HTTPException(status_code=403, detail=f"Forbidden")
+    except Exception as err:
+        print(str(err))
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
 def get_extraclass_or_404(schoolclass, school):
