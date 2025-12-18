@@ -12,7 +12,7 @@ def get_user_or_404(user, school):
     except Exception:
         raise HTTPException(status_code=404, detail=f"User {user} not found in ldap tree.")
 
-def get_schoolclass_or_404(schoolclass, who, dict=False):
+def get_schoolclass_or_404(schoolclass, who, dict=True):
     """
     Check if a schoolclass exist and if the authenticated user can see it: only if the attribute sophomorixHidden is
     not true, or if the user is already admin of the schoolclass.
@@ -25,28 +25,28 @@ def get_schoolclass_or_404(schoolclass, who, dict=False):
 
     try:
         schoolclass_data = lr.get(f'/schoolclasses/{schoolclass}', school=who.school, dict=dict)
-
-        if dict:
-            admins = schoolclass_data['sophomorixAdmins']
-            hidden = schoolclass_data['sophomorixHidden']
-        else:
-            admins = schoolclass_data.sophomorixAdmins
-            hidden = schoolclass_data.sophomorixHidden
-
-        if not schoolclass_data:
-            raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
-        if who.role in ["schooladministrator", "globaladministrator"]:
-            return schoolclass_data
-        elif who.role == "teacher":
-            if who.user in admins:
-                return schoolclass_data
-            elif not hidden:
-                return schoolclass_data
-        else:
-            raise HTTPException(status_code=403, detail=f"Forbidden")
     except Exception as err:
-        print(str(err))
+        raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found: {str(err)}")
+
+    if not schoolclass_data:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
+
+    if dict:
+        admins = schoolclass_data['sophomorixAdmins']
+        hidden = schoolclass_data['sophomorixHidden']
+    else:
+        admins = schoolclass_data.sophomorixAdmins
+        hidden = schoolclass_data.sophomorixHidden
+
+    if who.role in ["schooladministrator", "globaladministrator"]:
+        return schoolclass_data
+    elif who.role == "teacher":
+        if who.user in admins:
+            return schoolclass_data
+        elif not hidden:
+            return schoolclass_data
+    else:
+        raise HTTPException(status_code=403, detail=f"Forbidden")
 
 def get_extraclass_or_404(schoolclass, school):
     try:
@@ -66,30 +66,52 @@ def get_teacher_or_404(teacher, school):
     except Exception:
         raise HTTPException(status_code=404, detail=f"Teacher {teacher} not found")
 
-def get_project_or_404(project, school):
+def get_project_or_404(project, who, dict=True):
     """
+    Check if a project exist and if the authenticated user can see it: only if the attribute sophomorixHidden is
+    not true, or if the user is already admin of the project.
 
-    :param project: project cn with prefix
-    :param school: school name
-    :return:
+    :param project: Project name
+    :param who: Authenticated user
+    :return: Project details
     """
 
 
     # Ensure prefix is given
     prefix = "p_"
-    if school not in ["default-school", "global"]:
-        prefix = f"p_{school}-"
+    if who.school not in ["default-school", "global"]:
+        prefix = f"p_{who.school}-"
 
     if not project.startswith(prefix):
         project = prefix + project
 
     try:
-        project_details = lr.get(f'/projects/{project}', school=school, dict=False)
-        if not project_details.cn:
-            raise HTTPException(status_code=404, detail=f"Project {project} not found.")
-        return project_details
-    except Exception:
-        raise HTTPException(status_code=404, detail=f"Project {project} not found.")
+        project_data = lr.get(f'/projects/{project}', school=who.school, dict=dict)
+    except Exception as err:
+        raise HTTPException(status_code=404, detail=f"Project {project} not found: {str(err)}")
+
+    if not project_data:
+        raise HTTPException(status_code=404, detail=f"Project {project} not found")
+
+    if dict:
+        admins = project_data['sophomorixAdmins']
+        members = project_data['sophomorixMembers']
+        hidden = project_data['sophomorixHidden']
+    else:
+        admins = project_data.sophomorixAdmins
+        members = project_data.sophomorixMembers
+        hidden = project_data.sophomorixHidden
+
+    if who.role in ["schooladministrator", "globaladministrator"]:
+        return project_data
+    else:
+        # TODO missing check in nested groups
+        if who.user in admins or who.user in members:
+            return project_data
+        elif not hidden:
+            return project_data
+        else:
+            raise HTTPException(status_code=403, detail=f"Forbidden")
 
 def get_printer_or_404(printer, school):
     try:
