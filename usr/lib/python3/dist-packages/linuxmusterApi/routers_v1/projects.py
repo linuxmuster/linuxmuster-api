@@ -78,7 +78,7 @@ def get_project_details(project: str, all_members: bool = False, who: Authentica
     """
 
 
-    project_details = get_project_or_404(project, who.school)
+    project_details = get_project_or_404(project, who, dict=False)
     
     if all_members:
         project_details.get_all_members()
@@ -89,18 +89,7 @@ def get_project_details(project: str, all_members: bool = False, who: Authentica
         project_details['members'] = [lr.get(f'/users/{member}') for member in project_details['all_members']]
         project_details['admins'] = [lr.get(f'/users/{member}') for member in project_details['all_admins']]
 
-    if who.role in ["schooladministrator", "globaladministrator"]:
-        # No filter
-        return project_details
-
-    elif who.role == "teacher":
-        # Only the teacher's project or not hidden projects or project in which the teacher is member of
-        # TODO: read sophomorixMemberGroups and sophomorixAdminGroups too
-        if who.user in project_details['sophomorixAdmins'] or who.user in project_details['sophomorixMembers']:
-            return project_details
-        elif not project_details['sophomorixHidden']:
-            return project_details
-        raise HTTPException(status_code=403, detail=f"Forbidden")
+    return project_details
 
 @router.delete("/{project}", status_code=204, name="Delete a specific project")
 def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -135,7 +124,7 @@ def delete_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("G
     if not project.startswith(prefix):
         project = prefix + project
 
-    project_details = get_project_or_404(project, who.school)
+    project_details = get_project_or_404(project, who, dict=False)
 
     projectname = project.replace(prefix, "")
 
@@ -325,7 +314,7 @@ def modify_project(project: str, project_details: Project, who: AuthenticatedUse
     if not project.startswith(prefix):
         project = prefix + project
 
-    project_exists = get_project_or_404(project, who.school)
+    project_exists = get_project_or_404(project, who, dict=False)
 
     if who.role == "teacher":
         # Only teacher admins of the group should be able to modify the project
@@ -417,7 +406,7 @@ def join_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST
     """
 
 
-    project_details = get_project_or_404(project, who.school)
+    project_details = get_project_or_404(project, who, dict=False)
 
     if who.role == "teacher":
         # Teacher can only join a project if the project is joinable
@@ -456,7 +445,7 @@ def quit_project(project: str, who: AuthenticatedUser = Depends(RoleChecker("GST
     """
 
 
-    project_details = get_project_or_404(project, who.school)
+    project_details = get_project_or_404(project, who, dict=False)
 
     if who.role == "teacher":
         # Teacher can only join a project if the project is joinable
