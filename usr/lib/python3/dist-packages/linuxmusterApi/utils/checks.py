@@ -101,11 +101,15 @@ def get_project_or_404(project, who, dict=True):
 
     if dict:
         admins = project_data['sophomorixAdmins']
+        groupadmins = project_data['sophomorixAdminGroups']
         members = project_data['sophomorixMembers']
+        groupmembers = project_data['sophomorixMemberGroups']
         hidden = project_data['sophomorixHidden']
     else:
         admins = project_data.sophomorixAdmins
+        groupadmins = project_data.sophomorixAdminGroups
         members = project_data.sophomorixMembers
+        groupmembers = project_data.sophomorixMemberGroups
         hidden = project_data.sophomorixHidden
 
     if who.role in ["schooladministrator", "globaladministrator"]:
@@ -117,7 +121,19 @@ def get_project_or_404(project, who, dict=True):
         elif not hidden:
             return project_data
         else:
-            raise HTTPException(status_code=403, detail=f"Forbidden")
+            # Digging deeper
+            user_details = lr.get(f'/users/{who.user}', school=who.school, dict=False)
+
+            # User is in a schoolclass member or admin of this project
+            if user_details.sophomorixAdminclass in groupadmins + groupmembers:
+                return project_data
+
+            # User is in a project member or admin of this project
+            for p in user_details.projects:
+                if p in groupadmins + groupmembers:
+                    return project_data
+
+        raise HTTPException(status_code=403, detail=f"Forbidden")
 
 def get_printer_or_404(printer, school):
     try:
