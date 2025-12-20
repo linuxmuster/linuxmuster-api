@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 from time import localtime, strftime
 
-from security import UserListChecker, AuthenticatedUser
+from security import UserListChecker, AuthenticatedUser, RoleChecker
 from .body_schemas import UserList, StopExam
 from utils.sophomorix import lmn_getSophomorixValue
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
 router = APIRouter(
@@ -51,7 +52,6 @@ def start_exam_mode(userlist: UserList, who: AuthenticatedUser = Depends(UserLis
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error starting exam mode: {str(e)}")
 
-
 @router.post("/stop", name="Stop exam")
 def stop_exam_mode(stopexam: StopExam, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
@@ -67,8 +67,8 @@ def stop_exam_mode(stopexam: StopExam, who: AuthenticatedUser = Depends(UserList
     \f
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
-    :param userlist: List of samaccountname for whom stop the exam
-    :type userlist: UserList
+    :param stopexam: StopExam object containing the list of users, the group type and group name
+    :type userlist: StopExam
     :return: Session details
     :rtype: dict
     """
@@ -93,3 +93,26 @@ def stop_exam_mode(stopexam: StopExam, who: AuthenticatedUser = Depends(UserList
         lmn_getSophomorixValue(sophomorixCommand, 'COMMENT_EN')
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error stoping exam mode: {str(e)}")
+
+@router.get("/users", name="List all users in exammode")
+def users_exam_mode(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+    """
+    ## List all users in exam mode from the authenticated user (all users in exam mode for admins).
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: List of all users in exam mode from the authenticated user (all users in exam mode for admins)
+    :rtype: list
+    """
+
+
+    if who.role in ['schooladministrator', 'globaladministrator']:
+        return lr.get('/users/exam', school=who.school)
+    else:
+        return [user for user in lr.get('/users/exam') if user['examTeacher'] == who.user]
