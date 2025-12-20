@@ -116,3 +116,38 @@ def users_exam_mode(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
         return lr.get('/users/exam', school=who.school)
     else:
         return [user for user in lr.get('/users/exam') if user['examTeacher'] == who.user]
+
+@router.get("/users/{user}", name="Get details from an user in exammode")
+def user_exam_mode(user: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+    """
+    ## Get details from an user in exam mode. If the caller is not an admin and not the exam teacher, the response
+    is then empty. The suffix "-exam" can be omitted and will be automatically added if the given cn is from
+    an user which is in exam mode. If the given cn is not from an user in exam mode, the response will be empty.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :param user: cn of the user
+    :rtype user: basestring
+    :return: Details of user in exam mode
+    :rtype: dict
+    """
+
+
+    data = lr.get(f'/users/exam/{user}', school=who.school)
+
+    if not data:
+        return {}
+
+    if who.role in ['schooladministrator', 'globaladministrator']:
+        return data
+    else:
+        if data['examTeacher'] == who.user:
+            return data
+
+    return {}
