@@ -45,12 +45,31 @@ def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     elif who.role == "teacher":
         # Only the teacher's project or not hidden projects or project in which the teacher is member of
         # TODO: read sophomorixMemberGroups and sophomorixAdminGroups too
+
         response =  []
+        user_details = {}
+
         for project in projects:
             if who.user in project['sophomorixAdmins'] or who.user in project['sophomorixMembers']:
                 response.append(project)
             elif not project['sophomorixHidden']:
                 response.append(project)
+            else:
+                # Digging deeper
+                project_groups = project['sophomorixAdminGroups'] + project['sophomorixMemberGroups']
+
+                if not user_details:
+                    # Details not already cached
+                    user_details = lr.get(f'/users/{who.user}', school=who.school, dict=False)
+
+                # User is in a schoolclass member or admin of this project
+                if user_details.sophomorixAdminclass in project_groups:
+                    return project_data
+
+                # User is in a project member or admin of this project
+                for p in user_details.projects:
+                    if p in project_groups:
+                        return project_data
         return response
 
 @router.get("/{project}", name="Get all details from a specific project")
