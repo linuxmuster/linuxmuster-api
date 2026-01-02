@@ -1,3 +1,21 @@
+linuxmuster-api7 (7.3.22) lmn73; urgency=medium
+
+  * /schoolclass: all_members flag to get all members details
+  * /extraclasses: new endpoints for extraclasses
+  * auth: add dn to token
+  * Review joinable and hidden logic for schoolclasses, projects and printers
+  * Common check of admin and membership for projects
+  * /exam/users/USER: new endpoint to get users or a specific user in exam
+    mode.
+  * /listmanagement: new endpoints to get and post content for management
+    lists. EXPERIMENTAL.
+  * /listmanagement: new endpoints to run sophomomorix-check, sophomorix-add,
+    sophomorix-update and sophomorix-kill. EXPERIMENTAL.
+  * /listmanagement: new endpoints to check the status of the logs of a
+    running sophomorix process. EXPERIMENTAL.
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Fri, 02 Jan 2026 23:26:08 +0100
+
 linuxmuster-api7 (7.3.21) lmn73; urgency=medium
 
   * Allow access to pdf and csv too. 
