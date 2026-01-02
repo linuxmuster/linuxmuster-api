@@ -1,3 +1,4 @@
+import os
 import ldap
 import logging
 import tempfile
@@ -140,7 +141,7 @@ def do_sophomorix_apply(
     :param update: Bool to launch sophomorix-update or not
     :param kill: Bool to launch sophomorix-kill or not
     :return: Output of sophomorix-check
-    :rtype: basestring
+    :rtype: list of log lines
     """
 
 
@@ -164,13 +165,50 @@ def do_sophomorix_apply(
         script += f'sophomorix-kill --school {school} >> {path};'
 
     try:
+        # This could be really too long, must be discussed / tested.
         subprocess.check_call(script, shell=True, env={'LC_ALL': 'C'})
         with open(path, 'r') as f:
             log = f.readlines()
 
         # Remove log file ?
+        # Return logname in order to get status ?
 
         return log
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error applying changes with sophomorix: {str(e)}")
+
+@router.get("/sophomorix-apply/status/{logname}", name="Get log from an existing sophomorix process for management list.")
+def get_status_sophomorix_apply(logname: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+    """
+    ## Get last log of a sophomorix process for management list.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :param logname: A valid path name in /tmp, like /tmp/default-school.3v3ldev8.sophomorix.log
+    :type logname: basestring
+    :return: Output of sophomorix commands
+    :rtype: list of log lines
+    """
+
+
+    logpath = f"/tmp/{logname}"
+
+    if not os.path.isfile(logpath):
+        raise HTTPException(status_code=404, detail=f"Log file {logpath} not found.")
+
+    try:
+        with open(logpath, 'r') as f:
+            log = f.readlines()
+
+        return log
+
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error reading log file {logpath}: {str(e)}")
