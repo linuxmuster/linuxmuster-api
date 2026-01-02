@@ -156,6 +156,9 @@ def check_valid_mgmtlist_or_404(mgmtlist, school):
     if mgmtlist not in ['students','teachers','parents','staff','extraclasses','extrastudents']:
         raise HTTPException(status_code=404, detail=f"{role} is not a valid role")
 
+    if school not in lr.getval('/schools', 'ou'):
+        raise HTTPException(status_code=404, detail=f"{school} is not a valid school")
+
     if school == "default-school":
         configpath = f'/etc/linuxmuster/sophomorix/default-school/{mgmtlist}.csv'
     else:
