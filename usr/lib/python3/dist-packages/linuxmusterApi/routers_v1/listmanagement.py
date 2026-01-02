@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from security import RoleChecker, AuthenticatedUser
 from utils.checks import check_valid_mgmtlist_or_404
 from linuxmusterTools.lmnfile import LMNFile
+from utils.sophomorix import lmn_getSophomorixValue
 from .body_schemas import MgmtList
 
 
@@ -74,3 +75,33 @@ def post_management_list_content(school: str, mgmtlist: str, content: MgmtList, 
             return list.write(content.data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error writing {path}: {str(e)}")
+
+@router.get("/sophomorix-check", name="Run sophomorix-check")
+def do_sophomorix_check(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+    """
+    ## Run sophomorix-check.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: Output of sophomorix-check
+    :rtype: dict
+    """
+
+
+    sophomorixCommand = ['sophomorix-check', '-jj']
+    results = lmn_getSophomorixValue(sophomorixCommand, '')
+    ## Remove UPDATE entries which are also in KILL ( necessary to show it in KILL and UPDATE ? )
+
+    if "CHECK_RESULT" in results:
+        if "UPDATE" in results["CHECK_RESULT"] and "KILL" in results["CHECK_RESULT"]:
+            for user_update in tuple(results["CHECK_RESULT"]["UPDATE"]):
+                if user_update in results["CHECK_RESULT"]["KILL"]:
+                    del results["CHECK_RESULT"]["UPDATE"][user_update]
+    return results
