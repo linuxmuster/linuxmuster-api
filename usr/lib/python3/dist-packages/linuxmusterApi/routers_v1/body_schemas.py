@@ -158,3 +158,12 @@ class PrintPasswordsUsersParameter(BaseModel):
     pdflatex: bool | None = False
     school: str | None = ''
     users: list
+
+class MgmtList(BaseModel):
+    """
+    Content of a management file list like /etc/linuxmuster/sophomorix/default-school/teachers.csv
+    data should be a list of dict, with one dict per line.
+    """
+
+
+    data: list | None = None
