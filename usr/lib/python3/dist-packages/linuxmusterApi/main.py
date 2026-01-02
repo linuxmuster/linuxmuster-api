@@ -49,6 +49,7 @@ from routers_v1 import (
     exam,
     extraclasses,
     groups,
+    listmanagement,
     query,
     managementgroups,
     print_passwords,
@@ -88,6 +89,7 @@ app.include_router(auth.router, prefix="/v1")
 app.include_router(exam.router, prefix="/v1")
 app.include_router(extraclasses.router, prefix="/v1")
 app.include_router(groups.router, prefix="/v1")
+app.include_router(listmanagement.router, prefix="/v1")
 app.include_router(managementgroups.router, prefix="/v1")
 app.include_router(print_passwords.router, prefix="/v1")
 app.include_router(printers.router, prefix="/v1")
