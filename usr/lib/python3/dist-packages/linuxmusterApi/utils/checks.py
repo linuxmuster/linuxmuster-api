@@ -1,3 +1,4 @@
+import os
 from fastapi import HTTPException
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
@@ -146,3 +147,23 @@ def get_printer_or_404(printer, school):
 
     return printer_details
 
+def check_valid_mgmtlist_or_404(mgmtlist, school):
+    """
+    Check if the given mgmtlist name exists and returns the path of the CSV file.
+    """
+
+
+    if mgmtlist not in ['students','teachers','parents','staff','extraclasses','extrastudents']:
+        raise HTTPException(status_code=404, detail=f"{role} is not a valid role")
+
+    if school == "default-school":
+        configpath = f'/etc/linuxmuster/sophomorix/default-school/{mgmtlist}.csv'
+    else:
+        configpath = f'/etc/linuxmuster/sophomorix/{school}/{school}.{mgmtlist}.csv'
+
+    # Ensure file exists
+    print(configpath)
+    if os.path.isfile(configpath) is False:
+        os.mknod(configpath)
+
+    return configpath
