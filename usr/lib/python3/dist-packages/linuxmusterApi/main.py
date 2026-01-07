@@ -127,7 +127,7 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
-def list_all_endpoints():
+def list_all_endpoints(filter_str=''):
     max_name = 50
     max_path = 50
     max_reg = 50
@@ -155,9 +155,13 @@ def list_all_endpoints():
     for data in app.routes:
         if hasattr(data, 'dependant'):
             if data.dependant.dependencies:
-                print(f"{data.path:{max_path}} | {data.name:{max_name}} | {data.path_regex.pattern:{max_reg}} | {_roles(data.dependant.dependencies[0].call)}")
+                line = f"{data.path:{max_path}} | {data.name:{max_name}} | {data.path_regex.pattern:{max_reg}} | {_roles(data.dependant.dependencies[0].call)}"
         else:
-            print(f"{data.path:{max_path}} | {data.name:{max_name}} | {' '*max_reg} |")
+            line = f"{data.path:{max_path}} | {data.name:{max_name}} | {' '*max_reg} |"
+
+        if filter_str in line:
+            print(line)
+
     print("-"*(max_reg+max_path+max_name+60))
 
 app.openapi = custom_openapi
