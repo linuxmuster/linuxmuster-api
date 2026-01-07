@@ -138,8 +138,8 @@ def list_all_endpoints():
             return ''
         roles = []
         for role in raw_roles:
-            roles.append(role.replace('administrator', 'adm.'))
-        return roles
+            roles.append(role.replace('administrator', 'adm'))
+        return ';'.join(roles)
 
     for data in app.routes:
         if len(data.path) > max_path:
