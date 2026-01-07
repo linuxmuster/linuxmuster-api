@@ -11,7 +11,7 @@ router = APIRouter(
 )
 
 @router.get("/", name="List all existing roles")
-def get_all_roles(who: AuthenticatedUser = Depends(RoleChecker(["GS"]))):
+def get_all_roles(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## List all existing roles including users and computers
 
@@ -30,7 +30,7 @@ def get_all_roles(who: AuthenticatedUser = Depends(RoleChecker(["GS"]))):
     return set([k['sophomorixRole'] for k in lr.get('/search/', attributes=['sophomorixRole']) if k['sophomorixRole']])
 
 @router.get("/{role}", name="List all members with a specific role")
-def get_role_users(role: str, school: str | None = 'default-school', who: AuthenticatedUser = Depends(RoleChecker(["GS"]))):
+def get_role_users(role: str, school: str | None = 'default-school', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## List all users (and all their details) having a specific role
 
