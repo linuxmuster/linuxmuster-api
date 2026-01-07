@@ -11,9 +11,9 @@ router = APIRouter(
 )
 
 @router.get("/", name="List all existing roles")
-def get_all_roles(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def get_all_roles(who: AuthenticatedUser = Depends(RoleChecker(["GS"]))):
     """
-    ## List all existing roles
+    ## List all existing roles including users and computers
 
     ### Access
     - global-administrators
