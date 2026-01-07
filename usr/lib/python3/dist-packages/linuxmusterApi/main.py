@@ -127,6 +127,39 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
+def list_all_endpoints():
+    max_name = 50
+    max_path = 50
+    max_reg = 50
+
+    def _roles(depend):
+        raw_roles = getattr(depend, 'roles', '')
+        if not raw_roles:
+            return ''
+        roles = []
+        for role in raw_roles:
+            roles.append(role.replace('administrator', 'adm.'))
+        return roles
+
+    for data in app.routes:
+        if len(data.path) > max_path:
+            max_path = len(data.path)
+        if len(data.name) > max_name:
+            max_name = len(data.name)
+        if len(data.path_regex.pattern) > max_reg:
+            max_reg = len(data.path_regex.pattern)
+
+    print("-"*(max_reg+max_path+max_name+60))
+    print(f"{"URL":{max_path}} | {"Desc.":{max_name}} | {"Regexp":{max_reg}} | {'Roles'}")
+    print("-"*(max_reg+max_path+max_name+60))
+    for data in app.routes:
+        if hasattr(data, 'dependant'):
+            if data.dependant.dependencies:
+                print(f"{data.path:{max_path}} | {data.name:{max_name}} | {data.path_regex.pattern:{max_reg}} | {_roles(data.dependant.dependencies[0].call)}")
+        else:
+            print(f"{data.path:{max_path}} | {data.name:{max_name}} | {' '*max_reg} |")
+    print("-"*(max_reg+max_path+max_name+60))
+
 app.openapi = custom_openapi
 
 if __name__ == "__main__":
