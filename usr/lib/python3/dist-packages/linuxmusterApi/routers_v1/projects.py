@@ -63,7 +63,7 @@ def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
                     user_details = lr.get(f'/users/{who.user}', school=who.school, dict=False)
 
                 # User is in a schoolclass member or admin of this project
-                if user_details.sophomorixAdminclass in project_groups:
+                if user_details.sophomorixAdminClass in project_groups:
                     return project_data
 
                 # User is in a project member or admin of this project

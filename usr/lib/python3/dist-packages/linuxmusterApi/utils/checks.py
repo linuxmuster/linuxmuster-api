@@ -126,7 +126,7 @@ def get_project_or_404(project, who, dict=True):
             user_details = lr.get(f'/users/{who.user}', school=who.school, dict=False)
 
             # User is in a schoolclass member or admin of this project
-            if user_details.sophomorixAdminclass in groupadmins + groupmembers:
+            if user_details.sophomorixAdmincClass in groupadmins + groupmembers:
                 return project_data
 
             # User is in a project member or admin of this project
