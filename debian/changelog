@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.24) lmn73; urgency=medium
+
+  * Fix typo in projects. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Thu, 29 Jan 2026 12:40:21 +0100
+
 linuxmuster-api7 (7.3.23) lmn73; urgency=medium
 
   * Fix roles endpoints
