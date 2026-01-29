@@ -64,12 +64,12 @@ def get_projects_list(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
 
                 # User is in a schoolclass member or admin of this project
                 if user_details.sophomorixAdminClass in project_groups:
-                    return project_data
+                    response.append(project)
 
                 # User is in a project member or admin of this project
                 for p in user_details.projects:
                     if p in project_groups:
-                        return project_data
+                        response.append(project)
         return response
 
 @router.get("/{project}", name="Get all details from a specific project")
