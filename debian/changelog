@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.25) lmn73; urgency=medium
+
+  * Handle subprojects correctly. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Thu, 29 Jan 2026 14:07:55 +0100
+
 linuxmuster-api7 (7.3.24) lmn73; urgency=medium
 
   * Fix typo in projects. 
