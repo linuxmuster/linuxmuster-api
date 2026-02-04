@@ -1,3 +1,4 @@
+import subprocess
 from fastapi import APIRouter, Depends, HTTPException, Request
 
 from security import RoleChecker, AuthenticatedUser
@@ -60,7 +61,7 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
 
     return devices_data
 
-@router.post("/{school}/", name="Write content of devices.csv")
+@router.post("/{school}", name="Write content of devices.csv")
 def post_management_list_content(school: str, content: MgmtList, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Write the content of devices list (file like /etc/linuxmuster/sophomorix/default-school/devices.csv).
@@ -96,3 +97,27 @@ def post_management_list_content(school: str, content: MgmtList, who: Authentica
             return list.write(content.data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error writing {path}: {str(e)}")
+
+@router.get("/{school}/import-devices", name="Run linuxmuster-import-devices")
+def do_import_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+    """
+    ## Run linuxmuster-import-devices on the given school.
+    The school must be extra given, because it's not possible to know which
+    school a global-administrator would like to request.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: Output of sophomorix-check
+    :rtype: dict
+    """
+
+
+    cmd = ['linuxmuster-import-devices', '--school', school]
+    results = subprocess.run(cmd, stdout=subprocess.PIPE)
+
+    return results.stdout.decode()
