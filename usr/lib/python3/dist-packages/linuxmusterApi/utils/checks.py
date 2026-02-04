@@ -147,6 +147,17 @@ def get_printer_or_404(printer, school):
 
     return printer_details
 
+def check_valid_school_or_404(school):
+    """
+    Check if the given school is a valid school.
+    """
+
+    if school not in lr.getval('/schools', 'ou'):
+        raise HTTPException(status_code=404,
+                            detail=f"{school} is not a valid school")
+
+    return school
+
 def check_valid_mgmtlist_or_404(mgmtlist, school):
     """
     Check if the given mgmtlist name exists and returns the path of the CSV file.
@@ -156,8 +167,7 @@ def check_valid_mgmtlist_or_404(mgmtlist, school):
     if mgmtlist not in ['students','teachers','parents','staff','extraclasses','extrastudents']:
         raise HTTPException(status_code=404, detail=f"{mgmtlist} is not a valid role")
 
-    if school not in lr.getval('/schools', 'ou'):
-        raise HTTPException(status_code=404, detail=f"{school} is not a valid school")
+    check_valid_school_or_404(school)
 
     if school == "default-school":
         configpath = f'/etc/linuxmuster/sophomorix/default-school/{mgmtlist}.csv'

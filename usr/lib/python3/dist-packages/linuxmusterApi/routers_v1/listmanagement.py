@@ -1,6 +1,4 @@
 import os
-import ldap
-import logging
 import tempfile
 import subprocess
 from fastapi import APIRouter, Depends, HTTPException

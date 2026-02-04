@@ -7,7 +7,7 @@ from linuxmusterTools.lmnfile import LMNFile
 from utils.checks import get_printer_or_404
 from utils.sophomorix import lmn_getSophomorixValue
 from .body_schemas import MgmtList
-
+from utils.checks import check_valid_school_or_404
 
 router = APIRouter(
     prefix="/devices",
@@ -33,6 +33,8 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
     :rtype: list
     """
 
+
+    check_valid_school_or_404(school)
 
     if school != 'default-school':
         prefix = f'{school}.'
@@ -85,6 +87,8 @@ def post_management_list_content(school: str, content: MgmtList, who: Authentica
     """
 
 
+    check_valid_school_or_404(school)
+
     if school != 'default-school':
         prefix = f'{school}.'
     else:
@@ -116,6 +120,8 @@ def do_import_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker(
     :rtype: dict
     """
 
+
+    check_valid_school_or_404(school)
 
     cmd = ['linuxmuster-import-devices', '--school', school]
     results = subprocess.run(cmd, stdout=subprocess.PIPE)
