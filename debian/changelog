@@ -1,3 +1,10 @@
+linuxmuster-api7 (7.3.26) lmn73; urgency=medium
+
+  * Add /auth/whoami endpoint
+  * Add /devices endpoints to import devices. EXPERIMENTAL. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 04 Feb 2026 21:02:07 +0100
+
 linuxmuster-api7 (7.3.25) lmn73; urgency=medium
 
   * Handle subprojects correctly. 
