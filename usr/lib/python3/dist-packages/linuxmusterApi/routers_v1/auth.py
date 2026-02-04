@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, Request
 
-from security import BasicAuthChecker
+from security import BasicAuthChecker, AuthenticatedUser, RoleChecker
 
 
 router = APIRouter(
@@ -19,3 +19,14 @@ def get_json_web_token(auth: bool = Depends(BasicAuthChecker())):
     """
 
     return auth
+
+@router.get("/whoami", name="Check authenticated user")
+def get_whoami(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
+    """
+    ## Retrieve user's jwt information.
+
+    ### Access
+    - all users
+    """
+
+    return who.dict()
