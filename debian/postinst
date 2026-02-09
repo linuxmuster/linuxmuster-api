@@ -68,6 +68,9 @@ EOF
         mkdir -p /var/log/linuxmuster/api
         cp /usr/lib/python3/dist-packages/linuxmusterApi/templates/uvicorn_log_conf.yml /etc/linuxmuster/api/uvicorn_log_conf.yml
 
+        # For sophomorix users' commands logs
+        mkdir -p /tmp/lmnapi
+
         msg "Checking certificate"
         if [ ! -f "/etc/linuxmuster/api/lmnapi.pem" ] ; then
             /usr/lib/python3/dist-packages/linuxmusterApi/scripts/lmnapi-ssl-gen.py
