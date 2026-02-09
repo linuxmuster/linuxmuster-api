@@ -1,13 +1,13 @@
 import os
 import tempfile
 import subprocess
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 
 from security import RoleChecker, AuthenticatedUser
 from utils.checks import check_valid_mgmtlist_or_404
 from linuxmusterTools.lmnfile import LMNFile
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
-from utils.sophomorix import lmn_getSophomorixValue
+from utils.sophomorix import lmn_getSophomorixValue, process_user
 from .body_schemas import MgmtList
 
 
@@ -113,7 +113,8 @@ def do_sophomorix_check(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     return results
 
 @router.get("/sophomorix-apply", name="Run sophomorix-add, sophomorix-update, sophomorix-kill or all together.")
-def do_sophomorix_apply(
+async def do_sophomorix_apply(
+        background_tasks: BackgroundTasks,
         school: str,
         add: bool = False,
         update: bool = False,
@@ -149,35 +150,30 @@ def do_sophomorix_apply(
     if who.school != "global" and who.school != school:
         raise HTTPException(status_code=403, detail=f"Forbidden")
 
-    _, path = tempfile.mkstemp(prefix=f'{school}.', suffix='.sophomorix.log')
+    _, logpath = tempfile.mkstemp(prefix=f'{school}.', suffix='.sophomorix.log', dir='/tmp/lmnapi')
 
     script = ''
 
     if add:
-        script += f'sophomorix-add --school {school} >> {path};'
+        script += f'sophomorix-add --school {school} >> {logpath};'
 
     if update:
-        script += f'sophomorix-update --school {school} >> {path};'
+        script += f'sophomorix-update --school {school} >> {logpath};'
 
     if kill:
-        script += f'sophomorix-kill --school {school} >> {path};'
+        script += f'sophomorix-kill --school {school} >> {logpath};'
 
     try:
-        # This could be really too long, must be discussed / tested.
-        subprocess.check_call(script, shell=True, env={'LC_ALL': 'C'})
-        with open(path, 'r') as f:
-            log = f.readlines()
+        pid = logpath.replace(".sophomorix.log", "").replace("/tmp/lmnapi/", "")
+        background_tasks.add_task(process_user, script, pid)
 
-        # Remove log file ?
-        # Return logname in order to get status ?
-
-        return log
+        return pid
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error applying changes with sophomorix: {str(e)}")
 
-@router.get("/sophomorix-apply/status/{logname}", name="Get log from an existing sophomorix process for management list.")
-def get_status_sophomorix_apply(logname: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+@router.get("/sophomorix-apply/status/{pid}", name="Get log from an existing sophomorix process for management list.")
+def get_status_sophomorix_apply(pid: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Get last log of a sophomorix process for management list.
 
@@ -190,23 +186,27 @@ def get_status_sophomorix_apply(logname: str, who: AuthenticatedUser = Depends(R
     \f
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
-    :param logname: A valid path name in /tmp, like /tmp/default-school.3v3ldev8.sophomorix.log
-    :type logname: basestring
+    :param pid: PID of the runnning process like SCHOOL.RAND. The log path is /tmp/PID.sophomorix.log
+    :type pid: basestring
     :return: Output of sophomorix commands
     :rtype: list of log lines
     """
 
 
-    logpath = f"/tmp/{logname}"
+    logpath = f"/tmp/lmnapi/{pid}.sophomorix.log"
+    statuspath = f"/tmp/lmnapi/{pid}.sophomorix.status"
 
-    if not os.path.isfile(logpath):
+    if not os.path.isfile(logpath) or not os.path.isfile(statuspath):
         raise HTTPException(status_code=404, detail=f"Log file {logpath} not found.")
 
     try:
         with open(logpath, 'r') as f:
             log = f.readlines()
 
-        return log
+        with open(statuspath, 'r') as f:
+            status = f.read()
+
+        return {"status": status, "log": log}
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error reading log file {logpath}: {str(e)}")
