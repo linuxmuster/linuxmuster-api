@@ -1,4 +1,5 @@
 import subprocess
+from datetime import datetime
 import dpath.util
 import re
 import threading
@@ -22,6 +23,20 @@ class SophomorixProcess(threading.Thread):
         p = subprocess.Popen(self.command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=False)
         self.stdout, self.stderr = p.communicate()
 
+
+def process_user(cmd, pid):
+    statuspath = f"/tmp/lmnapi/{pid}.sophomorix.status"
+
+    with open(statuspath, 'w') as status:
+        start = datetime.now().strftime("%d %b %Y %H:%M:%S")
+        status.write(f"Process {pid} was started at {start} and is still running.")
+
+    p = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True, env={'LC_ALL': 'C'})
+    stdout, stderr = p.communicate()
+
+    with open(statuspath, 'w') as status:
+        now = datetime.now().strftime("%d %b %Y %H:%M:%S")
+        status.write(f"Process {pid} was started at {start} and was completed at {now}")
 
 def lmn_getSophomorixValue(sophomorixCommand, jsonpath, ignoreErrors=False, sensitive=False):
     """
