@@ -55,7 +55,7 @@ def get_all_schools(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
             "list": items
         }
 
-    for role in ["student", "teacher", "globaladministrator", "schooladministrator"]:
-        school[role] = len(lr.get(f'/roles/{role}'))
+    for role in ["student", "teacher", "globaladministrator", "schooladministrator", "parent", "staff"]:
+        school[role] = len(lr.get(f'/rawroles/{role}'))
 
     return school
