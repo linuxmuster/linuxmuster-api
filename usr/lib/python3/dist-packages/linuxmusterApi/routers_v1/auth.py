@@ -29,4 +29,4 @@ def get_whoami(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
     - all users
     """
 
-    return who.dict()
+    return who.model_dump()
