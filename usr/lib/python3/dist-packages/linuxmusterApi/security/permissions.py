@@ -104,7 +104,7 @@ class RoleChecker(BasicChecker):
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Permissions denied')
+            detail='Permission denied')
 
 
 class UserChecker(BasicChecker):
@@ -130,7 +130,7 @@ class UserChecker(BasicChecker):
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Permissions denied')
+            detail='Permission denied')
 
 
 class UserListChecker(BasicChecker):
@@ -158,13 +158,13 @@ class UserListChecker(BasicChecker):
                 if not self._check_role_permissions(who, user):
                     raise HTTPException(
                         status_code=status.HTTP_401_UNAUTHORIZED,
-                        detail=f'Permissions denied to request user {user}'
+                        detail=f'Permission denied to request user {user}'
                     )
             return who
 
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail='Permissions denied')
+            detail='Permission denied')
 
 def check_print_permissions(who, users):
     """
