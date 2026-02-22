@@ -46,6 +46,7 @@ if config.get("cors", {}):
 # V1
 from routers_v1 import (
     admins,
+    bindusers,
     auth,
     devices,
     exam,
@@ -90,6 +91,8 @@ def home():
 app.include_router(auth.router, prefix="/v1")
 app.include_router(admins.router_global, prefix="/v1")
 app.include_router(admins.router_school, prefix="/v1")
+app.include_router(bindusers.router_global, prefix="/v1")
+app.include_router(bindusers.router_school, prefix="/v1")
 app.include_router(devices.router, prefix="/v1")
 app.include_router(exam.router, prefix="/v1")
 app.include_router(extraclasses.router, prefix="/v1")
