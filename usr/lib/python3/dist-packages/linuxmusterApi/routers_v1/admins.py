@@ -60,7 +60,7 @@ def get_globaladministrator(admin: str, who: AuthenticatedUser = Depends(RoleChe
     raise HTTPException(status_code=404, detail=f"Globaladministrator {admin} not found")
 
 @router_school.get("/", name="List all schooladministrators")
-def get_all_schooladministrators(school: str = '', who: AuthenticatedUser = Depends(RoleChecker("G"))):
+def get_all_schooladministrators(school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Get basic information from all users.
 
@@ -82,7 +82,7 @@ def get_all_schooladministrators(school: str = '', who: AuthenticatedUser = Depe
     return lr.get('/schooladministrators')
 
 @router_school.get("/{admin}", name="User details")
-def get_schooladministrator(admin: str, who: AuthenticatedUser = Depends(RoleChecker("G"))):
+def get_schooladministrator(admin: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Get all information of a specific schooladministrator.
 
