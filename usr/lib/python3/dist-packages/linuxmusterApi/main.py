@@ -89,6 +89,7 @@ def home():
 
 app.include_router(auth.router, prefix="/v1")
 app.include_router(admins.router_global, prefix="/v1")
+app.include_router(admins.router_school, prefix="/v1")
 app.include_router(devices.router, prefix="/v1")
 app.include_router(exam.router, prefix="/v1")
 app.include_router(extraclasses.router, prefix="/v1")
