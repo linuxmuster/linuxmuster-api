@@ -1,3 +1,16 @@
+linuxmuster-api7 (7.3.27) lmn73; urgency=medium
+
+  * New GET endpoint /globaladministrators. 
+  * New GET endpoint /schooladministrators. 
+  * New GET endpoint /globalbindusers. 
+  * New GET endpoint /schoolbindusers.
+  * New query parameter check_parents for /roles endpoints.
+  * Support for parent and staff in /roles. 
+  * Method to process users checks as background task and follow logs.
+  * Many pytests. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 22 Feb 2026 18:12:01 +0100
+
 linuxmuster-api7 (7.3.26) lmn73; urgency=medium
 
   * Add /auth/whoami endpoint
