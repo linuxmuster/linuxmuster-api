@@ -3,6 +3,6 @@ fastapi
 pyOpenSSL
 python-ldap
 pyyaml
+typing-extensions
 uvicorn
 websockets>=11.0.3
-
