@@ -42,12 +42,14 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
         prefix = ''
 
     with LMNFile(f'/etc/linuxmuster/sophomorix/{school}/{prefix}devices.csv', 'r') as f:
-        devices_data = list(filter(lambda d:d['room'][0] != "#", f.read()))
-        devices_data = sorted(devices_data, key=lambda d: (d['room'], d['hostname']))
+        devices_data = f.read()
 
     ldap_data = lr.get('/devices', attributes=['cn', 'sophomorixComputerMAC', 'dn'])
 
     for device in devices_data:
+        if device['room'][0] == "#":
+            device['status'] == "comment"
+            continue
         for ldap_device in ldap_data:
             if device['hostname'].lower() == ldap_device['cn'].lower():
                 if device['mac'].lower() == ldap_device['sophomorixComputerMAC'].lower():
@@ -97,8 +99,8 @@ def post_management_list_content(school: str, content: MgmtList, who: Authentica
     path = f"/etc/linuxmuster/sophomorix/{school}/{prefix}devices.csv"
 
     try:
-        with LMNFile(path, 'w') as list:
-            return list.write(content.data)
+        with LMNFile(path, 'w') as devices_file:
+            return devices_file.write(content.data)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error writing {path}: {str(e)}")
 
