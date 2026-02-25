@@ -59,6 +59,20 @@ class Project(BaseModel):
     quota: list[LMNShareQuota] | None = []
     school: str = 'default-school'
 
+class SchoolclassAttr(BaseModel):
+    """
+    Model to patch some attributes of a specific schoolclass.
+    """
+
+
+    description: str | None = ''
+    displayName: str | None = ''
+    join: bool = True
+    hide: bool = False
+    mailalias: bool = False
+    maillist: bool = False
+    mailquota: int | None = None
+
 class User(BaseModel):
     """
     Model to patch user's data.
