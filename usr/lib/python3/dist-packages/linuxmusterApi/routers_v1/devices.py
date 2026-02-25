@@ -98,6 +98,11 @@ def post_management_list_content(school: str, content: MgmtList, who: Authentica
 
     path = f"/etc/linuxmuster/sophomorix/{school}/{prefix}devices.csv"
 
+    # Filter status key if given
+    for d in content.data:
+        if 'status' in d:
+            del d['status']
+
     try:
         with LMNFile(path, 'w') as devices_file:
             return devices_file.write(content.data)
