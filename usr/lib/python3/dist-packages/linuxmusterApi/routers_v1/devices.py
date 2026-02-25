@@ -47,9 +47,12 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
     ldap_data = lr.get('/devices', attributes=['cn', 'sophomorixComputerMAC', 'dn'])
 
     for device in devices_data:
+        status = "Not registered"
+
         if device['room'][0] == "#":
             device['status'] == "comment"
             continue
+
         for ldap_device in ldap_data:
             if device['hostname'].lower() == ldap_device['cn'].lower():
                 if device['mac'].lower() == ldap_device['sophomorixComputerMAC'].lower():
@@ -58,8 +61,6 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
                     status = "Domain Controller"
 
                 break
-        else:
-            status = "Not registered"
 
         device['status'] = status
 
