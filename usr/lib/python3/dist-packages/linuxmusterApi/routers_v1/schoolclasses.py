@@ -2,10 +2,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import FileResponse
 
 from security import RoleChecker, AuthenticatedUser
+from linuxmusterTools.print import print_schoolclass_list
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from linuxmusterTools.ldapconnector import LMNSchoolclass
 from utils.checks import get_schoolclass_or_404
 from utils.sophomorix import lmn_getSophomorixValue
-from linuxmusterTools.print import print_schoolclass_list
+from .body_schemas import SchoolclassAttr
 
 
 router = APIRouter(
@@ -74,6 +76,88 @@ def get_schoolclass(schoolclass: str, all_members: bool = False, who: Authentica
         schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
 
     return schoolclass
+
+@router.patch("/{schoolclass}", name="Update some parameters of a specific schoolclass")
+def modify_schoolclass(schoolclass: str, schoolclass_details: SchoolclassAttr, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+    """
+    ## Update some parameters of a specific schoolclass
+
+    *schoolclass_details* are the attribute of the group, like *description*,
+    *join* if the schoolclass should be joinable, *hide*, etc ... and can be partial.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    ### This endpoint uses Sophomorix.
+
+    \f
+    :param schoolclass: cn of the schoolclass to update
+    :type schoolclass: basestring
+    :param schoolclass_details: Parameter of the group, see NewGroup attributes
+    :type schoolclass_details: NewGroup
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: Result of the sophomorix command
+    :rtype: list
+    """
+
+
+    # School specific request. For global-admins, it will search in all schoolclasses from all schools
+    schoolclass_data = lr.get(f'/schoolclasses/{schoolclass}', school=who.school)
+
+    if not schoolclass_data:
+       raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found.")
+
+    options = []
+
+    if schoolclass_details.description:
+        options.extend(['--description', schoolclass_details.description])
+
+    if schoolclass_details.join:
+        options.append('--join')
+    else:
+        options.append('--nojoin')
+
+    if schoolclass_details.hide:
+        options.append('--hide')
+    else:
+        options.append('--nohide')
+
+    if schoolclass_details.mailalias:
+        options.append('--mailalias')
+    else:
+        options.append('--nomailalias')
+
+    if schoolclass_details.maillist:
+        options.append('--maillist')
+    else:
+        options.append('--nomaillist')
+
+    if schoolclass_details.mailquota is not None:
+        # Only mailquota without comment
+        options.extend(['--mailquota', f"{schoolclass_details.mailquota}:"])
+
+    cmd = ['sophomorix-class',  *options, '-c', schoolclass.lower(), '-jj']
+
+    try:
+        result =  lmn_getSophomorixValue(cmd, '')
+    except Exception as e:
+        raise HTTPException(status_code=422, detail=str(e))
+
+    output = result.get("OUTPUT", [{}])[0]
+    if output.get("TYPE", "") == "ERROR":
+        raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
+
+    if schoolclass_details.displayName:
+        if "-" in schoolclass:
+            school = schoolclass.lower().split("-")[0]
+        else:
+            school = 'default-school'
+        SchoolclassWriter = LMNSchoolclass(f"{schoolclass.lower()}", school=school)
+        SchoolclassWriter.setattr(data={'displayName': schoolclass_details.displayName})
+
+    return result
 
 @router.get("/{schoolclass}/first_passwords", name="Get all first passwords of the members of a specific schoolclass")
 def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
