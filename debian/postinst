@@ -49,7 +49,7 @@ case "$1" in
         msg "Checking config files"
         if [ ! -f "/etc/linuxmuster/api/config.yml" ] ; then
             mkdir -p /etc/linuxmuster/api
-            SECRET_KEY=$(echo $(openssl rand 64) | openssl enc -A -base64)
+            SECRET_KEY=$(openssl rand 64 | openssl enc -A -base64)
             cat << EOF > /etc/linuxmuster/api/config.yml
 uvicorn:
   port: 8001
