@@ -66,6 +66,32 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
 
     return devices_data
 
+@router.get("/{device}", name="Get device details")
+def get_device_details(device: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+    """
+    ## Get the details of a specific device.
+
+    Output information are e.g. cn, dn, etc...
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: All devices details
+    :rtype: dict
+    """
+
+
+    devices_data = lr.get(f'/devices/{device}', school=who.school)
+
+    if devices_data:
+        return devices_data
+
+    raise HTTPException(status_code=404, detail=f"Device {device} not found")
+
 @router.post("/list/{school}", name="Write content of devices.csv")
 def post_management_list_content(school: str, content: MgmtList, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
