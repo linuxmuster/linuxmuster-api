@@ -1,5 +1,6 @@
+import os
 import subprocess
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
@@ -41,7 +42,11 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
     else:
         prefix = ''
 
-    with LMNFile(f'/etc/linuxmuster/sophomorix/{school}/{prefix}devices.csv', 'r') as f:
+    devices_path = f'/etc/linuxmuster/sophomorix/{school}/{prefix}devices.csv'
+    if not os.path.isfile(devices_path):
+        return []
+
+    with LMNFile(devices_path, 'r') as f:
         devices_data = f.read()
 
     ldap_data = lr.get('/devices', attributes=['cn', 'sophomorixComputerMAC', 'dn'])
