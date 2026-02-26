@@ -50,7 +50,7 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
         status = "Not registered"
 
         if device['room'][0] == "#":
-            device['status'] == "comment"
+            device['status'] = "comment"
             continue
 
         for ldap_device in ldap_data:
