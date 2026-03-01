@@ -1,3 +1,13 @@
+linuxmuster-api7 (7.3.29) lmn73; urgency=medium
+
+  * /devices/list: Change namespace to list for devices management. 
+  * New GET endpoint /devices/device.
+  * New PATCH endpoint /devices/device (only 2 attributes).
+  * Fix secret key generation.
+  * Fix server error when devices.csv is missing.
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 01 Mar 2026 18:34:10 +0100
+
 linuxmuster-api7 (7.3.28) lmn73; urgency=medium
 
   * /devices: Fix status on GET.
