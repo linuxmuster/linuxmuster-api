@@ -181,3 +181,13 @@ class MgmtList(BaseModel):
 
 
     data: list | None = None
+
+class Device(BaseModel):
+    """
+    Some attributes which can be directly modified in ldap, without breaking
+    the synchronisation between ldap and devices.csv.
+    """
+
+
+    displayName: str | None = None
+    unicodePwd: str | None = None
