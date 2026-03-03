@@ -191,3 +191,5 @@ class Device(BaseModel):
 
     displayName: str | None = None
     unicodePwd: str | None = None
+    unicodePwd_hash: str | None = None
+    supplementalCredentials_hash: str | None = None
