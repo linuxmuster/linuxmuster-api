@@ -126,7 +126,17 @@ def modify_device(device: str, device_details: Device, who: AuthenticatedUser = 
     if not device_writer.getattr('sAMAccountName'):
        raise HTTPException(status_code=404, detail=f"Device {device} not found.")
 
-    device_writer.setattr(data=device_details.model_dump())
+    ucPwd_hash = device_details.unicodePwd_hash
+    suppCred_hash = device_details.supplementalCredentials_hash
+
+    if ucPwd_hash or suppCred_hash:
+        if not (ucPwd_hash and suppCred_hash):
+            return HTTPException(status_code=400, detail=f"Both unicodePwd_hash and supplementalCredentials_hash must be given.")
+
+        device_writer._set_hash_pwd(ucPwd_hash, suppCred_hash)
+
+    elif device_details.unicodePwd:
+        device_writer.setattr(data={'unicodePwd', device_details.unicodePwd})
 
     return device_writer.data
 
