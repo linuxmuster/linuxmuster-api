@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.30) lmn73; urgency=medium
+
+  * PATCH /devices/device: set password hashes. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Tue, 03 Mar 2026 16:57:08 +0100
+
 linuxmuster-api7 (7.3.29) lmn73; urgency=medium
 
   * /devices/list: Change namespace to list for devices management. 
