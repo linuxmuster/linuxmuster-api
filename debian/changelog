@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.32) lmn73; urgency=medium
+
+  * Fix typo. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 04 Mar 2026 17:27:56 +0100
+
 linuxmuster-api7 (7.3.31) lmn73; urgency=medium
 
   * Check tmp dir and harden security. 
