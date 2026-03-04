@@ -150,7 +150,7 @@ async def do_sophomorix_apply(
         raise HTTPException(status_code=403, detail=f"Forbidden")
 
     check_tmp_dir()
-    
+
     _, logpath = tempfile.mkstemp(prefix=f'{school}.', suffix='.sophomorix.log', dir='/tmp/lmnapi')
 
     script = ''
