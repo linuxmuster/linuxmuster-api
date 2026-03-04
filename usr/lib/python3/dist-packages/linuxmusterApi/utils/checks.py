@@ -4,6 +4,12 @@ from fastapi import HTTPException
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
+def check_tmp_dir():
+    # Ensure tmp directory is ready
+    if not os.path.exists('/tmp/lmnapi'):
+        os.makedirs('/tmp/lmnapi')
+        os.chmod('/tmp/lmnapi', 0o600)
+
 def get_user_or_404(user, school):
     try:
         user_details = lr.get(f'/users/{user}', school=school, dict=False)

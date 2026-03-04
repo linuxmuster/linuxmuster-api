@@ -14,6 +14,9 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.utils import get_openapi
 from vars import *
 
+
+from utils.checks import check_tmp_dir
+
 config = {}
 config_path = '/etc/linuxmuster/api/config.yml'
 if os.path.isfile(config_path):
@@ -190,6 +193,8 @@ if __name__ == "__main__":
         sys.exit(1)
 
     secret = ''
+
+    check_tmp_dir()
 
     # Ensure config data
     config.setdefault('uvicorn', {})

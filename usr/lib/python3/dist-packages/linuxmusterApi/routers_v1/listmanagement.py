@@ -1,10 +1,9 @@
 import os
 import tempfile
-import subprocess
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 
 from security import RoleChecker, AuthenticatedUser
-from utils.checks import check_valid_mgmtlist_or_404
+from utils.checks import check_valid_mgmtlist_or_404, check_tmp_dir
 from linuxmusterTools.lmnfile import LMNFile
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from utils.sophomorix import lmn_getSophomorixValue, process_user
@@ -150,6 +149,8 @@ async def do_sophomorix_apply(
     if who.school != "global" and who.school != school:
         raise HTTPException(status_code=403, detail=f"Forbidden")
 
+    check_tmp_dir()
+    
     _, logpath = tempfile.mkstemp(prefix=f'{school}.', suffix='.sophomorix.log', dir='/tmp/lmnapi')
 
     script = ''

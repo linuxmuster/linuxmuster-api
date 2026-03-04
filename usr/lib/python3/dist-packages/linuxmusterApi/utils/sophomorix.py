@@ -7,6 +7,9 @@ import ast
 import logging
 from time import time
 
+from checks import check_tmp_dir
+
+
 class SophomorixProcess(threading.Thread):
     """
     Worker for processing sophomorix commands.
@@ -25,6 +28,7 @@ class SophomorixProcess(threading.Thread):
 
 
 def process_user(cmd, pid):
+    check_tmp_dir()
     statuspath = f"/tmp/lmnapi/{pid}.sophomorix.status"
 
     with open(statuspath, 'w') as status:

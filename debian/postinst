@@ -70,6 +70,7 @@ EOF
 
         # For sophomorix users' commands logs
         mkdir -p /tmp/lmnapi
+        chmod 600 /tmp/lmnapi
 
         msg "Checking certificate"
         if [ ! -f "/etc/linuxmuster/api/lmnapi.pem" ] ; then
