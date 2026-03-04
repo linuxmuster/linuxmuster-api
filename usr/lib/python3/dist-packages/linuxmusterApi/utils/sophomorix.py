@@ -7,7 +7,7 @@ import ast
 import logging
 from time import time
 
-from checks import check_tmp_dir
+from .checks import check_tmp_dir
 
 
 class SophomorixProcess(threading.Thread):
