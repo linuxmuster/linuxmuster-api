@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNDevice
 from linuxmusterTools.lmnfile import LMNFile
+from linuxmusterTools.samba_util import DeviceManager
 from utils.checks import get_printer_or_404
 from utils.sophomorix import lmn_getSophomorixValue
 from .body_schemas import MgmtList, Device
@@ -75,6 +76,8 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
 def get_device_details(device: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Get the details of a specific device.
+    If the request is made from a global administrator, the response will contain
+    all devices with the same cn accross all schools.
 
     Output information are e.g. cn, dn, etc...
 
@@ -120,10 +123,20 @@ def modify_device(device: str, device_details: Device, who: AuthenticatedUser = 
     """
 
 
-    # School specific request. For global-admins, it will search in all devices from all schools
-    device_writer = LMNDevice(device, school=who.school)
+    # School must be given specific to avoid conflicts between clients with same
+    # names upon schools
+    if device_details.school:
+        school = device_details.school
+    else:
+        if who.school == 'global':
+            raise HTTPException(status_code=400, detail=f"For a request as globaladministrator, the school must be specified.")
 
-    if not device_writer.getattr('sAMAccountName'):
+        school = who.school
+
+    device_writer = LMNDevice(device, school=school)
+    sam = device_writer.getattr('sAMAccountName')
+
+    if not sam:
        raise HTTPException(status_code=404, detail=f"Device {device} not found.")
 
     ucPwd_hash = device_details.unicodePwd_hash
@@ -133,7 +146,8 @@ def modify_device(device: str, device_details: Device, who: AuthenticatedUser = 
         if not (ucPwd_hash and suppCred_hash):
             return HTTPException(status_code=400, detail=f"Both unicodePwd_hash and supplementalCredentials_hash must be given.")
 
-        device_writer._set_hash_pwd(ucPwd_hash, suppCred_hash)
+        device_manager = DeviceManager()
+        device_manager.set_credentials(device, ucPwd_hash, suppCred_hash)
 
     elif device_details.unicodePwd:
         device_writer.setattr(data={'unicodePwd', device_details.unicodePwd})
