@@ -73,7 +73,7 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
     return devices_data
 
 @router.get("/{device}", name="Get device details")
-def get_device_details(device: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def get_device_details(device: str, credentials: bool = False, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Get the details of a specific device.
     If the request is made from a global administrator, the response will contain
@@ -94,6 +94,10 @@ def get_device_details(device: str, who: AuthenticatedUser = Depends(RoleChecker
 
 
     devices_data = lr.get(f'/devices/{device}', school=who.school)
+
+    if credentials:
+        device_manager = DeviceManager()
+        devices_data.update(device_manager.get_credentials(device))
 
     if devices_data:
         return devices_data
