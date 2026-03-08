@@ -1,3 +1,11 @@
+linuxmuster-api7 (7.3.33) lmn73; urgency=medium
+
+  * GET /devices/device: new credentials flag for AD credentials.
+  * PATCH /devices/device: use DeviceManager to set credentials.
+  * PoC for new permissions system. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 08 Mar 2026 21:18:26 +0100
+
 linuxmuster-api7 (7.3.32) lmn73; urgency=medium
 
   * Fix typo. 
