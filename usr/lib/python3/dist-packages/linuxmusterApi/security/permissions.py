@@ -1,9 +1,29 @@
-from fastapi import Depends, Request, HTTPException
-from starlette import status
+from functools import wraps
 
 from .header import *
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
+
+# PoC: decorator for use with new permissions
+# How to use: simply decorate the endpoint with @authorize('lmn:linbo:sync')
+# This decorator should compare the given permission with the one stored in
+# /etc/linuxmuster/api/permissions.yml
+# See samples/permissions.yml for this.
+# If authorize is used for an endpoint, this will have precedence to the other
+# Checkers, and will check if the given role / user has non-default permission
+# to override the Checker.
+
+def authorize(perm):
+    def middleware(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            who = kwargs['who']
+            permlist = [perm] # should be loaded when lmnapi starts and be cached
+            if who.user == "global-admin" and perm not in permlist:
+                raise HTTPException(status_code=403, detail=f"Permission {perm} is missing.")
+            return func(*args, **kwargs)
+        return wrapper
+    return middleware
 
 class BasicChecker:
     """
