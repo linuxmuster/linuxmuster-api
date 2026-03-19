@@ -59,20 +59,6 @@ class Project(BaseModel):
     quota: list[LMNShareQuota] | None = []
     school: str = 'default-school'
 
-class SchoolclassAttr(BaseModel):
-    """
-    Model to patch some attributes of a specific schoolclass.
-    """
-
-
-    description: str | None = ''
-    displayName: str | None = ''
-    join: bool = True
-    hide: bool = False
-    mailalias: bool = False
-    maillist: bool = False
-    mailquota: int | None = None
-
 class User(BaseModel):
     """
     Model to patch user's data.
@@ -182,15 +168,12 @@ class MgmtList(BaseModel):
 
     data: list | None = None
 
-class Device(BaseModel):
-    """
-    Some attributes which can be directly modified in ldap, without breaking
-    the synchronisation between ldap and devices.csv.
-    """
+# --- LINBO Models ---
 
+class LinboBatchMacs(BaseModel):
+    """List of MAC addresses for batch host lookup."""
+    macs: list[str]
 
-    displayName: str | None = None
-    school: str | None = None
-    supplementalCredentials_hash: str | None = None
-    unicodePwd: str | None = None
-    unicodePwd_hash: str | None = None
+class LinboBatchIds(BaseModel):
+    """List of IDs for batch config lookup."""
+    ids: list[str]
