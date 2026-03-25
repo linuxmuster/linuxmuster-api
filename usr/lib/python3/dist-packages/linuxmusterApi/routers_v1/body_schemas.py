@@ -194,3 +194,13 @@ class Device(BaseModel):
     supplementalCredentials_hash: str | None = None
     unicodePwd: str | None = None
     unicodePwd_hash: str | None = None
+
+# --- LINBO Models ---
+
+class LinboBatchMacs(BaseModel):
+    """List of MAC addresses for batch host lookup."""
+    macs: list[str]
+
+class LinboBatchIds(BaseModel):
+    """List of IDs for batch config lookup."""
+    ids: list[str]
