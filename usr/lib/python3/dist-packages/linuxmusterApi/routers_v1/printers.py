@@ -184,11 +184,9 @@ def join_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
     ### Access
     - teachers
 
-    ### This endpoint uses Sophomorix.
-
     \f
     :param printer: cn of the printer to join
-    :type schooclass: basestring
+    :type schoolclass: basestring
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
     """
@@ -212,14 +210,10 @@ def join_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
     if not printer_data.sophomorixJoinable:
         raise HTTPException(status_code=403, detail=f"Printer {printer} is not joinable.")
 
-    cmd = ['sophomorix-group',  '--addmembers', who.user, '--group', printer.lower(), '-jj']
-    result =  lmn_getSophomorixValue(cmd, '')
+    printer_writer = LMNPrinter(printer)
+    printer_writer.add_member(who.user)
 
-    output = result.get("OUTPUT", [{}])[0]
-    if output.get("TYPE", "") == "ERROR":
-        raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
-
-    return result
+    return ''
 
 @router.post("/{printer}/quit", name="Quit an existing printer group")
 def quit_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T"))):
@@ -231,8 +225,6 @@ def quit_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
 
     ### Access
     - teachers
-
-    ### This endpoint uses Sophomorix.
 
     \f
     :param printer: cn of the printer to quit
@@ -260,11 +252,7 @@ def quit_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
     if not printer_data.sophomorixJoinable:
         raise HTTPException(status_code=403, detail=f"Printer {printer} is not joinable and cannot be quitted.")
 
-    cmd = ['sophomorix-group',  '--removemembers', who.user, '--group', printer.lower(), '-jj']
-    result =  lmn_getSophomorixValue(cmd, '')
+    printer_writer = LMNPrinter(printer)
+    printer_writer.remove_member(who.user)
 
-    output = result.get("OUTPUT", [{}])[0]
-    if output.get("TYPE", "") == "ERROR":
-        raise HTTPException(status_code=400, detail=output["MESSAGE_EN"])
-
-    return result
+    return ''
