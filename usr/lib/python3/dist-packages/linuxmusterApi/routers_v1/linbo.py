@@ -13,20 +13,19 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.responses import PlainTextResponse, StreamingResponse, Response
 
 from security import AuthenticatedUser, RoleChecker
-from utils.checks import check_valid_school_or_404
 
 from .body_schemas import LinboBatchIds, LinboBatchMacs
 
 # LMNTools imports — all business logic
 from linuxmusterTools.linbo.hosts import (
-    LinboHostProvider, devices_csv_path,
+    LinboHostProvider, devices_csv_path, validate_school,
 )
 from linuxmusterTools.linbo.config import LinboConfigManager
 from linuxmusterTools.linbo.grub import LinboGrubReader
 from linuxmusterTools.linbo.dhcp import LinboDhcpExporter
 from linuxmusterTools.linbo.changes import LinboChangeTracker
+from linuxmusterTools.linbo.images import scan_images
 from linuxmusterTools.linbo.image_sync import (
-    scan_images,
     resolve_image_file, get_image_file_info,
     receive_upload_chunk, get_upload_status,
     finalize_upload, cancel_upload,
@@ -46,6 +45,15 @@ router = APIRouter(
 
 LINBO_DIR = Path("/srv/linbo")
 IMAGES_DIR = LINBO_DIR / "images"
+
+
+def _require_school(school: str) -> None:
+    """Validate school name, raise 400 if invalid."""
+    if not validate_school(school):
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid school name: {school!r}. Must match [a-zA-Z0-9][a-zA-Z0-9_-]*",
+        )
 
 
 # ── Endpoints ────────────────────────────────────────────────────────
@@ -110,7 +118,7 @@ def linbo_health(
     :param school: School name (default: default-school)
     :type school: str
     """
-    check_valid_school_or_404(school)
+    _require_school(school)
     csv_path = devices_csv_path(school)
     config_mgr = LinboConfigManager()
     grub_reader = LinboGrubReader()
@@ -137,7 +145,7 @@ def get_changes(
     :param since: Cursor from previous sync (unix timestamp), or '0' for full snapshot
     :param school: School name (default: default-school)
     """
-    check_valid_school_or_404(school)
+    _require_school(school)
     tracker = LinboChangeTracker(school=school)
     return tracker.get_changes(since_cursor=since)
 
@@ -155,7 +163,7 @@ def batch_get_hosts(
     :param body: List of MAC addresses to look up
     :param school: School name (default: default-school)
     """
-    check_valid_school_or_404(school)
+    _require_school(school)
 
     if len(body.macs) > 500:
         raise HTTPException(status_code=400, detail="Maximum 500 MACs per request")
@@ -182,7 +190,7 @@ def batch_get_startconfs(
     :param body: List of start.conf group IDs
     :param school: School name (default: default-school)
     """
-    check_valid_school_or_404(school)
+    _require_school(school)
 
     if len(body.ids) > 100:
         raise HTTPException(status_code=400, detail="Maximum 100 IDs per request")
@@ -209,7 +217,7 @@ def batch_get_configs(
     :param body: List of GRUB config group IDs
     :param school: School name (default: default-school)
     """
-    check_valid_school_or_404(school)
+    _require_school(school)
 
     if len(body.ids) > 100:
         raise HTTPException(status_code=400, detail="Maximum 100 IDs per request")
@@ -239,7 +247,7 @@ def dhcp_export_dnsmasq(
     \\f
     :param school: School name (default: default-school)
     """
-    check_valid_school_or_404(school)
+    _require_school(school)
 
     provider = LinboHostProvider(school)
     try:
@@ -276,7 +284,7 @@ def get_all_grub_configs(
     \\f
     :param school: School name (default: default-school)
     """
-    check_valid_school_or_404(school)
+    _require_school(school)
 
     provider = LinboHostProvider(school)
     try:
@@ -301,7 +309,7 @@ def dhcp_export_isc(
     \\f
     :param school: School name (default: default-school)
     """
-    check_valid_school_or_404(school)
+    _require_school(school)
 
     provider = LinboHostProvider(school)
     try:
@@ -451,8 +459,12 @@ async def upload_image_file(
             raise HTTPException(status_code=400, detail="Invalid Content-Range")
 
     body = await request.body()
-    result = receive_upload_chunk(IMAGES_DIR, image_name, filename, body, offset)
-    return result
+    try:
+        return receive_upload_chunk(IMAGES_DIR, image_name, filename, body, offset)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 
 @router.get("/images/upload/{image_name}/{filename}/status", name="Check upload status for resume")
