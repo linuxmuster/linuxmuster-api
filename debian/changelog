@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.34) lmn73; urgency=medium
+
+  * /printers/join and quit: use lmntools. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Thu, 02 Apr 2026 00:03:47 +0200
+
 linuxmuster-api7 (7.3.33) lmn73; urgency=medium
 
   * GET /devices/device: new credentials flag for AD credentials.
