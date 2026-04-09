@@ -9,12 +9,12 @@ import logging
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse, StreamingResponse, Response
 
 from security import AuthenticatedUser, RoleChecker
 
-from .body_schemas import LinboBatchIds, LinboBatchMacs
+from .body_schemas import LinboBatchMacs
 
 # LMNTools imports — all business logic
 from linuxmusterTools.linbo.hosts import (
@@ -54,6 +54,20 @@ def _require_school(school: str) -> None:
             status_code=400,
             detail=f"Invalid school name: {school!r}. Must match [a-zA-Z0-9][a-zA-Z0-9_-]*",
         )
+
+
+def _parse_list_query(values: list[str], param_name: str, max_items: int) -> list[str]:
+    """Accept repeated and comma-separated query params while preserving order."""
+    items: list[str] = []
+    for value in values:
+        items.extend(part.strip() for part in value.split(","))
+
+    filtered = [item for item in items if item]
+    if not filtered:
+        raise HTTPException(status_code=400, detail=f"At least one {param_name} value is required")
+    if len(filtered) > max_items:
+        raise HTTPException(status_code=400, detail=f"Maximum {max_items} {param_name} values per request")
+    return filtered
 
 
 # ── Endpoints ────────────────────────────────────────────────────────
@@ -150,8 +164,8 @@ def get_changes(
     return tracker.get_changes(since_cursor=since)
 
 
-@router.post("/hosts:batch", name="Batch get hosts by MAC")
-def batch_get_hosts(
+@router.post("/hosts/query", name="Query hosts by MAC address list")
+def query_hosts(
     body: LinboBatchMacs,
     school: str = "default-school",
     who: AuthenticatedUser = Depends(RoleChecker("G")),
@@ -177,9 +191,9 @@ def batch_get_hosts(
     return {"hosts": hosts}
 
 
-@router.post("/startconfs:batch", name="Batch get start.conf files")
-def batch_get_startconfs(
-    body: LinboBatchIds,
+@router.get("/startconfs", name="Get start.conf files by ID")
+def get_startconfs(
+    id: list[str] = Query(..., alias="id", description="One or more start.conf IDs"),
     school: str = "default-school",
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
@@ -187,16 +201,14 @@ def batch_get_startconfs(
     ## Get start.conf file contents for a list of group IDs.
 
     \\f
-    :param body: List of start.conf group IDs
+    :param id: List of start.conf group IDs, either repeated or comma-separated
     :param school: School name (default: default-school)
     """
     _require_school(school)
-
-    if len(body.ids) > 100:
-        raise HTTPException(status_code=400, detail="Maximum 100 IDs per request")
+    ids = _parse_list_query(id, "id", 100)
 
     config_mgr = LinboConfigManager()
-    results = config_mgr.get_raw_startconfs(body.ids)
+    results = config_mgr.get_raw_startconfs(ids)
 
     if not results:
         raise HTTPException(status_code=404, detail="No start.conf files found for given IDs")
@@ -204,9 +216,9 @@ def batch_get_startconfs(
     return {"startConfs": results}
 
 
-@router.post("/configs:batch", name="Batch get GRUB configs")
-def batch_get_configs(
-    body: LinboBatchIds,
+@router.get("/configs", name="Get GRUB configs by ID")
+def get_configs(
+    id: list[str] = Query(..., alias="id", description="One or more GRUB config IDs"),
     school: str = "default-school",
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
@@ -214,16 +226,14 @@ def batch_get_configs(
     ## Get GRUB configuration files for a list of group IDs.
 
     \\f
-    :param body: List of GRUB config group IDs
+    :param id: List of GRUB config group IDs, either repeated or comma-separated
     :param school: School name (default: default-school)
     """
     _require_school(school)
-
-    if len(body.ids) > 100:
-        raise HTTPException(status_code=400, detail="Maximum 100 IDs per request")
+    ids = _parse_list_query(id, "id", 100)
 
     grub_reader = LinboGrubReader()
-    results = grub_reader.get_configs_by_ids(body.ids)
+    results = grub_reader.get_configs_by_ids(ids)
 
     if not results:
         raise HTTPException(status_code=404, detail="No GRUB configs found for given IDs")

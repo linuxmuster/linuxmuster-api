@@ -198,9 +198,5 @@ class Device(BaseModel):
 # --- LINBO Models ---
 
 class LinboBatchMacs(BaseModel):
-    """List of MAC addresses for batch host lookup."""
+    """List of MAC addresses for LINBO host query."""
     macs: list[str]
-
-class LinboBatchIds(BaseModel):
-    """List of IDs for batch config lookup."""
-    ids: list[str]
