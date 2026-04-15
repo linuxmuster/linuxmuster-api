@@ -4,6 +4,7 @@ from starlette import status
 import jwt
 import base64
 import yaml
+from datetime import datetime, timezone, timedelta
 from typing_extensions import Annotated
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
@@ -26,6 +27,7 @@ def generate_jwt(user, role, dn, school):
     secret = base64.b64decode(config['secret'])
 
     payload  = {
+        'exp': datetime.now(timezone.utc) + timedelta(hours=12),
         'user': user,
         'role': role,
         'dn': dn,
