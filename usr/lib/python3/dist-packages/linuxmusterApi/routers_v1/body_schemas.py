@@ -194,3 +194,9 @@ class Device(BaseModel):
     supplementalCredentials_hash: str | None = None
     unicodePwd: str | None = None
     unicodePwd_hash: str | None = None
+
+# --- LINBO Models ---
+
+class LinboBatchMacs(BaseModel):
+    """List of MAC addresses for LINBO host query."""
+    macs: list[str]
