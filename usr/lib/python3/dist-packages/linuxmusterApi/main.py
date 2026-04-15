@@ -70,6 +70,7 @@ from routers_v1 import (
     sessions,
     teachers,
     users,
+    vdi,
 )
 
 @app.middleware("http")
@@ -116,6 +117,7 @@ app.include_router(sessions.router, prefix="/v1")
 app.include_router(schools.router, prefix="/v1")
 app.include_router(teachers.router, prefix="/v1")
 app.include_router(users.router, prefix="/v1")
+app.include_router(vdi.router, prefix="/v1")
 
 def custom_openapi():
     if app.openapi_schema:
