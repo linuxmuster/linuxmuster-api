@@ -4,6 +4,7 @@ from starlette import status
 import jwt
 import base64
 import yaml
+import hmac
 from pydantic import BaseModel
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
@@ -108,7 +109,7 @@ def check_host_header(hostkey, client_ip) -> AuthenticatedUser:
         if secret is None:
             continue
 
-        if hostkey == secret:
+        if hmac.compare_digest(hostkey, secret):
             user = key.get('user', None)
             valid_ips = key.get('ips', [])
 
