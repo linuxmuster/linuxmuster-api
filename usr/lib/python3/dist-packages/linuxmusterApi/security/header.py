@@ -54,7 +54,7 @@ def check_user_header(apikey) -> AuthenticatedUser:
     secret = base64.b64decode(config['secret'])
 
     try:
-        payload = jwt.decode(apikey, secret, algorithms=["HS512", "HS256"])
+        payload = jwt.decode(apikey, secret, algorithms=["HS512"])
         user = payload['user']
     except (jwt.exceptions.InvalidSignatureError, jwt.exceptions.DecodeError):
         raise HTTPException(
