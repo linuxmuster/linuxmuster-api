@@ -13,13 +13,10 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import PlainTextResponse, StreamingResponse, Response
 
 from security import AuthenticatedUser, RoleChecker
-
+from utils.checks import check_valid_school_or_404
 from .body_schemas import LinboBatchMacs
 
 # LMNTools imports — all business logic
-from linuxmusterTools.linbo.hosts import (
-    LinboHostProvider, devices_csv_path, validate_school,
-)
 from linuxmusterTools.linbo.config import LinboConfigManager
 from linuxmusterTools.linbo.grub import LinboGrubReader
 from linuxmusterTools.linbo.dhcp import LinboDhcpExporter
@@ -33,6 +30,7 @@ from linuxmusterTools.linbo.image_sync import (
 )
 from linuxmusterTools.lmnfile import LMNFile
 
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
@@ -45,15 +43,6 @@ router = APIRouter(
 
 LINBO_DIR = Path("/srv/linbo")
 IMAGES_DIR = LINBO_DIR / "images"
-
-
-def _require_school(school: str) -> None:
-    """Validate school name, raise 400 if invalid."""
-    if not validate_school(school):
-        raise HTTPException(
-            status_code=400,
-            detail=f"Invalid school name: {school!r}. Must match [a-zA-Z0-9][a-zA-Z0-9_-]*",
-        )
 
 
 def _parse_list_query(values: list[str], param_name: str, max_items: int) -> list[str]:
@@ -132,7 +121,9 @@ def linbo_health(
     :param school: School name (default: default-school)
     :type school: str
     """
-    _require_school(school)
+
+
+    check_valid_school_or_404(school)
     csv_path = devices_csv_path(school)
     config_mgr = LinboConfigManager()
     grub_reader = LinboGrubReader()
@@ -159,7 +150,9 @@ def get_changes(
     :param since: Cursor from previous sync (unix timestamp), or '0' for full snapshot
     :param school: School name (default: default-school)
     """
-    _require_school(school)
+
+
+    check_valid_school_or_404(school)
     tracker = LinboChangeTracker(school=school)
     return tracker.get_changes(since_cursor=since)
 
@@ -177,7 +170,9 @@ def query_hosts(
     :param body: List of MAC addresses to look up
     :param school: School name (default: default-school)
     """
-    _require_school(school)
+
+
+    check_valid_school_or_404(school)
 
     if len(body.macs) > 500:
         raise HTTPException(status_code=400, detail="Maximum 500 MACs per request")
@@ -204,7 +199,9 @@ def get_startconfs(
     :param id: List of start.conf group IDs, either repeated or comma-separated
     :param school: School name (default: default-school)
     """
-    _require_school(school)
+
+
+    check_valid_school_or_404(school)
     ids = _parse_list_query(id, "id", 100)
 
     config_mgr = LinboConfigManager()
@@ -229,7 +226,9 @@ def get_configs(
     :param id: List of GRUB config group IDs, either repeated or comma-separated
     :param school: School name (default: default-school)
     """
-    _require_school(school)
+
+
+    check_valid_school_or_404(school)
     ids = _parse_list_query(id, "id", 100)
 
     grub_reader = LinboGrubReader()
@@ -257,7 +256,9 @@ def dhcp_export_dnsmasq(
     \\f
     :param school: School name (default: default-school)
     """
-    _require_school(school)
+
+
+    check_valid_school_or_404(school)
 
     provider = LinboHostProvider(school)
     try:
@@ -294,7 +295,9 @@ def get_all_grub_configs(
     \\f
     :param school: School name (default: default-school)
     """
-    _require_school(school)
+
+
+    check_valid_school_or_404(school)
 
     provider = LinboHostProvider(school)
     try:
@@ -319,7 +322,9 @@ def dhcp_export_isc(
     \\f
     :param school: School name (default: default-school)
     """
-    _require_school(school)
+
+
+    check_valid_school_or_404(school)
 
     provider = LinboHostProvider(school)
     try:
@@ -343,6 +348,8 @@ def get_image_manifest(
 
     \\f
     """
+
+
     images = scan_images()
     return {
         "images": images,
@@ -367,6 +374,8 @@ async def download_image_file(
 
     \\f
     """
+
+
     try:
         file_path = resolve_image_file(IMAGES_DIR, image_name, filename)
     except ValueError as e:
@@ -451,6 +460,8 @@ async def upload_image_file(
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
     """Upload an image or sidecar file with Content-Range support. \\f"""
+
+
     try:
         validate_image_path(image_name)
         validate_image_path(filename)
@@ -483,6 +494,8 @@ def upload_status_endpoint(
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
     """Check how many bytes have been received for a chunked upload. \\f"""
+
+
     try:
         return get_upload_status(IMAGES_DIR, image_name, filename)
     except ValueError as e:
@@ -499,6 +512,8 @@ def finalize_upload_endpoint(
     If the target directory already contains image files, they are backed up
     to a timestamped subdirectory before being replaced.
     \\f"""
+
+
     try:
         return finalize_upload(IMAGES_DIR, image_name)
     except ValueError as e:
@@ -513,6 +528,8 @@ def cancel_upload_endpoint(
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
     """Clean up staged upload files on cancel or failure. \\f"""
+
+
     try:
         return cancel_upload(IMAGES_DIR, image_name)
     except ValueError as e:

@@ -7,8 +7,8 @@ import os
 import sys
 import base64
 import binascii
-from fastapi import FastAPI, Depends, Request
-from fastapi.responses import HTMLResponse, FileResponse
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.utils import get_openapi
