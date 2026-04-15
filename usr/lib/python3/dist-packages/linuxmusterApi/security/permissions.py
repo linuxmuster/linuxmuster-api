@@ -1,3 +1,4 @@
+from fastapi import Depends
 from functools import wraps
 
 from .header import *
