@@ -54,7 +54,7 @@ class ConnectionRequest(BaseModel):
 # ---- Groups / Images ----
 
 @router.get("/groups", name="List all VDI groups")
-def get_vdi_groups(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+def get_vdi_groups(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
     """
     ## List all available VDI groups (images).
 
@@ -62,9 +62,7 @@ def get_vdi_groups(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     clone pool configuration (minimum, maximum, prestarted VMs).
 
     ### Access
-    - global-administrators
-    - school-administrators
-    - teachers
+    - all authenticated users
 
     \f
     :param who: User requesting the data, read from API Token
@@ -95,7 +93,7 @@ def get_vdi_groups(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
 # ---- Clone status ----
 
 @router.get("/clones", name="Get clone status for all groups")
-def get_clone_status(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+def get_clone_status(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
     """
     ## Get the clone status for all VDI groups.
 
@@ -103,9 +101,7 @@ def get_clone_status(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     clones per group.
 
     ### Access
-    - global-administrators
-    - school-administrators
-    - teachers
+    - all authenticated users
 
     \f
     :param who: User requesting the data, read from API Token
@@ -126,7 +122,7 @@ def get_clone_status(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
 
 
 @router.get("/clones/{group}", name="Get clone status for a specific group")
-def get_clone_status_by_group(group: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+def get_clone_status_by_group(group: str, who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
     """
     ## Get the clone status for a specific VDI group.
 
@@ -134,9 +130,7 @@ def get_clone_status_by_group(group: str, who: AuthenticatedUser = Depends(RoleC
     build state, connection status, and summary counters.
 
     ### Access
-    - global-administrators
-    - school-administrators
-    - teachers
+    - all authenticated users
 
     \f
     :param group: Name of the VDI group
@@ -197,7 +191,7 @@ def get_master_status(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
 # ---- Connection request ----
 
 @router.post("/connection", name="Request a VDI connection")
-def request_connection(data: ConnectionRequest, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+def request_connection(data: ConnectionRequest, who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
     """
     ## Request a SPICE connection to a VDI desktop.
 
@@ -210,9 +204,7 @@ def request_connection(data: ConnectionRequest, who: AuthenticatedUser = Depends
     3. A VM whose previous assignment has timed out
 
     ### Access
-    - global-administrators
-    - school-administrators
-    - teachers
+    - all authenticated users
 
     \f
     :param data: Connection request with group and user
