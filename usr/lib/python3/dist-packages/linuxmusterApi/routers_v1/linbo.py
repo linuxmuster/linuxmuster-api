@@ -17,6 +17,7 @@ from utils.checks import check_valid_school_or_404
 from .body_schemas import LinboBatchMacs
 
 # LMNTools imports — all business logic
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.linbo.config import LinboConfigManager
 from linuxmusterTools.linbo.grub import LinboGrubReader
 from linuxmusterTools.linbo.dhcp import LinboDhcpExporter
@@ -73,6 +74,8 @@ def get_server_info(
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
     """
+
+    
     try:
         with LMNFile('/var/lib/linuxmuster/setup.ini', 'r') as setup:
             data = setup.read()
@@ -83,14 +86,7 @@ def get_server_info(
     if not ini:
         raise HTTPException(status_code=500, detail="setup.ini empty or invalid")
 
-    sophomorix_dir = Path("/etc/linuxmuster/sophomorix")
-    schools = []
-    if sophomorix_dir.is_dir():
-        for d in sorted(sophomorix_dir.iterdir()):
-            if d.is_dir() and not d.name.startswith("."):
-                csv_name = "devices.csv" if d.name == "default-school" else f"{d.name}.devices.csv"
-                if (d / csv_name).is_file():
-                    schools.append(d.name)
+    schools = lr.getval('/schools', 'ou')
 
     return {
         "serverip": ini.get("serverip", ""),
