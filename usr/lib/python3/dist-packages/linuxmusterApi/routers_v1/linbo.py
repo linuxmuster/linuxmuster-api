@@ -16,8 +16,10 @@ from security import AuthenticatedUser, RoleChecker
 from utils.checks import check_valid_school_or_404
 from .body_schemas import LinboBatchMacs
 
-# LMNTools imports — all business logic
+
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from linuxmusterTools.devices import Devices
+
 from linuxmusterTools.linbo.config import LinboConfigManager
 from linuxmusterTools.linbo.grub import LinboGrubReader
 from linuxmusterTools.linbo.dhcp import LinboDhcpExporter
@@ -75,7 +77,7 @@ def get_server_info(
     :type who: AuthenticatedUser
     """
 
-    
+
     try:
         with LMNFile('/var/lib/linuxmuster/setup.ini', 'r') as setup:
             data = setup.read()
@@ -120,7 +122,7 @@ def linbo_health(
 
 
     check_valid_school_or_404(school)
-    csv_path = devices_csv_path(school)
+    csv_path = Devices(school).path
     config_mgr = LinboConfigManager()
     grub_reader = LinboGrubReader()
 
@@ -173,8 +175,7 @@ def query_hosts(
     if len(body.macs) > 500:
         raise HTTPException(status_code=400, detail="Maximum 500 MACs per request")
 
-    provider = LinboHostProvider(school)
-    hosts = provider.get_hosts_by_macs(body.macs)
+    hosts = Devices(school=school).get_hosts_by_macs(body.macs)
 
     if not hosts:
         raise HTTPException(status_code=404, detail="No hosts found for given MACs")
@@ -256,9 +257,10 @@ def dhcp_export_dnsmasq(
 
     check_valid_school_or_404(school)
 
-    provider = LinboHostProvider(school)
+    devices_mgr = Devices(school=school)
     try:
-        devices, mtime = provider.parse_devices_csv()
+        devices, mtime = devices_mgr.devices
+        csv_mtime = devices_mgr.csv_mtime
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="devices.csv not found")
 
@@ -274,8 +276,8 @@ def dhcp_export_dnsmasq(
         return PlainTextResponse(content="", status_code=304, headers={"ETag": f'"{etag}"'})
 
     headers = {"ETag": f'"{etag}"'}
-    if mtime:
-        headers["Last-Modified"] = mtime.strftime("%a, %d %b %Y %H:%M:%S GMT")
+    if csv_mtime:
+        headers["Last-Modified"] = csv_mtime.strftime("%a, %d %b %Y %H:%M:%S GMT")
 
     return PlainTextResponse(content=content, headers=headers)
 
@@ -295,9 +297,8 @@ def get_all_grub_configs(
 
     check_valid_school_or_404(school)
 
-    provider = LinboHostProvider(school)
     try:
-        school_groups = provider.get_school_groups()
+        school_groups = Devices(school=school).groups
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail=f"School '{school}' not found")
 
@@ -321,12 +322,6 @@ def dhcp_export_isc(
 
 
     check_valid_school_or_404(school)
-
-    provider = LinboHostProvider(school)
-    try:
-        provider.parse_devices_csv()
-    except FileNotFoundError:
-        raise HTTPException(status_code=404, detail=f"School '{school}' not found")
 
     exporter = LinboDhcpExporter()
     return exporter.get_isc_dhcp(school)
