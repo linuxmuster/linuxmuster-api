@@ -65,7 +65,10 @@ def get_server_info(
     """
     ## Server network configuration for auto-setup.
 
-    \\f
+    ### Access
+    - global-administrators
+
+    \f
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
     """
@@ -108,7 +111,10 @@ def linbo_health(
     """
     ## LINBO subsystem health check.
 
-    \\f
+    ### Access
+    - global-administrators
+
+    \f
     :param school: School name (default: default-school)
     :type school: str
     """
@@ -137,7 +143,10 @@ def get_changes(
     """
     ## Get changes since last sync (delta feed).
 
-    \\f
+    ### Access
+    - global-administrators
+
+    \f
     :param since: Cursor from previous sync (unix timestamp), or '0' for full snapshot
     :param school: School name (default: default-school)
     """
@@ -157,7 +166,10 @@ def query_hosts(
     """
     ## Get host records for a list of MAC addresses.
 
-    \\f
+    ### Access
+    - global-administrators
+
+    \f
     :param body: List of MAC addresses to look up
     :param school: School name (default: default-school)
     """
@@ -185,7 +197,10 @@ def get_startconfs(
     """
     ## Get start.conf file contents for a list of group IDs.
 
-    \\f
+    ### Access
+    - global-administrators
+
+    \f
     :param id: List of start.conf group IDs, either repeated or comma-separated
     :param school: School name (default: default-school)
     """
@@ -208,7 +223,10 @@ def get_configs(
     """
     ## Get GRUB configuration files for a list of group IDs.
 
-    \\f
+    ### Access
+    - global-administrators
+
+    \f
     :param id: List of GRUB config group IDs, either repeated or comma-separated
     :param school: School name (default: default-school)
     """
@@ -239,7 +257,10 @@ def dhcp_export_dnsmasq(
     """
     ## Generate dnsmasq proxy-DHCP configuration.
 
-    \\f
+    ### Access
+    - global-administrators
+
+    \f
     :param school: School name (default: default-school)
     """
 
@@ -279,7 +300,10 @@ def get_all_grub_configs(
     """
     ## Export all GRUB config files for a school.
 
-    \\f
+    ### Access
+    - global-administrators
+
+    \f
     :param school: School name (default: default-school)
     """
 
@@ -305,7 +329,10 @@ def dhcp_export_isc(
     """
     ## Export ISC DHCP configuration for a school.
 
-    \\f
+    ### Access
+    - global-administrators
+
+    \f
     :param school: School name (default: default-school)
     """
 
@@ -326,7 +353,10 @@ def get_image_manifest(
     """
     ## List all LINBO images with metadata.
 
-    \\f
+    ### Access
+    - global-administrators
+
+    \f
     """
 
 
@@ -353,7 +383,10 @@ async def download_image_file(
     """
     ## Download an image or extra_file with HTTP Range support.
 
-    \\f
+    ### Access
+    - global-administrators
+
+    \f
     """
 
 
@@ -440,7 +473,14 @@ async def upload_image_file(
     image_name: str, filename: str, request: FARequest,
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
-    """Upload an image or extra_file with Content-Range support. \\f"""
+    """
+    ## Upload an image or extra_file with Content-Range support.
+
+    ### Access
+    - global-administrators
+
+    \f
+    """
 
 
     try:
@@ -476,7 +516,14 @@ def upload_status_endpoint(
     image_name: str, filename: str,
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
-    """Check how many bytes have been received for a chunked upload. \\f"""
+    """
+    ## Check how many bytes have been received for a chunked upload.
+
+    ### Access
+    - global-administrators
+
+    \f
+    """
 
 
     try:
@@ -490,11 +537,17 @@ def finalize_upload_endpoint(
     image_name: str,
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
-    """Move uploaded files from staging to final images directory.
+    """
+    ## Move uploaded files from staging to final images directory.
 
     If the target directory already contains image files, they are backed up
     to a timestamped subdirectory before being replaced.
-    \\f"""
+
+    ### Access
+    - global-administrators
+
+    \f
+    """
 
 
     try:
@@ -510,7 +563,14 @@ def cancel_upload_endpoint(
     image_name: str,
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
-    """Clean up staged upload files on cancel or failure. \\f"""
+    """
+    ## Clean up staged upload files on cancel or failure.
+
+    ### Access
+    - global-administrators
+
+    \f
+    """
 
 
     try:
