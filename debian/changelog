@@ -1,3 +1,16 @@
+linuxmuster-api7 (7.3.35) lmn73; urgency=medium
+
+  * Add linbo endpoints for Linbo Docker (@amoalani). EXPERIMENTAL
+  * Add vdi endpoints (@hermanntoast). EXPERIMENTAL
+  * Add alias ALL for all authenticated users.
+  * Rewrite start page.
+  * Add rate limiter on /v1/auth/token
+  * Add expiry date to jwt.
+  * Only allow HS512 as signature request.
+  * Add protection against timing attack.
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sat, 25 Apr 2026 17:47:42 +0200
+
 linuxmuster-api7 (7.3.34) lmn73; urgency=medium
 
   * /printers/join and quit: use lmntools. 
