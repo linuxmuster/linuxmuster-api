@@ -6,10 +6,11 @@ This router only handles HTTP concerns (auth, validation, responses).
 """
 
 import logging
+import os.path
 from datetime import datetime, timezone
 from pathlib import Path
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Depends, HTTPException, Query, Request as FARequest
 from fastapi.responses import PlainTextResponse, StreamingResponse, Response
 
 from security import AuthenticatedUser, RoleChecker
@@ -20,20 +21,12 @@ from .body_schemas import LinboBatchMacs
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.devices import Devices
 
-from linuxmusterTools.linbo.config import LinboConfigManager
-from linuxmusterTools.linbo.grub import LinboGrubReader
-from linuxmusterTools.linbo.dhcp import LinboDhcpExporter
-from linuxmusterTools.linbo.changes import LinboChangeTracker
-from linuxmusterTools.linbo.images import scan_images
-from linuxmusterTools.linbo.image_sync import (
-    resolve_image_file, get_image_file_info,
-    receive_upload_chunk, get_upload_status,
-    finalize_upload, cancel_upload,
-    validate_image_path,
-)
+from linuxmusterTools.linbo import *
 from linuxmusterTools.lmnfile import LMNFile
+from linuxmusterTools.common.checks import NameChecker
 
 
+name_checker = NameChecker()
 logger = logging.getLogger(__name__)
 
 router = APIRouter(
@@ -122,15 +115,15 @@ def linbo_health(
 
 
     check_valid_school_or_404(school)
-    csv_path = Devices(school).path
-    config_mgr = LinboConfigManager()
+    csv_path_exists = os.path.isfile(Devices(school).path)
+    config_ids = LinboConfigManager().linbo_groups()
     grub_reader = LinboGrubReader()
 
     return {
-        "status": "ok" if csv_path.is_file() and LINBO_DIR.is_dir() else "degraded",
-        "devicesCSV": csv_path.is_file(),
+        "status": "ok" if csv_path_exists and LINBO_DIR.is_dir() else "degraded",
+        "devicesCSV": csv_path_exists,
         "linboDir": LINBO_DIR.is_dir(),
-        "startConfs": len(config_mgr.list_startconf_ids()),
+        "startConfs": len(config_ids),
         "grubConfigs": len(grub_reader.list_grub_cfg_ids()),
     }
 
@@ -201,13 +194,9 @@ def get_startconfs(
     check_valid_school_or_404(school)
     ids = _parse_list_query(id, "id", 100)
 
-    config_mgr = LinboConfigManager()
-    results = config_mgr.get_raw_startconfs(ids)
+    raw_startconfs = LinboConfigManager().load_raw_startconfs(ids)
 
-    if not results:
-        raise HTTPException(status_code=404, detail="No start.conf files found for given IDs")
-
-    return {"startConfs": results}
+    return {"startConfs": raw_startconfs}
 
 
 @router.get("/configs", name="Get GRUB configs by ID")
@@ -243,7 +232,7 @@ def get_configs(
     response_class=PlainTextResponse,
 )
 def dhcp_export_dnsmasq(
-    request: Request,
+    request: FARequest,
     school: str = "default-school",
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
@@ -259,7 +248,7 @@ def dhcp_export_dnsmasq(
 
     devices_mgr = Devices(school=school)
     try:
-        devices, mtime = devices_mgr.devices
+        devices = devices_mgr.devices
         csv_mtime = devices_mgr.csv_mtime
     except FileNotFoundError:
         raise HTTPException(status_code=404, detail="devices.csv not found")
@@ -341,7 +330,8 @@ def get_image_manifest(
     """
 
 
-    images = scan_images()
+    linbo_mgr = LinboImageManager()
+    images = linbo_mgr.get_images_infos()
     return {
         "images": images,
         "total": len(images),
@@ -352,16 +342,16 @@ def get_image_manifest(
 # ── Image Download ─────────────────────────────────────────────────
 
 
-@router.get("/images/download/{image_name}/{filename}", name="Download image or sidecar file")
-@router.head("/images/download/{image_name}/{filename}", name="HEAD image or sidecar file")
+@router.get("/images/download/{image_name}/{filename}", name="Download image or extra_file")
+@router.head("/images/download/{image_name}/{filename}", name="HEAD image or extra_file")
 async def download_image_file(
     image_name: str,
     filename: str,
-    request: Request,
+    request: FARequest,
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
     """
-    ## Download an image or sidecar file with HTTP Range support.
+    ## Download an image or extra_file with HTTP Range support.
 
     \\f
     """
@@ -445,17 +435,19 @@ async def download_image_file(
 # ── Image Upload ───────────────────────────────────────────────────
 
 
-@router.put("/images/upload/{image_name}/{filename}", name="Upload image or sidecar file (chunked)")
+@router.put("/images/upload/{image_name}/{filename}", name="Upload image or extra_file (chunked)")
 async def upload_image_file(
-    image_name: str, filename: str, request: Request,
+    image_name: str, filename: str, request: FARequest,
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
-    """Upload an image or sidecar file with Content-Range support. \\f"""
+    """Upload an image or extra_file with Content-Range support. \\f"""
 
 
     try:
-        validate_image_path(image_name)
-        validate_image_path(filename)
+        # TODO: should test if the image really exists, and not only path
+        # transversality and string validation
+        name_checker.check_linbo_image_name(image_name)
+        name_checker.check_linbo_image_name(filename)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
