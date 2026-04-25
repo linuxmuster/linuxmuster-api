@@ -93,7 +93,7 @@ def get_vdi_groups(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
 # ---- Clone status ----
 
 @router.get("/clones", name="Get clone status for all groups")
-def get_clone_status(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
+def get_clone_status(who: AuthenticatedUser = Depends(RoleChecker("ALL"))):
     """
     ## Get the clone status for all VDI groups.
 
@@ -122,7 +122,7 @@ def get_clone_status(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
 
 
 @router.get("/clones/{group}", name="Get clone status for a specific group")
-def get_clone_status_by_group(group: str, who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
+def get_clone_status_by_group(group: str, who: AuthenticatedUser = Depends(RoleChecker("ALL"))):
     """
     ## Get the clone status for a specific VDI group.
 

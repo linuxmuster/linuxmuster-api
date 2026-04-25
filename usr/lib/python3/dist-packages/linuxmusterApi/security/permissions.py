@@ -46,10 +46,13 @@ class BasicChecker:
         if isinstance(roles, list):
             self.roles = roles
         elif isinstance(roles, str):
-            self.roles = [
-                self.ROLES_MAPPING[alias]
-                for alias in roles if alias in self.ROLES_MAPPING
-            ]
+            if roles == "ALL":
+                self.roles = list(self.ROLES_MAPPING.values())
+            else:
+                self.roles = [
+                    self.ROLES_MAPPING[alias]
+                    for alias in roles if alias in self.ROLES_MAPPING
+                ]
 
     def _check_role_permissions(self, who, requested_user):
 

@@ -17,17 +17,23 @@ def get_json_web_token(auth: bool = Depends(BasicAuthChecker())):
     ### Access
     - all users
     - rate limited to 5 requests per minute
+
+    \f
     """
+
 
     return auth
 
 @router.get("/whoami", name="Check authenticated user")
-def get_whoami(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
+def get_whoami(who: AuthenticatedUser = Depends(RoleChecker("ALL"))):
     """
     ## Retrieve user's jwt information.
 
     ### Access
-    - all users
+    - all authenticated users
+
+    \f
     """
+
 
     return who.model_dump()
