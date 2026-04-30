@@ -186,7 +186,7 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
     """
 
 
-    schoolclass_data = get_schoolclass_or_404(schoolclass, who, asdict=False)
+    schoolclass_data = get_schoolclass_or_404(schoolclass, who, as_dict=False)
 
     return schoolclass_data.get_first_passwords()
 
@@ -311,7 +311,7 @@ def schoolclass_students_csv(schoolclass: str, who: AuthenticatedUser = Depends(
     """
 
 
-    schoolclass = get_schoolclass_or_404(schoolclass, who, asdict=False)
+    schoolclass = get_schoolclass_or_404(schoolclass, who, as_dict=False)
 
     file_path = schoolclass.students_csv()
     filename = file_path.split('/')[-1]
@@ -338,7 +338,7 @@ def schoolclass_students_pdf(schoolclass: str, who: AuthenticatedUser = Depends(
     """
 
 
-    schoolclass = get_schoolclass_or_404(schoolclass, who, asdict=False)
+    schoolclass = get_schoolclass_or_404(schoolclass, who, as_dict=False)
 
     try:
         file_path = print_schoolclass_list(schoolclass.cn, who.user, school=who.school)

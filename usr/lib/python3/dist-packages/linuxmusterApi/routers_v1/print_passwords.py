@@ -157,7 +157,7 @@ def print_passwords_projects(config: PrintPasswordsProjectsParameter, who: Authe
         raise HTTPException(status_code=400, detail=f"{config.format} is a wrong format")
 
     for project in config.projects:
-        details = get_project_or_404(project, who, asdict=False)
+        details = get_project_or_404(project, who, as_dict=False)
         details.get_all_members()
         users_to_print = users_to_print.union(set(details.all_members))
 
