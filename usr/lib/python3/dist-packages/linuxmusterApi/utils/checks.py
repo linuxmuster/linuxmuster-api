@@ -40,7 +40,7 @@ def get_schoolclass_or_404(schoolclass, who, asdict=True):
     if not schoolclass_data:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found")
 
-    if dict:
+    if asdict:
         admins = schoolclass_data['sophomorixAdmins']
         hidden = schoolclass_data['sophomorixHidden']
     else:
@@ -106,7 +106,7 @@ def get_project_or_404(project, who, asdict=True):
     if not project_data:
         raise HTTPException(status_code=404, detail=f"Project {project} not found")
 
-    if dict:
+    if asdict:
         admins = project_data['sophomorixAdmins']
         groupadmins = project_data['sophomorixAdminGroups']
         members = project_data['sophomorixMembers']
