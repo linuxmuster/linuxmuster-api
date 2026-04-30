@@ -49,7 +49,7 @@ class BasicAuthChecker:
 
     def __call__(self, credentials: Annotated[HTTPBasicCredentials, Depends(BASIC_AUTH)]) -> str:
         try:
-            user = lr.get(f'/users/{credentials.username}', dict=False)
+            user = lr.get(f'/users/{credentials.username}', asdict=False)
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

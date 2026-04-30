@@ -12,7 +12,7 @@ def check_tmp_dir():
 
 def get_user_or_404(user, school):
     try:
-        user_details = lr.get(f'/users/{user}', school=school, dict=False)
+        user_details = lr.get(f'/users/{user}', school=school, asdict=False)
     except Exception as err:
         raise HTTPException(status_code=404, detail=f"User {user} not found in ldap tree: {str(err)}")
 
@@ -21,7 +21,7 @@ def get_user_or_404(user, school):
 
     return user_details
 
-def get_schoolclass_or_404(schoolclass, who, dict=True):
+def get_schoolclass_or_404(schoolclass, who, asdict=True):
     """
     Check if a schoolclass exist and if the authenticated user can see it: only if the attribute sophomorixHidden is
     not true, or if the user is already admin of the schoolclass.
@@ -33,7 +33,7 @@ def get_schoolclass_or_404(schoolclass, who, dict=True):
 
 
     try:
-        schoolclass_data = lr.get(f'/schoolclasses/{schoolclass}', school=who.school, dict=dict)
+        schoolclass_data = lr.get(f'/schoolclasses/{schoolclass}', school=who.school, asdict=dict)
     except Exception as err:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found: {str(err)}")
 
@@ -79,7 +79,7 @@ def get_teacher_or_404(teacher, school):
 
     return user
 
-def get_project_or_404(project, who, dict=True):
+def get_project_or_404(project, who, asdict=True):
     """
     Check if a project exist and if the authenticated user can see it: only if the attribute sophomorixHidden is
     not true, or if the user is already admin of the project.
@@ -99,7 +99,7 @@ def get_project_or_404(project, who, dict=True):
         project = prefix + project
 
     try:
-        project_data = lr.get(f'/projects/{project}', school=who.school, dict=dict)
+        project_data = lr.get(f'/projects/{project}', school=who.school, asdict=dict)
     except Exception as err:
         raise HTTPException(status_code=404, detail=f"Project {project} not found: {str(err)}")
 
@@ -129,7 +129,7 @@ def get_project_or_404(project, who, dict=True):
             return project_data
         else:
             # Digging deeper
-            user_details = lr.get(f'/users/{who.user}', school=who.school, dict=False)
+            user_details = lr.get(f'/users/{who.user}', school=who.school, asdict=False)
 
             # User is in a schoolclass member or admin of this project
             if user_details.sophomorixAdmincClass in groupadmins + groupmembers:
@@ -144,7 +144,7 @@ def get_project_or_404(project, who, dict=True):
 
 def get_printer_or_404(printer, school):
     try:
-        printer_details = lr.get(f'/printers/{printer}', attributes=['cn'], school=school, dict=False)
+        printer_details = lr.get(f'/printers/{printer}', attributes=['cn'], school=school, asdict=False)
     except Exception as err:
         raise HTTPException(status_code=404, detail=f"Printer {printer} not found: {str(err)}")
 

@@ -9,7 +9,7 @@ from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
 def jwt_get(user):
-    data = lr.get(f'/users/{user}', dict=False)
+    data = lr.get(f'/users/{user}', asdict=False)
 
     if not data:
         print(f"user {user} not found")
