@@ -191,7 +191,7 @@ def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends
     return schoolclass_data.get_first_passwords()
 
 @router.get("/{schoolclass}/students", name="Details of students of a specific schoolclass")
-def get_schoolclass_passwords(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
+def get_schoolclass_students(schoolclass: str, who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## Get all details of all members of a specific schooclass.
 

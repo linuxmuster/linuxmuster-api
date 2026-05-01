@@ -29,7 +29,7 @@ def get_all_schools(who: AuthenticatedUser = Depends(RoleChecker("G"))):
     return lr.get('/schools')
 
 @router.get("/{school}", name="Retrieve informations from a specific school")
-def get_all_schools(school: str, who: AuthenticatedUser = Depends(RoleChecker("G"))):
+def get_school(school: str, who: AuthenticatedUser = Depends(RoleChecker("G"))):
     """
     ## Retrieve informations (projects, teachers, students, groups, etc ...)
     from a specific school. TODO ! NOT WORKING YET.
