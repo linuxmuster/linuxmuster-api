@@ -112,7 +112,7 @@ def do_sophomorix_check(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     return results
 
 @router.get("/sophomorix-apply", name="Run sophomorix-add, sophomorix-update, sophomorix-kill or all together.")
-async def do_sophomorix_apply(
+def do_sophomorix_apply(
         background_tasks: BackgroundTasks,
         school: str,
         add: bool = False,

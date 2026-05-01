@@ -374,7 +374,7 @@ def get_image_manifest(
 
 @router.get("/images/download/{image_name}/{filename}", name="Download image or extra_file")
 @router.head("/images/download/{image_name}/{filename}", name="HEAD image or extra_file")
-async def download_image_file(
+def download_image_file(
     image_name: str,
     filename: str,
     request: FARequest,
