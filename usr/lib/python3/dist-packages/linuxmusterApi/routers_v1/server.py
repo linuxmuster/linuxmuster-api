@@ -1,5 +1,5 @@
 import subprocess
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, AuthenticatedUser
 

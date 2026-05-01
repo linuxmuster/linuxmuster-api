@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from security import RoleChecker, UserChecker, AuthenticatedUser, UserListChecker
+from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 

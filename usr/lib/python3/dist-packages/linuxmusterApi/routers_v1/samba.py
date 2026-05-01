@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException
 
-from security import RoleChecker, UserListChecker, AuthenticatedUser
+from security import RoleChecker, AuthenticatedUser
 from utils.sophomorix import lmn_getSophomorixValue
 from linuxmusterTools.samba_util.smbstatus import SMBConnections
 

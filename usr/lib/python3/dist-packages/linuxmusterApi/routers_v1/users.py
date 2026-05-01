@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, UserChecker, AuthenticatedUser, UserListChecker
 from .body_schemas import SetFirstPassword, SetCurrentPassword, UserList, User

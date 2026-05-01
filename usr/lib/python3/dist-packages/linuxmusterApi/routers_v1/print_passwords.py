@@ -1,6 +1,6 @@
 import subprocess
 from fastapi.responses import FileResponse
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, AuthenticatedUser, check_print_permissions
 from utils.checks import get_schoolclass_or_404, get_project_or_404

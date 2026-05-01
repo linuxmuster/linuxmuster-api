@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException
 from time import localtime, strftime
 
 from security import UserListChecker, AuthenticatedUser, RoleChecker
