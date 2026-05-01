@@ -33,7 +33,7 @@ def get_schoolclass_or_404(schoolclass, who, as_dict=True):
 
 
     try:
-        schoolclass_data = lr.get(f'/schoolclasses/{schoolclass}', school=who.school, as_dict=dict)
+        schoolclass_data = lr.get(f'/schoolclasses/{schoolclass}', school=who.school, as_dict=as_dict)
     except Exception as err:
         raise HTTPException(status_code=404, detail=f"Schoolclass {schoolclass} not found: {str(err)}")
 
@@ -99,7 +99,7 @@ def get_project_or_404(project, who, as_dict=True):
         project = prefix + project
 
     try:
-        project_data = lr.get(f'/projects/{project}', school=who.school, as_dict=dict)
+        project_data = lr.get(f'/projects/{project}', school=who.school, as_dict=as_dict)
     except Exception as err:
         raise HTTPException(status_code=404, detail=f"Project {project} not found: {str(err)}")
 

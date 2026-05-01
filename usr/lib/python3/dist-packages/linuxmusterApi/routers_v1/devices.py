@@ -148,13 +148,13 @@ def modify_device(device: str, device_details: Device, who: AuthenticatedUser = 
 
     if ucPwd_hash or suppCred_hash:
         if not (ucPwd_hash and suppCred_hash):
-            return HTTPException(status_code=400, detail=f"Both unicodePwd_hash and supplementalCredentials_hash must be given.")
+            raise HTTPException(status_code=400, detail=f"Both unicodePwd_hash and supplementalCredentials_hash must be given.")
 
         device_manager = DeviceManager()
         device_manager.set_credentials(device, ucPwd_hash, suppCred_hash)
 
     elif device_details.unicodePwd:
-        device_writer.setattr(data={'unicodePwd', device_details.unicodePwd})
+        device_writer.setattr(data={'unicodePwd': device_details.unicodePwd})
 
     return device_writer.data
 
