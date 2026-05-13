@@ -76,7 +76,8 @@ def get_printer(printer: str, all_members: bool = False, who: AuthenticatedUser 
     printer_details = printer_details.asdict()
 
     if all_members:
-        printer_details['members'] = [lr.get(f'/users/{member}') for member in printer_details['all_members']]
+        members_list = ",".join(printer_details['all_members'])
+        printer_details['members'] = lr.get(f'/batch_users/{members_list}') if members_list else []
 
     if who.role in ["schooladministrator", "globaladministrator"]:
         # No filter

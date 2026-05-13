@@ -40,7 +40,8 @@ def session_user(user: str, members_details: bool = False, who: AuthenticatedUse
     sessionsList = []
     for session in sessions:
         if members_details:
-            members = [lr.get(f'/users/{member}') for member in session.members]
+            members_list = ",".join(session.members)
+            members = lr.get(f'/batch_users/{members_list}') if members_list else []
         else:
             members = session.members
         s = {
@@ -78,7 +79,8 @@ def get_session_sessionname(user:str, sessionsid: str, who: AuthenticatedUser = 
     sessions = user_details.lmnsessions
     for session in sessions:
         if sessionsid == session.sid:
-            members = [lr.get(f'/users/{member}') for member in session.members]
+            members_list = ",".join(session.members)
+            members = lr.get(f'/batch_users/{members_list}') if members_list else []
             return {
                 'sid': session.sid,
                 'name': session.name,

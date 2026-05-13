@@ -105,8 +105,10 @@ def get_project_details(project: str, all_members: bool = False, who: Authentica
     project_details = project_details.asdict()
 
     if all_members:
-        project_details['members'] = [lr.get(f'/users/{member}') for member in project_details['all_members']]
-        project_details['admins'] = [lr.get(f'/users/{member}') for member in project_details['all_admins']]
+        members_list = ",".join(project_details['all_members'])
+        admins_list = ",".join(project_details['all_admins'])
+        project_details['members'] = lr.get(f'/batch_users/{members_list}') if members_list else []
+        project_details['admins'] = lr.get(f'/batch_users/{admins_list}') if admins_list else []
 
     return project_details
 

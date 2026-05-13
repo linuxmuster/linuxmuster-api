@@ -73,7 +73,8 @@ def get_schoolclass(schoolclass: str, all_members: bool = False, who: Authentica
     schoolclass = get_schoolclass_or_404(schoolclass, who)
 
     if all_members:
-        schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
+        members_list = ",".join(schoolclass['sophomorixMembers'])
+        schoolclass['members'] = lr.get(f'/batch_users/{members_list}') if members_list else []
 
     return schoolclass
 

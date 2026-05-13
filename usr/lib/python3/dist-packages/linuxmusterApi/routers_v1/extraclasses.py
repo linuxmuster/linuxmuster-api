@@ -63,7 +63,8 @@ def get_extraclass(schoolclass: str, all_members: bool = False, who: Authenticat
     schoolclass = get_extraclass_or_404(schoolclass, who.school)
 
     if all_members:
-        schoolclass['members'] = [lr.get(f'/users/{member}') for member in schoolclass['sophomorixMembers']]
+        members_list = ",".join(schoolclass['sophomorixMembers'])
+        schoolclass['members'] = lr.get(f'/batch_users/{members_list}') if members_list else []
 
     return schoolclass
 
