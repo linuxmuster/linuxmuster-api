@@ -1,5 +1,6 @@
 import sys
 import json
+import jwt
 import pytest
 from fastapi.testclient import TestClient
 
@@ -16,10 +17,14 @@ class TestAuth:
     @pytest.mark.parametrize("user", USERS)
     def test_get_jwt_token(self, user):
         r = client.get(f"{BASE_URL}/auth", headers={"Authorization": f"Basic {user.basic_token}"})
-        jwt = r.content.decode("utf-8").strip('"')
-
         assert r.status_code == 200
-        assert jwt == user.jwt
+
+        token = r.content.decode("utf-8").strip('"')
+        actual = jwt.decode(token, options={"verify_signature": False})
+        expected = jwt.decode(user.jwt, options={"verify_signature": False})
+        for key in ['user', 'role', 'dn', 'school']:
+            assert actual[key] == expected[key]
+        assert 'exp' in actual
 
     @pytest.mark.parametrize("user", USERS)
     def test_wrong_token(self, user):
