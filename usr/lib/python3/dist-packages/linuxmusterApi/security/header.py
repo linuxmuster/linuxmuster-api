@@ -2,8 +2,6 @@ from fastapi import HTTPException, Request
 from fastapi.security import APIKeyHeader
 from starlette import status
 import jwt
-import base64
-import yaml
 import hmac
 from pydantic import BaseModel
 
@@ -36,23 +34,20 @@ def check_authentication_header(request: Request) -> AuthenticatedUser:
         )
 
     if apikey:
-        return check_user_header(apikey.strip('"').strip("'"))
+        return check_user_header(apikey.strip('"').strip("'"), request.app.state.secret)
 
     if hostkey:
         client_ip = request.client.host
-        return check_host_header(hostkey.strip('"').strip("'"), client_ip)
+        return check_host_header(hostkey.strip('"').strip("'"), client_ip,
+                                 request.app.state.host_keys,
+                                 request.app.state.host_key_auth_enable)
 
     raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API Key",
         )
 
-def check_user_header(apikey) -> AuthenticatedUser:
-
-    with open('/etc/linuxmuster/api/config.yml', 'r') as config_file:
-        config = yaml.load(config_file, Loader=yaml.SafeLoader)
-
-    secret = base64.b64decode(config['secret'])
+def check_user_header(apikey, secret) -> AuthenticatedUser:
 
     try:
         payload = jwt.decode(apikey, secret, algorithms=["HS512"])
@@ -67,9 +62,6 @@ def check_user_header(apikey) -> AuthenticatedUser:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Expired API Key",
         )
-
-    # No memory leak
-    secret = ''
 
     # role may be eventually None
     user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole', 'sophomorixSchoolname', 'distinguishedName'])
@@ -88,14 +80,9 @@ def check_user_header(apikey) -> AuthenticatedUser:
     )
 
 
-def check_host_header(hostkey, client_ip) -> AuthenticatedUser:
+def check_host_header(hostkey, client_ip, keys, host_key_auth_enable) -> AuthenticatedUser:
 
     user = None
-
-    with open('/etc/linuxmuster/api/config.yml', 'r') as config_file:
-        config = yaml.load(config_file, Loader=yaml.SafeLoader)
-        keys = config.get('host_keys', {})
-        host_key_auth_enable = config.get('host_key_auth', False)
 
     if not host_key_auth_enable:
         raise HTTPException(
@@ -126,9 +113,6 @@ def check_host_header(hostkey, client_ip) -> AuthenticatedUser:
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid API Key",
         )
-
-    # No memory leak
-    keys = ''
 
     # role may be eventually None
     user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole', 'sophomorixSchoolname', 'distinguishedName'])

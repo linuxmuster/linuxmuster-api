@@ -7,6 +7,7 @@ import os
 import sys
 import base64
 import binascii
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -24,10 +25,18 @@ if os.path.isfile(config_path):
     with open(config_path, 'r') as config_file:
         config = yaml.load(config_file, Loader=yaml.SafeLoader)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    app.state.secret = base64.b64decode(config['secret']) if config.get('secret') else None
+    app.state.host_keys = config.get('host_keys', {})
+    app.state.host_key_auth_enable = config.get('host_key_auth', False)
+    yield
+
 app = FastAPI(
     title = TITLE,
     version=VERSION,
     description = DESCRIPTION,
+    lifespan=lifespan,
     swagger_ui_parameters = {"tryItOutEnabled": True, "swagger_favicon_url": "/static/favicon.png"},
     license_info={
         "name": "GNU General Public License v3.0 only",
