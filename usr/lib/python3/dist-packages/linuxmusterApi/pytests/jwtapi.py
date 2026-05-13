@@ -5,6 +5,7 @@ import yaml
 import base64
 import jwt
 import sys
+from datetime import datetime, timezone, timedelta
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
@@ -20,7 +21,8 @@ def jwt_get(user):
 
     secret = base64.b64decode(config['secret'])
 
-    payload  = {
+    payload = {
+        'exp': datetime.now(timezone.utc) + timedelta(hours=12),
         'user': user,
         'role': data.sophomorixRole,
         'dn': data.dn,
