@@ -140,7 +140,7 @@ class PrintPasswordsSchoolclassesParameter(BaseModel):
 
     format: str | None = 'pdf'
     one_per_page: bool | None = False
-    pdflatex: bool | None = False
+    pdflatex: bool | None = True
     school: str | None = ''
     nosplit_names: bool | None = False
     schoolclasses: list
