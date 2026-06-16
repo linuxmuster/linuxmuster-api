@@ -15,3 +15,12 @@ TEACHER = LMNTestUser(cn="teacher01", password="PASSWORD", role="teacher", schoo
 STUDENT = LMNTestUser(cn="student01", password="PASSWORD", role="student", school="default-school")
 STAFF = LMNTestUser(cn="staff01", password="PASSWORD", role="staff", school="default-school")
 PARENT = LMNTestUser(cn="parent01", password="PASSWORD", role="parent", school="default-school")
+
+# Test data — fill with actual values from your LDAP
+SCHOOL = 'default-school'
+SCHOOLCLASS = 'SCHOOLCLASSNAME'  # CN of an existing schoolclass
+EXTRACLASS = 'EXTRACLASSNAME'    # CN of an existing extraclass
+PROJECT = 'p_PROJECTNAME'        # CN of an existing project (with prefix)
+PRINTER = 'PRINTERNAME'          # CN of an existing printer
+MGMT_GROUP = 'MGMTGROUPNAME'     # CN of an existing management group
+GROUP = 'GROUPNAME'              # CN of an existing group
