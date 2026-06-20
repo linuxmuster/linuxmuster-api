@@ -102,7 +102,7 @@ def get_project_details(project: str, all_members: bool = False, who: Authentica
     if all_members:
         project_details.get_all_members()
     
-    project_details = project_details.asdict()
+    project_details = project_details.as_dict()
 
     if all_members:
         members_list = ",".join(project_details['all_members'])

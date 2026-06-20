@@ -65,7 +65,7 @@ def get_user(user: str, check_first_pw: bool = False, who: AuthenticatedUser = D
     if check_first_pw:
         user_details = lr.get(f'/users/{user}', as_dict=False, school=who.school)
         first_pw_set = user_details.test_first_password()
-        user_dict = user_details.asdict()
+        user_dict = user_details.as_dict()
         user_dict['FirstPasswordSet'] = first_pw_set
         return user_dict
     else:

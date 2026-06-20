@@ -73,7 +73,7 @@ def get_printer(printer: str, all_members: bool = False, who: AuthenticatedUser 
     if all_members:
         printer_details.get_all_members()
 
-    printer_details = printer_details.asdict()
+    printer_details = printer_details.as_dict()
 
     if all_members:
         members_list = ",".join(printer_details['all_members'])

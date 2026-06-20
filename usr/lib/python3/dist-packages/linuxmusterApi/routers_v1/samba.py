@@ -83,7 +83,7 @@ def get_smbstatus(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     smb_connections = SMBConnections()
 
     connections = {
-        user: details.asdict()
+        user: details.as_dict()
         for user,details in smb_connections.users.items()
     }
 
@@ -100,7 +100,7 @@ def get_smbstatus(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
             }
     else:
         return {
-            user: details.asdict()
+            user: details.as_dict()
             for user,details in connections.users.items()
         }
 
