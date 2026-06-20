@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.4.3) lmn74; urgency=medium
+
+  * Use right method for as_dict. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sat, 20 Jun 2026 17:24:47 +0200
+
 linuxmuster-api7 (7.4.2) lmn74; urgency=medium
 
   * Avoid var shadowing with lmntools
