@@ -1,5 +1,5 @@
 dpath==2.0.6         # used for getSophomorixValue
-fastapi
+fastapi>=0.137.1     # list_all_endpoints() relies on the internal fastapi.routing._IncludedRouter API
 pyOpenSSL
 python-ldap
 pyyaml

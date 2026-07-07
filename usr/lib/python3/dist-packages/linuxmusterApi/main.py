@@ -13,6 +13,7 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.utils import get_openapi
+from fastapi.routing import _IncludedRouter  # internal FastAPI API (>= 0.137)
 from vars import *
 
 
@@ -151,6 +152,17 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
+def _iter_effective_routes(routes):
+    # Since FastAPI 0.137, app.include_router() no longer flattens sub-router
+    # routes into app.routes: each inclusion is kept as a lazy _IncludedRouter
+    # wrapper with no .path/.name/.path_regex/.dependant of its own.
+    # effective_route_contexts() resolves it to the real, prefixed routes.
+    for route in routes:
+        if isinstance(route, _IncludedRouter):
+            yield from route.effective_route_contexts()
+        else:
+            yield route
+
 def list_all_endpoints(filter_str=''):
     max_name = 50
     max_path = 50
@@ -165,7 +177,9 @@ def list_all_endpoints(filter_str=''):
             roles.append(role.replace('administrator', 'adm'))
         return ';'.join(roles)
 
-    for data in app.routes:
+    routes = list(_iter_effective_routes(app.routes))
+
+    for data in routes:
         if len(data.path) > max_path:
             max_path = len(data.path)
         if len(data.name) > max_name:
@@ -176,10 +190,10 @@ def list_all_endpoints(filter_str=''):
     print("-"*(max_reg+max_path+max_name+60))
     print(f"{"URL":{max_path}} | {"Desc.":{max_name}} | {"Regexp":{max_reg}} | {'Roles'}")
     print("-"*(max_reg+max_path+max_name+60))
-    for data in app.routes:
-        if hasattr(data, 'dependant'):
-            if data.dependant.dependencies:
-                line = f"{data.path:{max_path}} | {data.name:{max_name}} | {data.path_regex.pattern:{max_reg}} | {_roles(data.dependant.dependencies[0].call)}"
+    for data in routes:
+        dependant = getattr(data, 'dependant', None)
+        if dependant and dependant.dependencies:
+            line = f"{data.path:{max_path}} | {data.name:{max_name}} | {data.path_regex.pattern:{max_reg}} | {_roles(dependant.dependencies[0].call)}"
         else:
             line = f"{data.path:{max_path}} | {data.name:{max_name}} | {' '*max_reg} |"
 
