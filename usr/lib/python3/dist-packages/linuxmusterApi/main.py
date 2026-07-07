@@ -163,10 +163,36 @@ def _iter_effective_routes(routes):
         else:
             yield route
 
+_METHOD_ORDER = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
+_METHOD_COLORS = {
+    'GET': '\033[32m',      # green
+    'HEAD': '\033[36m',     # cyan
+    'POST': '\033[33m',     # yellow
+    'PUT': '\033[34m',      # blue
+    'PATCH': '\033[35m',    # magenta
+    'DELETE': '\033[31m',   # red
+    'OPTIONS': '\033[37m',  # white
+}
+_COLOR_RESET = '\033[0m'
+
+def _sorted_methods(data):
+    methods = getattr(data, 'methods', None) or set()
+    ordered = [m for m in _METHOD_ORDER if m in methods]
+    ordered += sorted(methods - set(_METHOD_ORDER))
+    return ordered
+
+def _method_label(data):
+    return '/'.join(_sorted_methods(data))
+
+def _method_color(data):
+    methods = _sorted_methods(data)
+    return _METHOD_COLORS.get(methods[0], '') if methods else ''
+
 def list_all_endpoints(filter_str=''):
     max_name = 50
     max_path = 50
     max_reg = 50
+    max_method = len('Method')
 
     def _roles(depend):
         raw_roles = getattr(depend, 'roles', '')
@@ -186,21 +212,28 @@ def list_all_endpoints(filter_str=''):
             max_name = len(data.name)
         if len(data.path_regex.pattern) > max_reg:
             max_reg = len(data.path_regex.pattern)
+        if len(_method_label(data)) > max_method:
+            max_method = len(_method_label(data))
 
-    print("-"*(max_reg+max_path+max_name+60))
-    print(f"{"URL":{max_path}} | {"Desc.":{max_name}} | {"Regexp":{max_reg}} | {'Roles'}")
-    print("-"*(max_reg+max_path+max_name+60))
+    print("-"*(max_reg+max_path+max_name+max_method+70))
+    print(f"{"Method":{max_method}} | {"URL":{max_path}} | {"Desc.":{max_name}} | {"Regexp":{max_reg}} | {'Roles'}")
+    print("-"*(max_reg+max_path+max_name+max_method+70))
     for data in routes:
         dependant = getattr(data, 'dependant', None)
+        method = _method_label(data)
+        color = _method_color(data)
+        method_field = f"{method:{max_method}}"
+        method_field = f"{color}{method_field}{_COLOR_RESET}" if color else method_field
+
         if dependant and dependant.dependencies:
             line = f"{data.path:{max_path}} | {data.name:{max_name}} | {data.path_regex.pattern:{max_reg}} | {_roles(dependant.dependencies[0].call)}"
         else:
             line = f"{data.path:{max_path}} | {data.name:{max_name}} | {' '*max_reg} |"
 
         if filter_str in line:
-            print(line)
+            print(f"{method_field} | {line}")
 
-    print("-"*(max_reg+max_path+max_name+60))
+    print("-"*(max_reg+max_path+max_name+max_method+70))
 
 app.openapi = custom_openapi
 
