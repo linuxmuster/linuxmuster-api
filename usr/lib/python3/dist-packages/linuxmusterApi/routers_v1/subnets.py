@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.lmnfile import LMNFile
 from linuxmusterTools.subnets import Subnets, import_subnets, SUBNETS_PATH
-from .body_schemas import MgmtList
+from .body_schemas import SubnetList
 
 router = APIRouter(
     prefix="/subnets",
@@ -12,8 +12,8 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@router.get("/list", name="List all subnets")
-def get_all_subnets(who: AuthenticatedUser = Depends(RoleChecker("G"))):
+@router.get("/", name="List all subnets")
+def get_subnets(who: AuthenticatedUser = Depends(RoleChecker("G"))):
     """
     ## List the content of /etc/linuxmuster/subnets.csv.
 
@@ -40,8 +40,8 @@ def get_all_subnets(who: AuthenticatedUser = Depends(RoleChecker("G"))):
     with LMNFile(SUBNETS_PATH, 'r') as f:
         return f.read()
 
-@router.post("/list", name="Write content of subnets.csv")
-def post_subnets_list_content(content: MgmtList, who: AuthenticatedUser = Depends(RoleChecker("G"))):
+@router.post("/", name="Write content of subnets.csv")
+def post_subnets(content: SubnetList, who: AuthenticatedUser = Depends(RoleChecker("G"))):
     """
     ## Write the content of /etc/linuxmuster/subnets.csv.
 
@@ -56,16 +56,18 @@ def post_subnets_list_content(content: MgmtList, who: AuthenticatedUser = Depend
     \f
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
-    :param content: Content of the CSV, see MgmtList attributes
-    :type content: MgmtList
+    :param content: Content of the CSV, see SubnetList attributes
+    :type content: SubnetList
     :return: Content of the csv file (list of dict, one dict per line in CSV)
     :rtype: list
     """
 
 
+    rows = [subnet.model_dump() for subnet in (content.data or [])]
+
     try:
         with LMNFile(SUBNETS_PATH, 'w') as subnets_file:
-            return subnets_file.write(content.data)
+            return subnets_file.write(rows)
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error writing {SUBNETS_PATH}: {str(e)}")
 
@@ -91,7 +93,7 @@ def check_subnets(who: AuthenticatedUser = Depends(RoleChecker("G"))):
     report = Subnets().check_conf()
     return {"valid": report is False, "report": report or []}
 
-@router.get("/list/import-subnets", name="Run linuxmuster-import-subnets")
+@router.get("/import-subnets", name="Run linuxmuster-import-subnets")
 def do_import_subnets(who: AuthenticatedUser = Depends(RoleChecker("G"))):
     """
     ## Run linuxmuster-import-subnets.
