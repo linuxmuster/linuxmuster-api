@@ -78,6 +78,7 @@ from routers_v1 import (
     schools,
     server,
     sessions,
+    subnets,
     teachers,
     users,
     vdi,
@@ -124,6 +125,7 @@ app.include_router(samba.router, prefix="/v1")
 app.include_router(schoolclasses.router, prefix="/v1")
 app.include_router(server.router, prefix="/v1")
 app.include_router(sessions.router, prefix="/v1")
+app.include_router(subnets.router, prefix="/v1")
 app.include_router(schools.router, prefix="/v1")
 app.include_router(teachers.router, prefix="/v1")
 app.include_router(users.router, prefix="/v1")
