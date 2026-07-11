@@ -142,6 +142,28 @@ def get_project_or_404(project, who, as_dict=True):
 
         raise HTTPException(status_code=403, detail=f"Forbidden")
 
+def get_group_or_404(group, school):
+    """
+    Check if a group (sophomorix-group) exists. Access to /v1/groups is
+    restricted to admins, so there is no visibility logic to apply here,
+    unlike get_project_or_404 or get_schoolclass_or_404.
+
+    :param group: Group cn
+    :param school: School to search in (or "global" for global-administrators)
+    :return: Group details
+    """
+
+
+    try:
+        group_details = lr.get(f'/groups/{group}', school=school, as_dict=False)
+    except Exception as err:
+        raise HTTPException(status_code=404, detail=f"Group {group} not found: {str(err)}")
+
+    if not group_details.cn:
+        raise HTTPException(status_code=404, detail=f"Group {group} not found")
+
+    return group_details
+
 def get_printer_or_404(printer, school):
     try:
         printer_details = lr.get(f'/printers/{printer}', attributes=['cn'], school=school, as_dict=False)
