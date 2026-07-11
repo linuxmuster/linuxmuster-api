@@ -213,6 +213,31 @@ class Device(BaseModel):
     unicodePwd: str | None = None
     unicodePwd_hash: str | None = None
 
+class Subnet(BaseModel):
+    """
+    One line of /etc/linuxmuster/subnets.csv.
+
+    All fields are optional so that comment and empty lines (whose *network*
+    field then starts with '#') can be round-tripped without loss.
+    """
+
+
+    network: str | None = None
+    routerIp: str | None = None
+    beginRange: str | None = None
+    endRange: str | None = None
+    nameServer: str | None = None
+    nextServer: str | None = None
+    setupFlag: str | None = None
+
+class SubnetList(BaseModel):
+    """
+    Content of /etc/linuxmuster/subnets.csv, one Subnet per line.
+    """
+
+
+    data: list[Subnet] | None = None
+
 # --- LINBO Models ---
 
 class LinboBatchMacs(BaseModel):
