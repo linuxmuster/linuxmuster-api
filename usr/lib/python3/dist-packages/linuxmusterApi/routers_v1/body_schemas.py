@@ -22,6 +22,24 @@ class LMNShareQuota(BaseModel):
     quota: int
     share: str
 
+class Group(BaseModel):
+    """
+    Model to create or update a sophomorix-group.
+    """
+
+
+    description: str | None = ''
+    displayName: str | None = ''
+    hide: bool = False
+    join: bool = True
+    mailalias: bool = False
+    maillist: bool = False
+    mailquota: int | None = None
+    members: list = []
+    proxyAddresses: list | None = []
+    quota: list[LMNShareQuota] | None = []
+    school: str = 'default-school'
+
 class Printer(BaseModel):
     """
     Model to handle a printer group.
