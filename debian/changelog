@@ -1,3 +1,11 @@
+linuxmuster-api7 (7.4.4) lmn74; urgency=medium
+
+  * Fix endpoint list
+  * [groups] New endpoints for lmngroups.
+  * [subnets] New endpoints to manage subnets (@hermanntoast)
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 15 Jul 2026 11:11:29 +0200
+
 linuxmuster-api7 (7.4.3) lmn74; urgency=medium
 
   * Use right method for as_dict. 
