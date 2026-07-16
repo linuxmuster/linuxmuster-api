@@ -152,3 +152,22 @@ class TestLinbo:
         r = client.get(f"{BASE_URL}/linbo/server-info", headers={"X-API-KEY": user.jwt})
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
+
+    @pytest.mark.parametrize("user", USERS[1:])
+    def test_post_linbo_startconf_denied(self, user):
+        r = client.post(
+            f"{BASE_URL}/linbo/startconfs/pytest-startconf",
+            headers={"X-API-KEY": user.jwt},
+            json={"content": "[LINBO]\nServer = 10.0.0.1\n"},
+        )
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
+
+    @pytest.mark.parametrize("user", USERS[1:])
+    def test_delete_linbo_startconf_denied(self, user):
+        r = client.delete(
+            f"{BASE_URL}/linbo/startconfs/pytest-startconf",
+            headers={"X-API-KEY": user.jwt},
+        )
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
