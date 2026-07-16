@@ -241,5 +241,16 @@ class SubnetList(BaseModel):
 # --- LINBO Models ---
 
 class LinboBatchMacs(BaseModel):
-    """List of MAC addresses for LINBO host query."""
+    """
+    List of MAC addresses for LINBO host query.
+    """
+
+
     macs: list[str]
+
+class StartConfRawBody(BaseModel):
+    """
+    Raw start.conf content, keeps comments, but will not be parsed.
+    """
+
+    content: str
