@@ -15,7 +15,7 @@ from fastapi.responses import PlainTextResponse, StreamingResponse, Response
 
 from security import AuthenticatedUser, RoleChecker
 from utils.checks import check_valid_school_or_404
-from .body_schemas import LinboBatchMacs
+from .body_schemas import LinboBatchMacs, StartConfRawBody
 
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
@@ -212,6 +212,71 @@ def get_startconfs(
     raw_startconfs = LinboConfigManager().load_raw_startconfs(ids)
 
     return {"startConfs": raw_startconfs}
+
+@router.post("/startconfs/{group_id}", name="Create or update a start.conf file")
+def write_startconf(
+    group_id: str,
+    body: StartConfRawBody,
+    school: str = "default-school",
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Create or update a start.conf file for a LINBO group.
+
+    The payload is the raw file content (comments and formatting preserved
+    verbatim), matching the shape returned by GET /startconfs. The file is
+    created if it doesn't exist yet.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
+    :param body: Raw start.conf content
+    :param school: School name (default: default-school)
+    """
+
+
+    check_valid_school_or_404(school)
+
+    try:
+        LinboConfigManager().write_raw_startconf(group_id, body.content)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return {"id": group_id, "status": "ok"}
+
+
+@router.delete("/startconfs/{group_id}", name="Delete a start.conf file")
+def delete_startconf(
+    group_id: str,
+    school: str = "default-school",
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Delete a start.conf file and its associated GRUB config.
+
+    Same behaviour as the legacy webui `lmn_linbo4` plugin.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
+    :param school: School name (default: default-school)
+    """
+
+
+    check_valid_school_or_404(school)
+
+    try:
+        LinboConfigManager().delete_startconf(group_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    return {"id": group_id, "status": "deleted"}
 
 
 @router.get("/configs", name="Get GRUB configs by ID")
