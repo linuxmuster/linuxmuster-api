@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.4.5) lmn74; urgency=medium
+
+  * [linbo] Add endpoints to write raw start.conf or delete start.conf 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Thu, 16 Jul 2026 22:36:51 +0200
+
 linuxmuster-api7 (7.4.4) lmn74; urgency=medium
 
   * Fix endpoint list
