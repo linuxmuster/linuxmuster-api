@@ -171,3 +171,56 @@ class TestLinbo:
         )
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
+
+    @pytest.mark.parametrize("endpoint", ["profiles", "images", "inventory"])
+    def test_get_linbo_drivers_ga(self, endpoint):
+        r = client.get(
+            f"{BASE_URL}/linbo/drivers/{endpoint}",
+            headers={"X-API-KEY": GLOBALADMIN.jwt},
+        )
+        assert r.status_code == 200
+        assert isinstance(r.json(), list)
+
+    @pytest.mark.parametrize(
+        "method,endpoint,payload",
+        [
+            ("get", "profiles", None),
+            ("get", "images", None),
+            ("get", "inventory", None),
+            ("get", "inventory/pytest-client", None),
+            ("get", "profiles/pytest-profile", None),
+            (
+                "post",
+                "profiles",
+                {"name": "pytest-profile", "vendor": "pytest", "products": ["pytest"]},
+            ),
+            (
+                "post",
+                "profiles/from-inventory",
+                {"hostname": "pytest-client"},
+            ),
+            ("post", "hooks/reconcile", None),
+            (
+                "put",
+                "profiles/pytest-profile/match",
+                {"vendor": "pytest", "products": ["pytest"]},
+            ),
+            (
+                "put",
+                "profiles/pytest-profile/image",
+                {"image": "pytest-image"},
+            ),
+            ("delete", "profiles/pytest-profile/image", None),
+            ("delete", "profiles/pytest-profile", None),
+        ],
+    )
+    @pytest.mark.parametrize("user", USERS[1:])
+    def test_linbo_drivers_denied(self, method, endpoint, payload, user):
+        r = client.request(
+            method,
+            f"{BASE_URL}/linbo/drivers/{endpoint}",
+            headers={"X-API-KEY": user.jwt},
+            json=payload,
+        )
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
