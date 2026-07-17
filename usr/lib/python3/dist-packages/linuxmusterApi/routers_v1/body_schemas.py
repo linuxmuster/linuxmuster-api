@@ -254,3 +254,40 @@ class StartConfRawBody(BaseModel):
     """
 
     content: str
+
+class LinboDriverProfileCreate(BaseModel):
+    """
+    Data required to create a hardware-matched driver profile.
+    """
+
+
+    name: str = Field(min_length=1, max_length=100)
+    vendor: str = Field(min_length=1, max_length=255)
+    products: list[str] = Field(min_length=1, max_length=256)
+
+class LinboDriverMatchUpdate(BaseModel):
+    """
+    Hardware matching rules for an existing driver profile.
+    """
+
+
+    vendor: str = Field(min_length=1, max_length=255)
+    products: list[str] = Field(min_length=1, max_length=256)
+
+class LinboDriverProfileFromInventory(BaseModel):
+    """
+    Select an inventory and optionally override the generated profile name.
+    """
+
+
+    hostname: str = Field(min_length=1, max_length=128)
+    name: str | None = Field(default=None, min_length=1, max_length=100)
+    school: str = Field(default="default-school", min_length=1, max_length=255)
+
+class LinboDriverImageAssignment(BaseModel):
+    """
+    Assign an existing LINBO image basename to a driver profile.
+    """
+
+
+    image: str = Field(min_length=1, max_length=100)

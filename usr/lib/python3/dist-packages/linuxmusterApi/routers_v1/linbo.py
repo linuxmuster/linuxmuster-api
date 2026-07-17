@@ -15,13 +15,30 @@ from fastapi.responses import PlainTextResponse, StreamingResponse, Response
 
 from security import AuthenticatedUser, RoleChecker
 from utils.checks import check_valid_school_or_404
-from .body_schemas import LinboBatchMacs, StartConfRawBody
+from .body_schemas import (
+    LinboBatchMacs,
+    LinboDriverImageAssignment,
+    LinboDriverMatchUpdate,
+    LinboDriverProfileCreate,
+    LinboDriverProfileFromInventory,
+    StartConfRawBody,
+)
 
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.devices import Devices
 
 from linuxmusterTools.linbo import *
+from linuxmusterTools.linbo.driver_hooks import (
+    DriverHookOwnershipError,
+    DriverHookTransactionError,
+)
+from linuxmusterTools.linbo.driver_storage import StorageSecurityError
+from linuxmusterTools.linbo.drivers import (
+    DriverInventoryNotFoundError,
+    DriverProfileConflictError,
+    LinboDriverManager,
+)
 from linuxmusterTools.lmnfile import LMNFile
 from linuxmusterTools.common.checks import NameChecker
 
@@ -642,3 +659,383 @@ def cancel_upload_endpoint(
         return cancel_upload(IMAGES_DIR, image_name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ── Windows Driver Profiles ─────────────────────────────────────────
+
+
+def _raise_driver_hook_http_error(error):
+    """Map expected hook publication failures to stable HTTP responses."""
+
+    if isinstance(error, DriverHookOwnershipError):
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    if isinstance(error, DriverHookTransactionError):
+        if isinstance(error.cause, DriverHookOwnershipError):
+            raise HTTPException(status_code=409, detail=str(error.cause)) from error
+        logger.exception("Unable to publish LINBO driver hook")
+        raise HTTPException(status_code=500, detail=str(error)) from error
+    raise error
+
+
+def _raise_driver_storage_http_error(error):
+    """Hide protected server paths from storage-safety responses."""
+
+    logger.exception("LINBO driver storage safety check failed")
+    raise HTTPException(
+        status_code=500,
+        detail="LINBO driver storage safety check failed",
+    ) from error
+
+
+@router.get("/drivers/images", name="List images available for LINBO driver profiles")
+def list_driver_images(
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## List complete LINBO images available for driver profile assignments.
+
+    ### Access
+    - global-administrators
+    """
+
+
+    return LinboDriverManager().list_available_images()
+
+
+@router.post("/drivers/hooks/reconcile", name="Reconcile all managed driver hooks")
+def reconcile_driver_hooks(
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Rebuild all managed driver hooks from their profile assignments.
+
+    ### Access
+    - global-administrators
+    """
+
+
+    return LinboDriverManager().reconcile_driver_hooks()
+
+
+@router.get("/drivers/inventory", name="List LINBO hardware inventories")
+def list_driver_inventory(
+    include_devices: bool = Query(default=False),
+    school: str = Query(default="default-school"),
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## List hardware inventories uploaded by LINBO clients.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param include_devices: Include the parsed hardware device list
+    :param school: School containing the requested clients
+    """
+
+
+    check_valid_school_or_404(school)
+    try:
+        return LinboDriverManager().list_inventory(
+            include_devices=include_devices,
+            school=school,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.get("/drivers/inventory/{hostname}", name="Get a LINBO hardware inventory")
+def get_driver_inventory(
+    hostname: str,
+    include_devices: bool = Query(default=True),
+    school: str = Query(default="default-school"),
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Get one hardware inventory uploaded by a LINBO client.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param hostname: Client hostname
+    :param include_devices: Include the parsed hardware device list
+    :param school: School containing the requested client
+    """
+
+
+    check_valid_school_or_404(school)
+    try:
+        inventory = LinboDriverManager().get_inventory(
+            hostname,
+            include_devices=include_devices,
+            school=school,
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    if inventory is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"LINBO hardware inventory '{hostname}' not found",
+        )
+    return inventory
+
+
+@router.get("/drivers/profiles", name="List LINBO driver profiles")
+def list_driver_profiles(
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## List all valid Windows driver profiles.
+
+    ### Access
+    - global-administrators
+    """
+
+
+    return LinboDriverManager().list_profiles()
+
+
+@router.post(
+    "/drivers/profiles",
+    name="Create a LINBO driver profile",
+    status_code=201,
+)
+def create_driver_profile(
+    body: LinboDriverProfileCreate,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Create a Windows driver profile with canonical hardware matching.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param content: Profile name and DMI match values
+    """
+
+
+    try:
+        return LinboDriverManager().create_profile(
+            name=body.name,
+            vendor=body.vendor,
+            products=body.products,
+        )
+    except DriverProfileConflictError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except StorageSecurityError as e:
+        _raise_driver_storage_http_error(e)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.post(
+    "/drivers/profiles/from-inventory",
+    name="Create a LINBO driver profile from inventory",
+)
+def create_driver_profile_from_inventory(
+    body: LinboDriverProfileFromInventory,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Create or return a driver profile matching one client inventory.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param content: Inventory hostname, school and optional profile name
+    """
+
+
+    check_valid_school_or_404(body.school)
+    try:
+        return LinboDriverManager().create_profile_from_inventory(
+            hostname=body.hostname,
+            name=body.name,
+            school=body.school,
+        )
+    except DriverInventoryNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except DriverProfileConflictError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except StorageSecurityError as e:
+        _raise_driver_storage_http_error(e)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.get("/drivers/profiles/{profile_name}", name="Get a LINBO driver profile")
+def get_driver_profile(
+    profile_name: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Get one Windows driver profile and its parsed match rules.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param profile_name: Driver profile name
+    """
+
+
+    try:
+        profile = LinboDriverManager().get_profile(profile_name)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except StorageSecurityError as e:
+        _raise_driver_storage_http_error(e)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    if profile is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Driver profile '{profile_name}' not found",
+        )
+    return profile
+
+
+@router.put(
+    "/drivers/profiles/{profile_name}/match",
+    name="Update LINBO driver profile matching",
+)
+def update_driver_profile_match(
+    profile_name: str,
+    body: LinboDriverMatchUpdate,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Replace one driver profile's hardware matching rules.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param profile_name: Driver profile name
+    :param content: Replacement DMI match values
+    """
+
+
+    try:
+        return LinboDriverManager().update_match(
+            profile_name,
+            vendor=body.vendor,
+            products=body.products,
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except StorageSecurityError as e:
+        _raise_driver_storage_http_error(e)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.put(
+    "/drivers/profiles/{profile_name}/image",
+    name="Assign an image to a LINBO driver profile",
+)
+def set_driver_profile_image(
+    profile_name: str,
+    body: LinboDriverImageAssignment,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Assign one LINBO image and publish all affected driver hooks.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param profile_name: Driver profile name
+    :param content: LINBO image basename
+    """
+
+
+    try:
+        return LinboDriverManager().set_profile_image(
+            profile_name,
+            body.image,
+        )
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except (DriverHookOwnershipError, DriverHookTransactionError) as e:
+        _raise_driver_hook_http_error(e)
+    except StorageSecurityError as e:
+        _raise_driver_storage_http_error(e)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.delete(
+    "/drivers/profiles/{profile_name}/image",
+    name="Remove an image from a LINBO driver profile",
+)
+def remove_driver_profile_image(
+    profile_name: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Remove one image assignment and publish the resulting cleanup hook.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param profile_name: Driver profile name
+    """
+
+
+    try:
+        return LinboDriverManager().remove_profile_image(profile_name)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except (DriverHookOwnershipError, DriverHookTransactionError) as e:
+        _raise_driver_hook_http_error(e)
+    except StorageSecurityError as e:
+        _raise_driver_storage_http_error(e)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+
+@router.delete(
+    "/drivers/profiles/{profile_name}",
+    name="Delete a LINBO driver profile",
+)
+def delete_driver_profile(
+    profile_name: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Delete one unassigned Windows driver profile.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param profile_name: Driver profile name
+    """
+
+
+    try:
+        deleted = LinboDriverManager().delete_profile(profile_name)
+    except DriverProfileConflictError as e:
+        raise HTTPException(status_code=409, detail=str(e)) from e
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e)) from e
+    except StorageSecurityError as e:
+        _raise_driver_storage_http_error(e)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
+
+    if not deleted:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Driver profile '{profile_name}' not found",
+        )
+    return {"deleted": True, "name": profile_name}
