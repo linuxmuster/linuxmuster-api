@@ -29,15 +29,13 @@ from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.devices import Devices
 
 from linuxmusterTools.linbo import *
-from linuxmusterTools.linbo.driver_hooks import (
+from linuxmusterTools.linbo import (
     DriverHookOwnershipError,
     DriverHookTransactionError,
-)
-from linuxmusterTools.linbo.driver_storage import StorageSecurityError
-from linuxmusterTools.linbo.drivers import (
     DriverInventoryNotFoundError,
     DriverProfileConflictError,
     LinboDriverManager,
+    StorageSecurityError,
 )
 from linuxmusterTools.lmnfile import LMNFile
 from linuxmusterTools.common.checks import NameChecker
@@ -634,10 +632,14 @@ def finalize_upload_endpoint(
 
     try:
         return finalize_upload(IMAGES_DIR, image_name)
+    except StorageSecurityError as e:
+        _raise_driver_storage_http_error(e)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except FileNotFoundError as e:
         raise HTTPException(status_code=404, detail=str(e))
+    except (DriverHookOwnershipError, DriverHookTransactionError) as e:
+        _raise_driver_hook_http_error(e)
 
 
 @router.delete("/images/upload/{image_name}", name="Cancel/cleanup upload")
