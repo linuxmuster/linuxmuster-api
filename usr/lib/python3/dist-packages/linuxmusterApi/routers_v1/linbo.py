@@ -29,14 +29,6 @@ from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.devices import Devices
 
 from linuxmusterTools.linbo import *
-from linuxmusterTools.linbo import (
-    DriverHookOwnershipError,
-    DriverHookTransactionError,
-    DriverInventoryNotFoundError,
-    DriverProfileConflictError,
-    LinboDriverManager,
-    StorageSecurityError,
-)
 from linuxmusterTools.lmnfile import LMNFile
 from linuxmusterTools.common.checks import NameChecker
 
@@ -701,7 +693,12 @@ def list_driver_images(
     """
 
 
-    return LinboDriverManager().list_available_images()
+    try:
+        return LinboDriverManager().list_available_images()
+    except StorageSecurityError as e:
+        _raise_driver_storage_http_error(e)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.post("/drivers/hooks/reconcile", name="Reconcile all managed driver hooks")
@@ -716,7 +713,14 @@ def reconcile_driver_hooks(
     """
 
 
-    return LinboDriverManager().reconcile_driver_hooks()
+    try:
+        return LinboDriverManager().reconcile_driver_hooks()
+    except StorageSecurityError as e:
+        _raise_driver_storage_http_error(e)
+    except (DriverHookOwnershipError, DriverHookTransactionError) as e:
+        _raise_driver_hook_http_error(e)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e)) from e
 
 
 @router.get("/drivers/inventory", name="List LINBO hardware inventories")
@@ -816,7 +820,7 @@ def create_driver_profile(
     - global-administrators
 
     \f
-    :param content: Profile name and DMI match values
+    :param body: Profile name and DMI match values
     """
 
 
@@ -849,7 +853,7 @@ def create_driver_profile_from_inventory(
     - global-administrators
 
     \f
-    :param content: Inventory hostname, school and optional profile name
+    :param body: Inventory hostname, school and optional profile name
     """
 
 
@@ -920,7 +924,7 @@ def update_driver_profile_match(
 
     \f
     :param profile_name: Driver profile name
-    :param content: Replacement DMI match values
+    :param body: Replacement DMI match values
     """
 
 
@@ -955,7 +959,7 @@ def set_driver_profile_image(
 
     \f
     :param profile_name: Driver profile name
-    :param content: LINBO image basename
+    :param body: LINBO image basename
     """
 
 

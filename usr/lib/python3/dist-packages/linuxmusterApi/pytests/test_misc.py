@@ -6,10 +6,18 @@ from .credentials import *
 
 sys.path.append(LOCAL_API_PATH)
 from main import app
+from routers_v1 import linbo as linbo_router
 
 client = TestClient(app)
 client_no_raise = TestClient(app, raise_server_exceptions=False)
 USERS = [GLOBALADMIN, SCHOOLADMIN, TEACHER, STUDENT, STAFF, PARENT]
+
+
+def _raise_error(error):
+    def fail(*_args, **_kwargs):
+        raise error
+
+    return fail
 
 
 class TestQuery:
@@ -180,6 +188,131 @@ class TestLinbo:
         )
         assert r.status_code == 200
         assert isinstance(r.json(), list)
+
+    @pytest.mark.parametrize(
+        "error",
+        [
+            linbo_router.DriverHookOwnershipError("existing hook is not managed"),
+            linbo_router.DriverHookTransactionError(
+                "image upload transaction failed",
+                cause=linbo_router.DriverHookOwnershipError(
+                    "existing hook is not managed"
+                ),
+            ),
+        ],
+    )
+    def test_finalize_upload_maps_hook_ownership_to_conflict(
+        self,
+        monkeypatch,
+        error,
+    ):
+        monkeypatch.setattr(
+            linbo_router,
+            "finalize_upload",
+            _raise_error(error),
+        )
+        r = client.post(
+            f"{BASE_URL}/linbo/images/upload/win11/complete",
+            headers={"X-API-KEY": GLOBALADMIN.jwt},
+        )
+
+        assert r.status_code == 409
+        assert r.json()["detail"] == "existing hook is not managed"
+
+    @pytest.mark.parametrize(
+        "target,endpoint,protected_path",
+        [
+            (
+                "finalize_upload",
+                "images/upload/win11/complete",
+                "/srv/linbo/images/win11/private-target",
+            ),
+            (
+                "reconcile_driver_hooks",
+                "drivers/hooks/reconcile",
+                "/srv/linbo/drivers/.driver-profiles.lock",
+            ),
+        ],
+    )
+    def test_linbo_driver_storage_errors_hide_server_paths(
+        self,
+        monkeypatch,
+        target,
+        endpoint,
+        protected_path,
+    ):
+        fail = _raise_error(
+            linbo_router.StorageSecurityError(
+                f"unsafe path: {protected_path}"
+            )
+        )
+        if target == "finalize_upload":
+            monkeypatch.setattr(linbo_router, target, fail)
+        else:
+            monkeypatch.setattr(
+                linbo_router.LinboDriverManager,
+                target,
+                fail,
+            )
+        r = client.post(
+            f"{BASE_URL}/linbo/{endpoint}",
+            headers={"X-API-KEY": GLOBALADMIN.jwt},
+        )
+
+        assert r.status_code == 500
+        assert r.json()["detail"] == "LINBO driver storage safety check failed"
+        assert protected_path not in r.json()["detail"]
+
+    def test_reconcile_driver_hooks_passes_through_tools_result(self, monkeypatch):
+        expected = {
+            "regenerated": ["win11"],
+            "failed": [{"image": "broken", "message": "fixture"}],
+        }
+        monkeypatch.setattr(
+            linbo_router.LinboDriverManager,
+            "reconcile_driver_hooks",
+            lambda _manager: expected,
+        )
+
+        r = client.post(
+            f"{BASE_URL}/linbo/drivers/hooks/reconcile",
+            headers={"X-API-KEY": GLOBALADMIN.jwt},
+        )
+
+        assert r.status_code == 200
+        assert r.json() == expected
+
+    @pytest.mark.parametrize(
+        "error,status_code,detail",
+        [
+            (
+                linbo_router.DriverHookOwnershipError("foreign hook"),
+                409,
+                "foreign hook",
+            ),
+            (ValueError("invalid assignment"), 400, "invalid assignment"),
+        ],
+    )
+    def test_reconcile_driver_hooks_maps_domain_errors(
+        self,
+        monkeypatch,
+        error,
+        status_code,
+        detail,
+    ):
+        monkeypatch.setattr(
+            linbo_router.LinboDriverManager,
+            "reconcile_driver_hooks",
+            _raise_error(error),
+        )
+
+        r = client.post(
+            f"{BASE_URL}/linbo/drivers/hooks/reconcile",
+            headers={"X-API-KEY": GLOBALADMIN.jwt},
+        )
+
+        assert r.status_code == status_code
+        assert r.json()["detail"] == detail
 
     @pytest.mark.parametrize(
         "method,endpoint,payload",

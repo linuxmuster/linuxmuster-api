@@ -261,9 +261,9 @@ class LinboDriverProfileCreate(BaseModel):
     """
 
 
-    name: str = Field(min_length=1, max_length=100)
-    vendor: str = Field(min_length=1, max_length=255)
-    products: list[str] = Field(min_length=1, max_length=256)
+    name: str
+    vendor: str
+    products: list[str]
 
 class LinboDriverMatchUpdate(BaseModel):
     """
@@ -271,8 +271,8 @@ class LinboDriverMatchUpdate(BaseModel):
     """
 
 
-    vendor: str = Field(min_length=1, max_length=255)
-    products: list[str] = Field(min_length=1, max_length=256)
+    vendor: str
+    products: list[str]
 
 class LinboDriverProfileFromInventory(BaseModel):
     """
@@ -280,9 +280,9 @@ class LinboDriverProfileFromInventory(BaseModel):
     """
 
 
-    hostname: str = Field(min_length=1, max_length=128)
-    name: str | None = Field(default=None, min_length=1, max_length=100)
-    school: str = Field(default="default-school", min_length=1, max_length=255)
+    hostname: str
+    name: str | None = None
+    school: str = "default-school"
 
 class LinboDriverImageAssignment(BaseModel):
     """
@@ -290,4 +290,4 @@ class LinboDriverImageAssignment(BaseModel):
     """
 
 
-    image: str = Field(min_length=1, max_length=100)
+    image: str
