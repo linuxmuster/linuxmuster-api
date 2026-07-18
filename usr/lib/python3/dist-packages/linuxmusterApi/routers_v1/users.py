@@ -5,11 +5,13 @@ from .body_schemas import SetFirstPassword, SetCurrentPassword, UserList, User
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.ldapconnector import LMNUser, LMNStudent
 from linuxmusterTools.samba_util import UserManager
+from linuxmusterTools.passwords import PasswordPolicyProvider
 import linuxmusterTools.quotas
 from utils.checks import get_user_or_404
 
 
 user_manager = UserManager()
+password_policy_provider = PasswordPolicyProvider()
 
 router = APIRouter(
     prefix="/users",
@@ -160,9 +162,17 @@ def set_first_user_password(user: str, password: SetFirstPassword, who: Authenti
     """
 
 
-    get_user_or_404(user, who.school)
+    user_details = get_user_or_404(user, who.school)
 
-    # TODO : paswword constraints ?
+    result = password_policy_provider.validate(
+        password.password, role=user_details.sophomorixRole, school=who.school, username=user
+    )
+    if not result.ok:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Password does not meet requirements: {'; '.join(result.violations)}",
+        )
+
     UserWriter = LMNUser(user, who.school)
     UserWriter.setattr(data={'sophomorixFirstPassword': password.password})
     if password.set_current:
@@ -190,9 +200,6 @@ def set_current_user_password(user: str, password: SetCurrentPassword, who: Auth
     - school-administrators
     - teachers (own data and students)
 
-    ### TODO
-    - Password constraints ?
-
     \f
     :param user: The user to get the details from (samaccountname)
     :type user: basestring
@@ -203,7 +210,16 @@ def set_current_user_password(user: str, password: SetCurrentPassword, who: Auth
     """
 
 
-    get_user_or_404(user, who.school)
+    user_details = get_user_or_404(user, who.school)
+
+    result = password_policy_provider.validate(
+        password.password, role=user_details.sophomorixRole, school=who.school, username=user
+    )
+    if not result.ok:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Password does not meet requirements: {'; '.join(result.violations)}",
+        )
 
     try:
         user_manager.set_password(user, password.password)
