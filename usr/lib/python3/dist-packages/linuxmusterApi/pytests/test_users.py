@@ -42,3 +42,49 @@ class TestUsers:
         assert r.status_code == 200
         data = r.json()
         assert data["cn"] == STUDENT.cn
+
+
+class TestUserPasswords:
+    """
+    Password constraint enforcement on set-first-password/set-current-password.
+    Uses passwords deliberately far from any reasonable policy on either side
+    (too weak to pass any config, long/varied enough to pass any config) so
+    these tests don't depend on the server's own password_constraints.yml.
+    """
+
+    WEAK_PASSWORD = "weak"
+    STRONG_PASSWORD = "Str0ngP@ssw0rd!"
+
+    def test_set_first_password_weak_rejected(self):
+        r = client.post(
+            f"{BASE_URL}/users/{STUDENT.cn}/set-first-password",
+            headers={"X-API-KEY": GLOBALADMIN.jwt},
+            json={"password": self.WEAK_PASSWORD, "set_current": False},
+        )
+        assert r.status_code == 400
+        assert "does not meet requirements" in r.json()["detail"]
+
+    def test_set_first_password_strong_accepted(self):
+        r = client.post(
+            f"{BASE_URL}/users/{STUDENT.cn}/set-first-password",
+            headers={"X-API-KEY": GLOBALADMIN.jwt},
+            json={"password": self.STRONG_PASSWORD, "set_current": False},
+        )
+        assert r.status_code == 200
+
+    def test_set_current_password_weak_rejected(self):
+        r = client.post(
+            f"{BASE_URL}/users/{STUDENT.cn}/set-current-password",
+            headers={"X-API-KEY": GLOBALADMIN.jwt},
+            json={"password": self.WEAK_PASSWORD, "set_first": False},
+        )
+        assert r.status_code == 400
+        assert "does not meet requirements" in r.json()["detail"]
+
+    def test_set_current_password_strong_accepted(self):
+        r = client.post(
+            f"{BASE_URL}/users/{STUDENT.cn}/set-current-password",
+            headers={"X-API-KEY": GLOBALADMIN.jwt},
+            json={"password": self.STRONG_PASSWORD, "set_first": False},
+        )
+        assert r.status_code == 200
