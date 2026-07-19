@@ -69,6 +69,7 @@ from routers_v1 import (
     listmanagement,
     query,
     managementgroups,
+    passwordconstraints,
     print_passwords,
     printers,
     projects,
@@ -116,6 +117,7 @@ app.include_router(groups.router, prefix="/v1")
 app.include_router(linbo.router, prefix="/v1")
 app.include_router(listmanagement.router, prefix="/v1")
 app.include_router(managementgroups.router, prefix="/v1")
+app.include_router(passwordconstraints.router, prefix="/v1")
 app.include_router(print_passwords.router, prefix="/v1")
 app.include_router(printers.router, prefix="/v1")
 app.include_router(projects.router, prefix="/v1")

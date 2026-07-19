@@ -254,3 +254,46 @@ class StartConfRawBody(BaseModel):
     """
 
     content: str
+
+# --- Password constraints models ---
+
+class PasswordRuleEntry(BaseModel):
+    """
+    One password rule, see linuxmusterTools.passwords.PasswordRules.build for
+    the supported "type" values ("min_length", "require_classes") and which
+    of the fields below each of them uses.
+    """
+
+
+    type: str
+    value: int | None = None
+    classes: list[str] | None = None
+    count: int | None = None
+
+class PasswordConstraintsConfig(BaseModel):
+    """
+    Full content of /etc/linuxmuster/tools/password_constraints.yml.
+
+    "default" holds the per-role rules applied to every school unless
+    overridden; "schools" holds per-school, per-role overrides. Writing this
+    is restricted for school-administrators to their own school's entry in
+    "schools", see the passwordconstraints router.
+    """
+
+
+    default: dict[str, list[PasswordRuleEntry]] | None = None
+    schools: dict[str, dict[str, list[PasswordRuleEntry]]] | None = None
+
+class DomainPasswordPolicy(BaseModel):
+    """
+    Samba AD domain-wide password policy, see
+    linuxmusterTools.samba_util.DomainPasswordSettingsManager.set(). All
+    fields are optional: only the given ones are changed, the rest of the
+    domain policy (history length, lockout settings, PSOs) is left as-is.
+    """
+
+
+    min_pwd_length: int | None = None
+    min_pwd_age: int | None = None
+    max_pwd_age: int | None = None
+    complexity: bool | None = None
