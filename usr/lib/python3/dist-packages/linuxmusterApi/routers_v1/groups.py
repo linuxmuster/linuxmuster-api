@@ -15,6 +15,9 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+# TODO: cenrtalize
+CUSTOMFIELDS = [f'sophomorixCustom{count}' for count in range(1, 5)] + [f'sophomorixCustomMulti{count}' for count in range(1, 5)]
+
 @router.get("/", name="List all groups")
 def get_groups_list(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
@@ -183,6 +186,11 @@ def create_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
     if group_details.quota:
         data['sophomorixQuota'] = [f"{q.share}:{q.quota}:{q.comment}:" for q in group_details.quota]
 
+    for field in CUSTOMFIELDS:
+        value = getattr(group_details, field, None)
+        if value:
+            data[field] = value
+
     GroupWriter.setattr(data=data)
 
     if group_details.members:
@@ -238,6 +246,11 @@ def modify_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
 
     if group_details.quota:
         data['sophomorixQuota'] = [f"{q.share}:{q.quota}:{q.comment}:" for q in group_details.quota]
+
+    for field in CUSTOMFIELDS:
+        value = getattr(group_details, field, None)
+        if value:
+            data[field] = value
 
     GroupWriter = LMNGroup(group, school=school)
     GroupWriter.setattr(data=data)
