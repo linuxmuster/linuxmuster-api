@@ -39,6 +39,16 @@ class Group(BaseModel):
     proxyAddresses: list | None = []
     quota: list[LMNShareQuota] | None = []
     school: str = 'default-school'
+    sophomorixCustom1: str | None = ''
+    sophomorixCustom2: str | None = ''
+    sophomorixCustom3: str | None = ''
+    sophomorixCustom4: str | None = ''
+    sophomorixCustom5: str | None = ''
+    sophomorixCustomMulti1: list | None = []
+    sophomorixCustomMulti2: list | None = []
+    sophomorixCustomMulti3: list | None = []
+    sophomorixCustomMulti4: list | None = []
+    sophomorixCustomMulti5: list | None = []
 
 class Printer(BaseModel):
     """
