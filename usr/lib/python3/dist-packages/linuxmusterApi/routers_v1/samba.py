@@ -148,7 +148,7 @@ def get_smbstatus(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
             # Teacher not found in samba connections
             return {}
         else:
-            user_room = connections[who.user].room
+            user_room = connections[who.user][room]
             return {
                 user: details
                 for user,details in connections.items()
@@ -157,7 +157,7 @@ def get_smbstatus(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     else:
         return {
             user: details.as_dict()
-            for user,details in connections.users.items()
+            for user,details in connections.items()
         }
 
 
