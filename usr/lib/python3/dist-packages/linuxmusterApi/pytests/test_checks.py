@@ -45,3 +45,13 @@ class TestRequireSchool:
         monkeypatch.setattr("utils.checks.lr.getval", lambda *a, **k: ['default-school'])
         who = SimpleNamespace(school='global')
         assert _dummy_endpoint(school='default-school', who=who) == 'ok'
+
+    def test_passes_through_when_school_matches_who_school(self):
+        who = SimpleNamespace(school='default-school')
+        assert _dummy_endpoint(school='default-school', who=who) == 'ok'
+
+    def test_raises_403_when_school_differs_from_who_school(self):
+        who = SimpleNamespace(school='default-school')
+        with pytest.raises(HTTPException) as exc_info:
+            _dummy_endpoint(school='other-school', who=who)
+        assert exc_info.value.status_code == 403

@@ -15,6 +15,7 @@ _TEST_DATA_DEFAULTS = {
     'PRINTER': 'UNCONFIGURED',
     'MGMT_GROUP': 'UNCONFIGURED',
     'GROUP': 'UNCONFIGURED',
+    'DEVICE': 'UNCONFIGURED',
 }
 for _var, _default in _TEST_DATA_DEFAULTS.items():
     if not hasattr(credentials, _var):

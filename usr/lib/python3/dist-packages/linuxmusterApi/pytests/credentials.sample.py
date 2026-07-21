@@ -24,3 +24,4 @@ PROJECT = 'p_PROJECTNAME'        # CN of an existing project (with prefix)
 PRINTER = 'PRINTERNAME'          # CN of an existing printer
 MGMT_GROUP = 'MGMTGROUPNAME'     # CN of an existing management group
 GROUP = 'GROUPNAME'              # CN of an existing group
+DEVICE = 'DEVICENAME'            # CN of an existing device
