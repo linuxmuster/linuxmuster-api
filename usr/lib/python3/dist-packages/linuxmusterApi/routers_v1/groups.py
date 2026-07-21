@@ -89,8 +89,8 @@ def get_group_details(group: str, who: AuthenticatedUser = Depends(RoleChecker("
 
     return group_details.as_dict()
 
-@require_school
 @router.delete("/{group}", status_code=204, name="Delete a specific group")
+@require_school
 def delete_group(group: str, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Delete a specific group
@@ -264,8 +264,8 @@ def modify_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
 
     return GroupWriter.data
 
-@require_school
 @router.post("/{group}/members", name="Add users to a specific group")
+@require_school
 def add_members_to_group(group: str, userlist: UserList, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Add members to a specific group.
@@ -302,8 +302,8 @@ def add_members_to_group(group: str, userlist: UserList, school: str = '', who: 
         except Exception:
             logging.warning(f"User {member} not found, will not add it to group {group}")
 
-@require_school
 @router.delete("/{group}/members", status_code=204, name="Remove users from a specific group")
+@require_school
 def remove_members_from_group(group: str, userlist: UserList, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Remove members from a specific group.
@@ -340,8 +340,8 @@ def remove_members_from_group(group: str, userlist: UserList, school: str = '', 
         except Exception:
             logging.warning(f"User {member} not found, will not delete from group {group}")
 
-@require_school
 @router.post("/{group}/migrate", name="Migrate a legacy sophomorix-group to OU=LMNGroups")
+@require_school
 def migrate_group(group: str, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Migrate a legacy sophomorix-group (living in OU=Projects) to OU=LMNGroups.

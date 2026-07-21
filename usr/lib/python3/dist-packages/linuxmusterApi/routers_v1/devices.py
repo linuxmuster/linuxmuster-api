@@ -17,8 +17,8 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
-@require_school
 @router.get("/list/{school}", name="List all devices")
+@require_school
 def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## List all devices from devices.csv with all available information.
@@ -157,8 +157,8 @@ def modify_device(device: str, device_details: Device, who: AuthenticatedUser = 
 
     return device_writer.data
 
-@require_school
 @router.post("/list/{school}", name="Write content of devices.csv")
+@require_school
 def post_management_list_content(school: str, content: MgmtList, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Write the content of devices list (file like /etc/linuxmuster/sophomorix/default-school/devices.csv).
@@ -200,8 +200,8 @@ def post_management_list_content(school: str, content: MgmtList, who: Authentica
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error writing {path}: {str(e)}")
 
-@require_school
 @router.get("/list/{school}/import-devices", name="Run linuxmuster-import-devices")
+@require_school
 def do_import_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Run linuxmuster-import-devices on the given school.
