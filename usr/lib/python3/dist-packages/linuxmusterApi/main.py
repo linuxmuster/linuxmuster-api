@@ -13,7 +13,6 @@ from fastapi.responses import HTMLResponse
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.openapi.utils import get_openapi
-from fastapi.routing import _IncludedRouter  # internal FastAPI API (>= 0.137)
 from vars import *
 
 
@@ -105,33 +104,39 @@ def home():
 
     return HTML_HOME
 
-app.include_router(auth.router, prefix="/v1")
-app.include_router(admins.router_global, prefix="/v1")
-app.include_router(admins.router_school, prefix="/v1")
-app.include_router(bindusers.router_global, prefix="/v1")
-app.include_router(bindusers.router_school, prefix="/v1")
-app.include_router(devices.router, prefix="/v1")
-app.include_router(exam.router, prefix="/v1")
-app.include_router(extraclasses.router, prefix="/v1")
-app.include_router(groups.router, prefix="/v1")
-app.include_router(linbo.router, prefix="/v1")
-app.include_router(listmanagement.router, prefix="/v1")
-app.include_router(managementgroups.router, prefix="/v1")
-app.include_router(passwordconstraints.router, prefix="/v1")
-app.include_router(print_passwords.router, prefix="/v1")
-app.include_router(printers.router, prefix="/v1")
-app.include_router(projects.router, prefix="/v1")
-app.include_router(query.router, prefix="/v1")
-app.include_router(roles.router, prefix="/v1")
-app.include_router(samba.router, prefix="/v1")
-app.include_router(schoolclasses.router, prefix="/v1")
-app.include_router(server.router, prefix="/v1")
-app.include_router(sessions.router, prefix="/v1")
-app.include_router(subnets.router, prefix="/v1")
-app.include_router(schools.router, prefix="/v1")
-app.include_router(teachers.router, prefix="/v1")
-app.include_router(users.router, prefix="/v1")
-app.include_router(vdi.router, prefix="/v1")
+_V1_PREFIX = "/v1"
+_V1_ROUTERS = [
+    auth.router,
+    admins.router_global,
+    admins.router_school,
+    bindusers.router_global,
+    bindusers.router_school,
+    devices.router,
+    exam.router,
+    extraclasses.router,
+    groups.router,
+    linbo.router,
+    listmanagement.router,
+    managementgroups.router,
+    passwordconstraints.router,
+    print_passwords.router,
+    printers.router,
+    projects.router,
+    query.router,
+    roles.router,
+    samba.router,
+    schoolclasses.router,
+    server.router,
+    sessions.router,
+    subnets.router,
+    schools.router,
+    teachers.router,
+    users.router,
+    vdi.router,
+]
+
+for _router in _V1_ROUTERS:
+    app.include_router(_router, prefix=_V1_PREFIX)
 
 def custom_openapi():
     if app.openapi_schema:
@@ -156,16 +161,26 @@ def custom_openapi():
     app.openapi_schema = openapi_schema
     return app.openapi_schema
 
-def _iter_effective_routes(routes):
+def _iter_effective_routes():
     # Since FastAPI 0.137, app.include_router() no longer flattens sub-router
-    # routes into app.routes: each inclusion is kept as a lazy _IncludedRouter
-    # wrapper with no .path/.name/.path_regex/.dependant of its own.
-    # effective_route_contexts() resolves it to the real, prefixed routes.
-    for route in routes:
-        if isinstance(route, _IncludedRouter):
-            yield from route.effective_route_contexts()
-        else:
-            yield route
+    # routes into app.routes: each inclusion is kept as a lazy wrapper with no
+    # .path/.path_regex of its own (only a real route has .path_regex, hence
+    # the duck-typing check below instead of importing FastAPI's private
+    # wrapper type). So top-level routes (home, static, docs, openapi) are
+    # read straight off app.routes, while v1 endpoints are read directly off
+    # the original router objects, with the "/v1" prefix applied manually.
+    for route in app.routes:
+        if hasattr(route, 'path_regex'):
+            yield route, route.path, route.path_regex.pattern
+
+    for router in _V1_ROUTERS:
+        for route in router.routes:
+            pattern = route.path_regex.pattern
+            if pattern.startswith('^'):
+                display_regex = f"^{_V1_PREFIX}{pattern[1:]}"
+            else:
+                display_regex = f"{_V1_PREFIX}{pattern}"
+            yield route, f"{_V1_PREFIX}{route.path}", display_regex
 
 _METHOD_ORDER = ['GET', 'HEAD', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS']
 _METHOD_COLORS = {
@@ -207,22 +222,22 @@ def list_all_endpoints(filter_str=''):
             roles.append(role.replace('administrator', 'adm'))
         return ';'.join(roles)
 
-    routes = list(_iter_effective_routes(app.routes))
+    routes = list(_iter_effective_routes())
 
-    for data in routes:
-        if len(data.path) > max_path:
-            max_path = len(data.path)
+    for data, path, regex in routes:
+        if len(path) > max_path:
+            max_path = len(path)
         if len(data.name) > max_name:
             max_name = len(data.name)
-        if len(data.path_regex.pattern) > max_reg:
-            max_reg = len(data.path_regex.pattern)
+        if len(regex) > max_reg:
+            max_reg = len(regex)
         if len(_method_label(data)) > max_method:
             max_method = len(_method_label(data))
 
     print("-"*(max_reg+max_path+max_name+max_method+70))
     print(f"{"Method":{max_method}} | {"URL":{max_path}} | {"Desc.":{max_name}} | {"Regexp":{max_reg}} | {'Roles'}")
     print("-"*(max_reg+max_path+max_name+max_method+70))
-    for data in routes:
+    for data, path, regex in routes:
         dependant = getattr(data, 'dependant', None)
         method = _method_label(data)
         color = _method_color(data)
@@ -230,9 +245,9 @@ def list_all_endpoints(filter_str=''):
         method_field = f"{color}{method_field}{_COLOR_RESET}" if color else method_field
 
         if dependant and dependant.dependencies:
-            line = f"{data.path:{max_path}} | {data.name:{max_name}} | {data.path_regex.pattern:{max_reg}} | {_roles(dependant.dependencies[0].call)}"
+            line = f"{path:{max_path}} | {data.name:{max_name}} | {regex:{max_reg}} | {_roles(dependant.dependencies[0].call)}"
         else:
-            line = f"{data.path:{max_path}} | {data.name:{max_name}} | {' '*max_reg} |"
+            line = f"{path:{max_path}} | {data.name:{max_name}} | {' '*max_reg} |"
 
         if filter_str in line:
             print(f"{method_field} | {line}")
