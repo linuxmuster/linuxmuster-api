@@ -9,7 +9,7 @@ from linuxmusterTools.samba_util import DeviceManager
 from utils.checks import get_printer_or_404
 from utils.sophomorix import lmn_getSophomorixValue
 from .body_schemas import MgmtList, Device
-from utils.checks import check_valid_school_or_404
+from utils.checks import check_valid_school_or_404, require_school
 
 router = APIRouter(
     prefix="/devices",
@@ -17,6 +17,7 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+@require_school
 @router.get("/list/{school}", name="List all devices")
 def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
@@ -35,8 +36,6 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
     :rtype: list
     """
 
-
-    check_valid_school_or_404(school)
 
     if school != 'default-school':
         prefix = f'{school}.'
@@ -158,6 +157,7 @@ def modify_device(device: str, device_details: Device, who: AuthenticatedUser = 
 
     return device_writer.data
 
+@require_school
 @router.post("/list/{school}", name="Write content of devices.csv")
 def post_management_list_content(school: str, content: MgmtList, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
@@ -182,8 +182,6 @@ def post_management_list_content(school: str, content: MgmtList, who: Authentica
     """
 
 
-    check_valid_school_or_404(school)
-
     if school != 'default-school':
         prefix = f'{school}.'
     else:
@@ -202,6 +200,7 @@ def post_management_list_content(school: str, content: MgmtList, who: Authentica
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error writing {path}: {str(e)}")
 
+@require_school
 @router.get("/list/{school}/import-devices", name="Run linuxmuster-import-devices")
 def do_import_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
@@ -220,8 +219,6 @@ def do_import_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker(
     :rtype: dict
     """
 
-
-    check_valid_school_or_404(school)
 
     cmd = ['linuxmuster-import-devices', '--school', school]
     results = subprocess.run(cmd, stdout=subprocess.PIPE)
