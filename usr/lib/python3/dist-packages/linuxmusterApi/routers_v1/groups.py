@@ -90,7 +90,7 @@ def get_group_details(group: str, who: AuthenticatedUser = Depends(RoleChecker("
     return group_details.as_dict()
 
 @router.delete("/{group}", status_code=204, name="Delete a specific group")
-def delete_group(group: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def delete_group(group: str, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Delete a specific group
 
@@ -106,9 +106,10 @@ def delete_group(group: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))
     """
 
 
-    get_group_or_404(group, who.school)
+    active_school = school if school else who.school
+    get_group_or_404(group, active_school)
 
-    GroupWriter = LMNGroup(group, school=who.school)
+    GroupWriter = LMNGroup(group, school=active_school)
     GroupWriter.delete()
 
 @router.post("/{group}", name="Create a new group")
@@ -261,7 +262,7 @@ def modify_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
     return GroupWriter.data
 
 @router.post("/{group}/members", name="Add users to a specific group")
-def add_members_to_group(group: str, userlist: UserList, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def add_members_to_group(group: str, userlist: UserList, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Add members to a specific group.
 
@@ -282,9 +283,10 @@ def add_members_to_group(group: str, userlist: UserList, who: AuthenticatedUser 
     if not userlist.users:
         raise HTTPException(status_code=400, detail="Missing userlist of members to add")
 
-    get_group_or_404(group, who.school)
+    active_school = school if school else who.school
+    get_group_or_404(group, active_school)
 
-    GroupWriter = LMNGroup(group, school=who.school)
+    GroupWriter = LMNGroup(group, school=active_school)
 
     for member in userlist.users:
         try:
@@ -297,7 +299,7 @@ def add_members_to_group(group: str, userlist: UserList, who: AuthenticatedUser 
             logging.warning(f"User {member} not found, will not add it to group {group}")
 
 @router.delete("/{group}/members", status_code=204, name="Remove users from a specific group")
-def remove_members_from_group(group: str, userlist: UserList, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def remove_members_from_group(group: str, userlist: UserList, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Remove members from a specific group.
 
@@ -318,9 +320,10 @@ def remove_members_from_group(group: str, userlist: UserList, who: Authenticated
     if not userlist.users:
         raise HTTPException(status_code=400, detail="Missing userlist of members to delete")
 
-    get_group_or_404(group, who.school)
+    active_school = school if school else who.school
+    get_group_or_404(group, active_school)
 
-    GroupWriter = LMNGroup(group, school=who.school)
+    GroupWriter = LMNGroup(group, school=active_school)
 
     for member in userlist.users:
         try:
@@ -333,7 +336,7 @@ def remove_members_from_group(group: str, userlist: UserList, who: Authenticated
             logging.warning(f"User {member} not found, will not delete from group {group}")
 
 @router.post("/{group}/migrate", name="Migrate a legacy sophomorix-group to OU=LMNGroups")
-def migrate_group(group: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def migrate_group(group: str, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Migrate a legacy sophomorix-group (living in OU=Projects) to OU=LMNGroups.
 
@@ -353,9 +356,10 @@ def migrate_group(group: str, who: AuthenticatedUser = Depends(RoleChecker("GS")
     """
 
 
-    get_group_or_404(group, who.school)
+    active_school = school if school else who.school
+    get_group_or_404(group, active_school)
 
-    GroupWriter = LMNGroup(group, school=who.school)
+    GroupWriter = LMNGroup(group, school=active_school)
     GroupWriter.migrate()
 
     return GroupWriter.data
