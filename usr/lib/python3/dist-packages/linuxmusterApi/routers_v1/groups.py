@@ -153,7 +153,9 @@ def create_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
     if not Validator.check_group_name(group):
         raise HTTPException(status_code=422, detail=f"{group} is not a valid name. Valid chars are {NAME_RULES['group']}")
 
-    school = group_details.school or who.school
+    # school-administrators are restricted to their own school: group_details.school
+    # is only honored for global-administrators, who are not scoped to a single school.
+    school = group_details.school if who.school == 'global' else who.school
 
     # School specific request. For global-admins, it will search in all groups from all schools
     if lr.get(f'/groups/{group}', school=school):
@@ -225,7 +227,9 @@ def modify_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
     """
 
 
-    school = group_details.school or who.school
+    # school-administrators are restricted to their own school: group_details.school
+    # is only honored for global-administrators, who are not scoped to a single school.
+    school = group_details.school if who.school == 'global' else who.school
     check_valid_school_or_404(school)
     get_group_or_404(group, school)
 
