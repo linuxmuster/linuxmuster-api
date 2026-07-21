@@ -3,6 +3,7 @@ from functools import wraps
 from fastapi import HTTPException
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from linuxmusterTools.passwords import PasswordRules
 
 
 def check_tmp_dir():
@@ -244,3 +245,11 @@ def check_valid_mgmtlist_or_404(mgmtlist, school):
         os.mknod(configpath)
 
     return configpath
+
+def check_password_constraints_rules_or_400(role: str, entries: list):
+    for entry in entries:
+        try:
+            PasswordRules.build(entry)
+        except Exception as e:
+            raise HTTPException(status_code=400,
+                                detail=f"Invalid rule for role '{role}': {e}")
