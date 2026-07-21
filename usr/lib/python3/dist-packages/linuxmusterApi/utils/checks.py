@@ -197,10 +197,15 @@ def require_school(func):
     value like 'global' can end up passed to a LDAP writer (e.g. LMNGroup) and
     fail deep in the call stack instead of at the API boundary.
 
+    A school-administrator is scoped to their own school: if they pass a
+    `school` different from `who.school`, the request is rejected instead of
+    silently operating on another school.
+
     Only applies to endpoints whose `school` is a direct parameter (not nested
     in a body schema, e.g. `group_details.school`).
 
     :raises HTTPException 400: who.school == 'global' and no school was given
+    :raises HTTPException 403: who.school != 'global' and school != who.school
     :raises HTTPException 404: the given school is not a valid school
     """
 
@@ -210,6 +215,11 @@ def require_school(func):
         school = kwargs.get('school') or ''
 
         if who is not None and who.school != 'global':
+            if school and school != who.school:
+                raise HTTPException(
+                    status_code=403,
+                    detail="school-administrators can only operate on their own school."
+                )
             return func(*args, **kwargs)
 
         if not school:
