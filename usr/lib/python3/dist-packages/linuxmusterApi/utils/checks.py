@@ -1,4 +1,5 @@
 import os
+from functools import wraps
 from fastapi import HTTPException
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
@@ -185,6 +186,42 @@ def check_valid_school_or_404(school):
                             detail=f"{school} is not a valid school")
 
     return school
+
+def require_school(func):
+    """
+    Decorator for endpoints taking a `who` (AuthenticatedUser) and a `school`
+    parameter. A global-administrator (who.school == 'global') is not scoped to
+    a single school, so the endpoint must receive an explicit, valid `school`
+    argument to know which school to operate on. Without this, a school-scoped
+    value like 'global' can end up passed to a LDAP writer (e.g. LMNGroup) and
+    fail deep in the call stack instead of at the API boundary.
+
+    Only applies to endpoints whose `school` is a direct parameter (not nested
+    in a body schema, e.g. `group_details.school`).
+
+    :raises HTTPException 400: who.school == 'global' and no school was given
+    :raises HTTPException 404: the given school is not a valid school
+    """
+
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        who = kwargs.get('who')
+        school = kwargs.get('school') or ''
+
+        if who is not None and who.school != 'global':
+            return func(*args, **kwargs)
+
+        if not school:
+            raise HTTPException(
+                status_code=400,
+                detail="A specific school is required: global-administrators must provide the 'school' parameter."
+            )
+
+        check_valid_school_or_404(school)
+
+        return func(*args, **kwargs)
+
+    return wrapper
 
 def check_valid_mgmtlist_or_404(mgmtlist, school):
     """

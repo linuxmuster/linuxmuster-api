@@ -6,7 +6,7 @@ from security import RoleChecker, AuthenticatedUser
 from .body_schemas import Group, UserList
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNGroup, find_legacy_groups
 from linuxmusterTools.common import Validator, NAME_RULES
-from utils.checks import get_group_or_404
+from utils.checks import get_group_or_404, require_school
 
 
 router = APIRouter(
@@ -89,6 +89,7 @@ def get_group_details(group: str, who: AuthenticatedUser = Depends(RoleChecker("
 
     return group_details.as_dict()
 
+@require_school
 @router.delete("/{group}", status_code=204, name="Delete a specific group")
 def delete_group(group: str, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
@@ -261,6 +262,7 @@ def modify_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
 
     return GroupWriter.data
 
+@require_school
 @router.post("/{group}/members", name="Add users to a specific group")
 def add_members_to_group(group: str, userlist: UserList, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
@@ -298,6 +300,7 @@ def add_members_to_group(group: str, userlist: UserList, school: str = '', who: 
         except Exception:
             logging.warning(f"User {member} not found, will not add it to group {group}")
 
+@require_school
 @router.delete("/{group}/members", status_code=204, name="Remove users from a specific group")
 def remove_members_from_group(group: str, userlist: UserList, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
@@ -335,6 +338,7 @@ def remove_members_from_group(group: str, userlist: UserList, school: str = '', 
         except Exception:
             logging.warning(f"User {member} not found, will not delete from group {group}")
 
+@require_school
 @router.post("/{group}/migrate", name="Migrate a legacy sophomorix-group to OU=LMNGroups")
 def migrate_group(group: str, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
