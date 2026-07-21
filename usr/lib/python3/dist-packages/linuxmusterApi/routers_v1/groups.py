@@ -6,7 +6,7 @@ from security import RoleChecker, AuthenticatedUser
 from .body_schemas import Group, UserList
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNGroup, find_legacy_groups
 from linuxmusterTools.common import Validator, NAME_RULES
-from utils.checks import get_group_or_404, require_school
+from utils.checks import get_group_or_404, require_school, check_valid_school_or_404
 
 
 router = APIRouter(
@@ -159,6 +159,7 @@ def create_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
     if lr.get(f'/groups/{group}', school=school):
         raise HTTPException(status_code=400, detail=f"Group {group} already exists on this server.")
 
+    check_valid_school_or_404(school)
     GroupWriter = LMNGroup(group, school=school)
 
     try:
@@ -225,6 +226,7 @@ def modify_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
 
 
     school = group_details.school or who.school
+    check_valid_school_or_404(school)
     get_group_or_404(group, school)
 
     data = {
