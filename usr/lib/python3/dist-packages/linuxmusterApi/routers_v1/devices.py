@@ -127,13 +127,15 @@ def modify_device(device: str, device_details: Device, who: AuthenticatedUser = 
 
 
     # School must be given specific to avoid conflicts between clients with same
-    # names upon schools
-    if device_details.school:
-        school = device_details.school
-    else:
-        if who.school == 'global':
+    # names upon schools. school-administrators are restricted to their own
+    # school: device_details.school is only honored for global-administrators,
+    # who are not scoped to a single school.
+    if who.school == 'global':
+        if not device_details.school:
             raise HTTPException(status_code=400, detail=f"For a request as globaladministrator, the school must be specified.")
 
+        school = device_details.school
+    else:
         school = who.school
 
     device_writer = LMNDevice(device, school=school)
