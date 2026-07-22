@@ -93,7 +93,10 @@ def post_passwordconstraints(content: PasswordConstraintsConfig, who: Authentica
                 detail="School administrators can only set their own school's rules")
 
         if not os.path.isfile(CONFIG_PATH):
-            return {}
+            raise HTTPException(
+                status_code=404,
+                detail=f"{CONFIG_PATH} does not exist yet. A global-administrator must create it first."
+            )
 
         with LMNFile(str(CONFIG_PATH), 'r') as f:
             config = f.read() or {}
