@@ -1,3 +1,23 @@
+linuxmuster-api7 (7.4.6) lmn74; urgency=medium
+
+  * [passwords] Add endpoints to manage the Samba domain-wide password
+    policy (passwordpolicy) and the password constraints config
+    (passwordconstraints), scoped by role (school-administrator vs
+    global-administrator); check new/current passwords against the
+    configured policy when set; tests.
+  * [passwords] Return a clear 404 instead of silently no-op'ing when a
+    school-administrator tries to write password constraints before a
+    global-administrator has created the config file.
+  * Fix school scoping across several endpoints: enforce a required
+    `school` parameter for global-administrators, restrict
+    school-administrators to their own school, fix decorator order and a
+    dict-assignment bug found along the way. Fixes #22, #23, #24, #26.
+  * List routers explicitly instead of relying on a private FastAPI method.
+    Fix #25.
+  * [groups] Add custom fields handling to lmngroups.
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 22 Jul 2026 22:30:03 +0200
+
 linuxmuster-api7 (7.4.5) lmn74; urgency=medium
 
   * [linbo] Add endpoints to write raw start.conf or delete start.conf 
