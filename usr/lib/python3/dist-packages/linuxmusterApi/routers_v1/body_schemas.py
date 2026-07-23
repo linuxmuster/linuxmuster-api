@@ -265,6 +265,33 @@ class StartConfRawBody(BaseModel):
 
     content: str
 
+class LinboDriverProfileCreate(BaseModel):
+    """
+    Data required to create a hardware-matched driver profile.
+    """
+
+
+    name: str
+    vendor: str
+    product: str
+
+class LinboDriverMatchUpdate(BaseModel):
+    """
+    Hardware matching values for an existing driver profile.
+    """
+
+
+    vendor: str
+    product: str
+
+class LinboDriverImageAssignment(BaseModel):
+    """
+    LINBO image assigned to a driver profile.
+    """
+
+
+    image: str
+
 # --- Password constraints models ---
 
 class PasswordRuleEntry(BaseModel):
