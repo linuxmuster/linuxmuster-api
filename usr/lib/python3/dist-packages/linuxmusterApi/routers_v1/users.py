@@ -4,13 +4,11 @@ from security import RoleChecker, UserChecker, AuthenticatedUser, UserListChecke
 from .body_schemas import SetFirstPassword, SetCurrentPassword, UserList, User
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.ldapconnector import LMNUser, LMNStudent
-from linuxmusterTools.samba_util import UserManager
 from linuxmusterTools.passwords import PasswordPolicyProvider
 import linuxmusterTools.quotas
 from utils.checks import get_user_or_404
 
 
-user_manager = UserManager()
 password_policy_provider = PasswordPolicyProvider()
 
 router = APIRouter(
@@ -177,7 +175,7 @@ def set_first_user_password(user: str, password: SetFirstPassword, who: Authenti
     UserWriter.setattr(data={'sophomorixFirstPassword': password.password})
     if password.set_current:
         try:
-            user_manager.set_password(user, password.password)
+            UserWriter.set_actual_password(password.password)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Cannot set current password: {str(e)}")
 
@@ -221,13 +219,13 @@ def set_current_user_password(user: str, password: SetCurrentPassword, who: Auth
             detail=f"Password does not meet requirements: {'; '.join(result.violations)}",
         )
 
+    UserWriter = LMNUser(user.lower(), school=who.school)
     try:
-        user_manager.set_password(user, password.password)
+        UserWriter.set_actual_password(password.password)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
     if password.set_first:
-        UserWriter = LMNUser(user.lower(), school=who.school)
         UserWriter.setattr(data={'sophomorixFirstPassword': password.password})
 
 
