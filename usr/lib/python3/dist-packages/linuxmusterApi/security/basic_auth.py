@@ -6,6 +6,7 @@ from datetime import datetime, timezone, timedelta
 from typing_extensions import Annotated
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from linuxmusterTools.ldapconnector.models import check_password
 
 
 BASIC_AUTH = HTTPBasic()
@@ -35,7 +36,7 @@ class BasicAuthChecker:
                 detail='Malformated username, please send a valid username and password.'
             )
 
-        if user.test_password(password=credentials.password):
+        if check_password(user.dn, credentials.password):
             return generate_jwt(user.cn, user.sophomorixRole, user.dn, user.sophomorixSchoolname,
                                 request.app.state.secret)
 
