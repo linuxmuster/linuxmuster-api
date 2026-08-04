@@ -15,6 +15,12 @@ class RateLimiter:
 
     async def __call__(self, request: Request):
         client_ip = request.client.host
+
+        # Local callers (e.g. linuxmuster-webui7 running on the same host) are not
+        # rate-limited: only requests coming from outside the host are counted.
+        if client_ip in {'127.0.0.1', '::1'}:
+            return True
+
         route_path = request.url.path
 
         # Get the current timestamp
