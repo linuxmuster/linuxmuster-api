@@ -130,11 +130,11 @@ class User(BaseModel):
 class SetFirstPassword(BaseModel):
     """
     Wenn setting the first password, the set_current boolean flag indicates if the current password must be overwritten
-    too.
+    too. If password is omitted, the current password is instead reset back to the existing first password.
     """
 
 
-    password: str
+    password: str | None = None
     set_current: bool = Field(default= False)
 
 class SetCurrentPassword(BaseModel):

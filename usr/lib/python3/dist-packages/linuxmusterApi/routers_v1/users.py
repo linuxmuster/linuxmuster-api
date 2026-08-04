@@ -145,6 +145,9 @@ def set_first_user_password(user: str, password: SetFirstPassword, who: Authenti
     If the flag *set_current* is set to true, the current password will be updated
     too.
 
+    If *password* is omitted, the current password is instead reset back to
+    the existing first password (no new password is generated or stored).
+
     ### Access
     - global-administrators
     - school-administrators
@@ -153,12 +156,27 @@ def set_first_user_password(user: str, password: SetFirstPassword, who: Authenti
     \f
     :param user: The user to get the details from (samaccountname)
     :type user: basestring
-    :param password: The password o set
+    :param password: The password to set, or omitted to reset to the existing first password
     :type password: SetFirstPassword
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
     """
 
+
+    UserWriter = LMNUser(user, who.school)
+
+    if password.password is None:
+        first_password = UserWriter.data.get('sophomorixFirstPassword')
+        if not first_password:
+            raise HTTPException(
+                status_code=400,
+                detail="No first password stored for this user, nothing to reset to.",
+            )
+        try:
+            UserWriter.set_actual_password(first_password)
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Cannot reset current password: {str(e)}")
+        return
 
     user_details = get_user_or_404(user, who.school)
 
@@ -171,13 +189,45 @@ def set_first_user_password(user: str, password: SetFirstPassword, who: Authenti
             detail=f"Password does not meet requirements: {'; '.join(result.violations)}",
         )
 
-    UserWriter = LMNUser(user, who.school)
     UserWriter.setattr(data={'sophomorixFirstPassword': password.password})
     if password.set_current:
         try:
             UserWriter.set_actual_password(password.password)
         except Exception as e:
             raise HTTPException(status_code=400, detail=f"Cannot set current password: {str(e)}")
+
+@router.post("/{user}/set-random-first-password", name="Set a random first password for the user")
+def set_random_first_user_password(user: str, who: AuthenticatedUser = Depends(UserChecker("GST"))):
+    """
+    ## Generate a random password satisfying the current password policy and
+    set it as the user's first and current password.
+
+    Unlike *set-first-password*, no password is provided by the caller: it is
+    generated server-side (see `LMNUser.set_random_first_password`), then
+    returned so it can be displayed or printed for the user.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+    - teachers (own data and students)
+
+    \f
+    :param user: The user to get the details from (samaccountname)
+    :type user: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: The generated password
+    :rtype: dict
+    """
+
+
+    UserWriter = LMNUser(user, who.school)
+    try:
+        password = UserWriter.set_random_first_password()
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Cannot set a random password: {str(e)}")
+
+    return {"password": password}
 
 @router.post("/{user}/set-current-password", name="Set user's current password")
 def set_current_user_password(user: str, password: SetCurrentPassword, who: AuthenticatedUser = Depends(UserChecker("GST"))):
