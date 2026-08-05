@@ -1,3 +1,24 @@
+linuxmuster-api7 (7.4.7) lmn74; urgency=medium
+
+  * [passwords] Add POST /v1/users/{user}/set-random-first-password:
+    generates a password satisfying the current policy server-side and
+    returns it.
+  * [passwords] Allow omitting `password` in set-first-password to reset
+    the current password back to the existing first password instead of
+    setting a new one.
+  * [passwords] Use LMNUser.set_actual_password() instead of the removed
+    samba_util.UserManager for setting the account's current password.
+  * Fix authentication broken by the linuxmuster-tools
+    test_password()/check_password() rename (JWT issuance via Basic Auth
+    was failing).
+  * [security] Exempt local requests (127.0.0.1/::1, e.g.
+    linuxmuster-webui7 on the same host) from the rate limiter.
+  * [linbo] Add LINBO Windows driver API endpoints. (@amolani)
+  * [tests] Add/update tests for the password endpoints, policy
+    constraints, and the rate limiter's loopback exemption.
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 05 Aug 2026 15:35:00 +0200
+
 linuxmuster-api7 (7.4.6) lmn74; urgency=medium
 
   * [passwords] Add endpoints to manage the Samba domain-wide password
