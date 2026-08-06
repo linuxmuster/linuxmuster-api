@@ -258,6 +258,25 @@ class LinboBatchMacs(BaseModel):
 
     macs: list[str]
 
+class LinboHostScanRequest(BaseModel):
+    """
+    MAC addresses to probe for online status. Empty means every client of the school.
+    """
+
+
+    macs: list[str] = []
+
+class LinboWolRequest(BaseModel):
+    """
+    MAC addresses to wake, with the magic packet parameters.
+    """
+
+
+    macs: list[str]
+    broadcast: str | None = None
+    port: int = 9
+    count: int = 3
+
 class StartConfRawBody(BaseModel):
     """
     Raw start.conf content, keeps comments, but will not be parsed.

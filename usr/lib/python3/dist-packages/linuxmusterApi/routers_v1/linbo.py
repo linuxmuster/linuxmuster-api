@@ -15,7 +15,12 @@ from fastapi.responses import PlainTextResponse, StreamingResponse, Response
 
 from security import AuthenticatedUser, RoleChecker
 from utils.checks import check_valid_school_or_404
-from .body_schemas import LinboBatchMacs, StartConfRawBody
+from .body_schemas import (
+    LinboBatchMacs,
+    LinboHostScanRequest,
+    LinboWolRequest,
+    StartConfRawBody,
+)
 
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
@@ -406,6 +411,175 @@ def dhcp_export_isc(
 
     exporter = LinboDhcpExporter()
     return exporter.get_isc_dhcp(school)
+
+
+# ── Host state ─────────────────────────────────────────────────────
+
+
+@router.post("/hosts/scan", name="Probe hosts for online status")
+def scan_hosts(
+    body: LinboHostScanRequest,
+    school: str = "default-school",
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Probe hosts over TCP and report which ones are online.
+
+    An empty MAC list scans every client of the school.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param body: MAC addresses to probe, empty for all clients of the school
+    :param school: School name (default: default-school)
+    """
+
+
+    check_valid_school_or_404(school)
+
+    if len(body.macs) > 500:
+        raise HTTPException(status_code=400, detail="Maximum 500 MACs per request")
+
+    devices_mgr = Devices(school=school)
+    hosts = devices_mgr.get_hosts_by_macs(body.macs) if body.macs else devices_mgr.get_clients()
+
+    if not hosts:
+        raise HTTPException(status_code=404, detail="No hosts found")
+
+    return {
+        "hosts": scan_hosts_sync(hosts),
+        "scannedAt": datetime.now(timezone.utc).isoformat(),
+    }
+
+
+@router.post("/wol", name="Wake hosts with a magic packet")
+def wake_hosts(
+    body: LinboWolRequest,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Send Wake-on-LAN magic packets to a list of MAC addresses.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param body: MAC addresses to wake, with broadcast address, port and packet count
+    """
+
+
+    if not body.macs:
+        raise HTTPException(status_code=400, detail="At least one MAC address is required")
+
+    if len(body.macs) > 500:
+        raise HTTPException(status_code=400, detail="Maximum 500 MACs per request")
+
+    return send_wol_bulk(
+        body.macs,
+        broadcast=body.broadcast,
+        port=body.port,
+        count=body.count,
+    )
+
+
+@router.get("/hosts/image-status", name="Last sync per host from the boot logs")
+def hosts_image_status(
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Report the last applied image per host, read from the LINBO boot logs.
+
+    Hosts that never reported carry no entry.
+
+    ### Access
+    - global-administrators
+
+    \f
+    """
+
+
+    hosts = get_host_image_status()
+    return {"hosts": hosts, "total": len(hosts)}
+
+
+# ── Boot logs ──────────────────────────────────────────────────────
+
+
+@router.get("/boot-logs", name="List LINBO client boot logs")
+def list_boot_logs(
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## List the client boot logs, newest first.
+
+    ### Access
+    - global-administrators
+
+    \f
+    """
+
+
+    logs = LinboBootLogs().list_logs()
+    return {"logs": logs, "total": len(logs)}
+
+
+@router.get(
+    "/boot-logs/{filename}",
+    name="Read a LINBO client boot log",
+    response_class=PlainTextResponse,
+)
+def read_boot_log(
+    filename: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Read one boot log.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param filename: Name of the log file
+    """
+
+
+    try:
+        content = LinboBootLogs().read_log(filename)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if content is None:
+        raise HTTPException(status_code=404, detail=f"Boot log {filename} not found")
+
+    return PlainTextResponse(content=content)
+
+
+@router.delete("/boot-logs/{filename}", name="Delete a LINBO client boot log")
+def delete_boot_log(
+    filename: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Delete one boot log.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param filename: Name of the log file
+    """
+
+
+    try:
+        deleted = LinboBootLogs().delete_log(filename)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    if not deleted:
+        raise HTTPException(status_code=404, detail=f"Boot log {filename} not found")
+
+    return {"filename": filename, "status": "deleted"}
 
 
 # ── Image Manifest ─────────────────────────────────────────────────
