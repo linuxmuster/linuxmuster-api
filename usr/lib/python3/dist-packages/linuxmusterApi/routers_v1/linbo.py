@@ -28,6 +28,11 @@ from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.devices import Devices
 
 from linuxmusterTools.linbo import *
+# Explicit alias: the wildcard import above brings in the async `scan_hosts`
+# from host_status.py, but the /hosts/scan endpoint below is itself named
+# `scan_hosts` and shadows it. Import it under its own name so it stays
+# reachable and awaitable from the endpoint.
+from linuxmusterTools.linbo.host_status import scan_hosts as scan_hosts_async
 from linuxmusterTools.lmnfile import LMNFile
 from linuxmusterTools.common.checks import NameChecker
 
@@ -418,7 +423,7 @@ def dhcp_export_isc(
 
 
 @router.post("/hosts/scan", name="Probe hosts for online status")
-def scan_hosts(
+async def scan_hosts(
     body: LinboHostScanRequest,
     school: str = "default-school",
     who: AuthenticatedUser = Depends(RoleChecker("G")),
@@ -449,7 +454,7 @@ def scan_hosts(
         raise HTTPException(status_code=404, detail="No hosts found")
 
     return {
-        "hosts": scan_hosts_sync(hosts),
+        "hosts": await scan_hosts_async(hosts),
         "scannedAt": datetime.now(timezone.utc).isoformat(),
     }
 

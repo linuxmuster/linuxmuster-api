@@ -1,4 +1,5 @@
-from unittest.mock import Mock
+import asyncio
+from unittest.mock import AsyncMock, Mock
 
 import pytest
 from fastapi import HTTPException
@@ -12,13 +13,13 @@ from security import RoleChecker
 def linbo_backends(monkeypatch):
     devices = Mock()
     boot_logs = Mock()
-    scan = Mock(return_value=[])
+    scan = AsyncMock(return_value=[])
     wol = Mock(return_value={})
     image_status = Mock(return_value={})
 
     monkeypatch.setattr(linbo, "Devices", lambda school: devices)
     monkeypatch.setattr(linbo, "LinboBootLogs", lambda: boot_logs)
-    monkeypatch.setattr(linbo, "scan_hosts_sync", scan)
+    monkeypatch.setattr(linbo, "scan_hosts_async", scan)
     monkeypatch.setattr(linbo, "send_wol_bulk", wol)
     monkeypatch.setattr(linbo, "get_host_image_status", image_status)
     monkeypatch.setattr(linbo, "check_valid_school_or_404", lambda school: school)
@@ -59,7 +60,7 @@ def test_scan_without_macs_probes_every_client(linbo_backends):
     devices.get_clients.return_value = clients
     scan.return_value = [{"mac": clients[0]["mac"], "online": True}]
 
-    result = linbo.scan_hosts(LinboHostScanRequest(), "default-school", None)
+    result = asyncio.run(linbo.scan_hosts(LinboHostScanRequest(), "default-school", None))
 
     scan.assert_called_once_with(clients)
     devices.get_hosts_by_macs.assert_not_called()
@@ -73,7 +74,7 @@ def test_scan_with_macs_probes_only_those_hosts(linbo_backends):
     hosts = [{"mac": macs[0], "ip": "10.0.0.100", "hostname": "pc100"}]
     devices.get_hosts_by_macs.return_value = hosts
 
-    linbo.scan_hosts(LinboHostScanRequest(macs=macs), "default-school", None)
+    asyncio.run(linbo.scan_hosts(LinboHostScanRequest(macs=macs), "default-school", None))
 
     devices.get_hosts_by_macs.assert_called_once_with(macs)
     devices.get_clients.assert_not_called()
@@ -85,7 +86,7 @@ def test_scan_rejects_more_than_500_macs(linbo_backends):
     body = LinboHostScanRequest(macs=[f"00:00:00:00:00:{i:02x}" for i in range(501)])
 
     with pytest.raises(HTTPException) as error:
-        linbo.scan_hosts(body, "default-school", None)
+        asyncio.run(linbo.scan_hosts(body, "default-school", None))
 
     assert error.value.status_code == 400
     scan.assert_not_called()
@@ -96,7 +97,7 @@ def test_scan_without_any_host_is_404(linbo_backends):
     devices.get_clients.return_value = []
 
     with pytest.raises(HTTPException) as error:
-        linbo.scan_hosts(LinboHostScanRequest(), "default-school", None)
+        asyncio.run(linbo.scan_hosts(LinboHostScanRequest(), "default-school", None))
 
     assert error.value.status_code == 404
     scan.assert_not_called()
