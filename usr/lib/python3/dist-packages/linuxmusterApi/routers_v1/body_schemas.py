@@ -2,7 +2,7 @@
 The purpose of this file is to gather all classes used as model for post data.
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, IPvAnyAddress
 
 class UserList(BaseModel):
     """
@@ -258,24 +258,33 @@ class LinboBatchMacs(BaseModel):
 
     macs: list[str]
 
-class LinboHostScanRequest(BaseModel):
+class LinboHostScanBody(BaseModel):
     """
     MAC addresses to probe for online status. Empty means every client of the school.
+
+    Kept separate from LinboBatchMacs despite the same single field: an empty list
+    means "every client" here, while on /linbo/hosts/query it would reach
+    Devices.filter() with no filter at all and return every device of the school.
     """
 
 
     macs: list[str] = []
 
-class LinboWolRequest(BaseModel):
+class LinboWolBody(BaseModel):
     """
     MAC addresses to wake, with the magic packet parameters.
+
+    The packet parameters are bounded here rather than in the router: an
+    unbounded count is multiplied by the number of MAC addresses inside a
+    blocking send loop, and an unvalidated broadcast address makes the server
+    send UDP to any host it can reach.
     """
 
 
     macs: list[str]
-    broadcast: str | None = None
-    port: int = 9
-    count: int = 3
+    broadcast: IPvAnyAddress | None = None
+    port: int = Field(9, ge=1, le=65535)
+    count: int = Field(3, ge=1, le=10)
 
 class StartConfRawBody(BaseModel):
     """

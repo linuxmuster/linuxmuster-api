@@ -171,3 +171,58 @@ class TestLinbo:
         )
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
+
+    @pytest.mark.parametrize("user", USERS[1:])
+    def test_post_linbo_hosts_scan_denied(self, user):
+        r = client.post(
+            f"{BASE_URL}/linbo/hosts/scan",
+            headers={"X-API-KEY": user.jwt},
+            json={"macs": []},
+        )
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
+
+    @pytest.mark.parametrize("user", USERS[1:])
+    def test_post_linbo_wol_denied(self, user):
+        r = client.post(
+            f"{BASE_URL}/linbo/wol",
+            headers={"X-API-KEY": user.jwt},
+            json={"macs": ["00:11:22:33:44:55"]},
+        )
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
+
+    @pytest.mark.parametrize("user", USERS[1:])
+    def test_get_linbo_hosts_image_status_denied(self, user):
+        r = client.get(f"{BASE_URL}/linbo/hosts/image-status", headers={"X-API-KEY": user.jwt})
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
+
+    @pytest.mark.parametrize("user", USERS[1:])
+    def test_get_linbo_boot_logs_denied(self, user):
+        r = client.get(f"{BASE_URL}/linbo/boot-logs", headers={"X-API-KEY": user.jwt})
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
+
+    @pytest.mark.parametrize("user", USERS[1:])
+    def test_get_linbo_boot_log_denied(self, user):
+        r = client.get(
+            f"{BASE_URL}/linbo/boot-logs/pytest-nonexistent.log",
+            headers={"X-API-KEY": user.jwt},
+        )
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
+
+    @pytest.mark.parametrize("user", USERS[1:])
+    def test_delete_linbo_boot_log_denied(self, user):
+        r = client.delete(
+            f"{BASE_URL}/linbo/boot-logs/pytest-nonexistent.log",
+            headers={"X-API-KEY": user.jwt},
+        )
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
+
+    def test_get_linbo_boot_logs_ga(self):
+        r = client.get(f"{BASE_URL}/linbo/boot-logs", headers={"X-API-KEY": GLOBALADMIN.jwt})
+        assert r.status_code == 200
+        assert "logs" in r.json()
