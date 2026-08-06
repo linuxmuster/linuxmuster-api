@@ -1,10 +1,10 @@
-import ldap
-import logging
 from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, UserListChecker, AuthenticatedUser
 from .body_schemas import UserList
-from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNMgmtGroup
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from linuxmusterTools.samba_util import GroupManager
+from utils.checks import require_school
 
 
 router = APIRouter(
@@ -67,9 +67,14 @@ def get_group_details(group: str, who: AuthenticatedUser = Depends(RoleChecker("
     raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
 
 @router.delete("/{group}/members", status_code=204, name="Remove users from a specific management group")
-def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
+@require_school
+def remove_user_from_group(group: str, userlist: UserList, school: str = '', who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
     ## Remove members from a specific management group.
+
+    `group` is the bare group name (e.g. "wifi"), never school-prefixed:
+    the school-specific LDAP cn (e.g. "secondary-wifi") is resolved from
+    `school`/`who.school`.
 
     ### Access
     - global-administrators
@@ -77,10 +82,13 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
     - teachers (own data and students)
 
     \f
-    :param group: Valid cn of a management group
+    :param group: Bare name of a management group (e.g. "wifi", "internet")
     :type group: basestring
     :param userlist: List of samaccountname to remove
     :type userlist: UserList
+    :param school: School to operate on. Required for global-administrators,
+                   who are not scoped to a single school.
+    :type school: basestring
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
     """
@@ -93,28 +101,24 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
         # Nothing to do
         raise HTTPException(status_code=400, detail=f"Missing userlist of members to delete")
 
-    group_details = lr.get(f'/managementgroups/{group}', school=who.school)
+    active_school = school if school else who.school
 
-    if not group_details:
-        raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
-
-    for member in userlist.users:
-        try:
-            GroupWriter = LMNMgmtGroup(group, school=who.school)
-            GroupWriter.remove_member(member)
-        except ldap.UNWILLING_TO_PERFORM as e:
-            if 'Attribute member already deleted for target' in str(e):
-                # User already deleted from the group, ignoring
-                pass
-        except Exception as e:
-            logging.warning(f"User {member} not found, will not delete from management group {group}")
+    try:
+        GroupManager(school=active_school).remove_members(group, userlist.users)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
     return
 
 @router.post("/{group}/members", name="Add users to a specific management group")
-def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
+@require_school
+def add_user_to_group(group: str, userlist: UserList, school: str = '', who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
     ## Add members to a specific management group.
+
+    `group` is the bare group name (e.g. "wifi"), never school-prefixed:
+    the school-specific LDAP cn (e.g. "secondary-wifi") is resolved from
+    `school`/`who.school`.
 
     ### Access
     - global-administrators
@@ -122,10 +126,13 @@ def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = D
     - teachers (own data and students)
 
     \f
-    :param group: Valid cn of a management group
+    :param group: Bare name of a management group (e.g. "wifi", "internet")
     :type group: basestring
     :param userlist: List of samaccountname to add
     :type userlist: UserList
+    :param school: School to operate on. Required for global-administrators,
+                   who are not scoped to a single school.
+    :type school: basestring
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
     """
@@ -138,20 +145,11 @@ def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = D
         # Nothing to do
         raise HTTPException(status_code=400, detail=f"Missing userlist of members to add")
 
-    group_details = lr.get(f'/managementgroups/{group}', school=who.school)
+    active_school = school if school else who.school
 
-    if not group_details:
-        raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
-
-    for member in userlist.users:
-        try:
-            GroupWriter = LMNMgmtGroup(group, school=who.school)
-            GroupWriter.add_member(member)
-        except ldap.ALREADY_EXISTS as e:
-            if 'Attribute member already exists for target' in str(e):
-                # User already deleted from the group, ignoring
-                pass
-        except Exception as e:
-            logging.warning(f"User {member} not found, will not add it to management group {group}")
+    try:
+        GroupManager(school=active_school).add_members(group, userlist.users)
+    except Exception as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
     return
