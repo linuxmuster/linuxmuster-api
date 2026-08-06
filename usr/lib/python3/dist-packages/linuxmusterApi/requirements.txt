@@ -3,6 +3,7 @@ fastapi>=0.137.1     # list_all_endpoints() relies on the internal fastapi.routi
 pyOpenSSL
 python-ldap
 pyyaml
+requests            # used to POST job-completion webhooks, see utils/notifications.py
 uvicorn
 websockets>=11.0.3
 

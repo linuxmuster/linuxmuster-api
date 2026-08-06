@@ -20,6 +20,15 @@ host_keys:
     ips: [] # All ip allowed
     user: lmn-teacher # cn of a valid ldap user to isolate the permissions
     secret: LONG_AND_SECURE_BASE64_ENCODED_STRING
+# Job-completion webhook, sent when a background sophomorix job started via
+# /listmanagement/sophomorix-check or /listmanagement/sophomorix-apply finishes.
+# Omit this section entirely to disable notifications (polling the job's
+# /listmanagement/sophomorix-apply/status/{pid} endpoint still works).
+notifications:
+  callback_url: https://url.example/hooks/lmnapi
+  key: PUBLIC_KEY_IDENTIFIER # sent as-is in the x-webhook-key header, lets the receiver pick which secret to verify with
+  secret: LONG_AND_SECURE_BASE64_ENCODED_STRING # used to sign x-webhook-signature, never sent over the wire
+  timeout: 5 # seconds, best-effort: a failed/slow callback only logs a warning
 # CORS configuration
 cors:
   allow_origins:

@@ -30,6 +30,7 @@ async def lifespan(app: FastAPI):
     app.state.secret = base64.b64decode(config['secret']) if config.get('secret') else None
     app.state.host_keys = config.get('host_keys', {})
     app.state.host_key_auth_enable = config.get('host_key_auth', False)
+    app.state.notifications = config.get('notifications', {})
     yield
 
 app = FastAPI(
