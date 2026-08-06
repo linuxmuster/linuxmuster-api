@@ -17,8 +17,8 @@ from security import AuthenticatedUser, RoleChecker
 from utils.checks import check_valid_school_or_404
 from .body_schemas import (
     LinboBatchMacs,
-    LinboHostScanRequest,
-    LinboWolRequest,
+    LinboHostScanBody,
+    LinboWolBody,
     StartConfRawBody,
 )
 
@@ -44,6 +44,11 @@ router = APIRouter(
 
 LINBO_DIR = Path("/srv/linbo")
 IMAGES_DIR = LINBO_DIR / "images"
+
+# A scan holds a worker thread until every host has answered or timed out, so the
+# host count is capped and the probes run wider than the library default of 20.
+MAX_HOSTS_PER_SCAN = 500
+SCAN_CONCURRENCY = 100
 
 
 def _parse_list_query(values: list[str], param_name: str, max_items: int) -> list[str]:
@@ -417,8 +422,8 @@ def dhcp_export_isc(
 
 
 @router.post("/hosts/scan", name="Probe hosts for online status")
-def scan_hosts(
-    body: LinboHostScanRequest,
+def probe_hosts(
+    body: LinboHostScanBody,
     school: str = "default-school",
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
@@ -438,8 +443,8 @@ def scan_hosts(
 
     check_valid_school_or_404(school)
 
-    if len(body.macs) > 500:
-        raise HTTPException(status_code=400, detail="Maximum 500 MACs per request")
+    if len(body.macs) > MAX_HOSTS_PER_SCAN:
+        raise HTTPException(status_code=400, detail=f"Maximum {MAX_HOSTS_PER_SCAN} MACs per request")
 
     devices_mgr = Devices(school=school)
     hosts = devices_mgr.get_hosts_by_macs(body.macs) if body.macs else devices_mgr.get_clients()
@@ -447,15 +452,24 @@ def scan_hosts(
     if not hosts:
         raise HTTPException(status_code=404, detail="No hosts found")
 
+    # The cap above only covers an explicit list; an empty one resolves to every
+    # client of the school, which is unbounded and would hold a worker thread for
+    # the whole scan.
+    if len(hosts) > MAX_HOSTS_PER_SCAN:
+        raise HTTPException(
+            status_code=400,
+            detail=f"School {school} has {len(hosts)} clients, more than the {MAX_HOSTS_PER_SCAN} a single scan allows",
+        )
+
     return {
-        "hosts": scan_hosts_sync(hosts),
+        "hosts": scan_hosts_sync(hosts, concurrency=SCAN_CONCURRENCY),
         "scannedAt": datetime.now(timezone.utc).isoformat(),
     }
 
 
 @router.post("/wol", name="Wake hosts with a magic packet")
 def wake_hosts(
-    body: LinboWolRequest,
+    body: LinboWolBody,
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
     """
@@ -472,12 +486,12 @@ def wake_hosts(
     if not body.macs:
         raise HTTPException(status_code=400, detail="At least one MAC address is required")
 
-    if len(body.macs) > 500:
-        raise HTTPException(status_code=400, detail="Maximum 500 MACs per request")
+    if len(body.macs) > MAX_HOSTS_PER_SCAN:
+        raise HTTPException(status_code=400, detail=f"Maximum {MAX_HOSTS_PER_SCAN} MACs per request")
 
     return send_wol_bulk(
         body.macs,
-        broadcast=body.broadcast,
+        broadcast=str(body.broadcast) if body.broadcast else None,
         port=body.port,
         count=body.count,
     )
@@ -547,7 +561,11 @@ def read_boot_log(
     try:
         content = LinboBootLogs().read_log(filename)
     except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        # read_log raises ValueError for an unsafe name and for a log over its size
+        # limit. Only the first is the caller's fault; a log the list endpoint just
+        # advertised is not a bad request.
+        status_code = 413 if "too large" in str(e).lower() else 400
+        raise HTTPException(status_code=status_code, detail=str(e))
 
     if content is None:
         raise HTTPException(status_code=404, detail=f"Boot log {filename} not found")
@@ -575,6 +593,13 @@ def delete_boot_log(
         deleted = LinboBootLogs().delete_log(filename)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError:
+        # logrotate rotates and compresses this directory, so a log can disappear
+        # between delete_log's is_file() and its unlink(). Same answer as a log that
+        # was never there. FileNotFoundError is an OSError, so it is caught first.
+        raise HTTPException(status_code=404, detail=f"Boot log {filename} not found")
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"Could not delete boot log {filename}: {e}")
 
     if not deleted:
         raise HTTPException(status_code=404, detail=f"Boot log {filename} not found")
