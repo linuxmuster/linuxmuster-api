@@ -1,9 +1,11 @@
+import configparser
 import os
 import subprocess
 from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNDevice
+from linuxmusterTools.lmnconfig import SophomorixIni
 from linuxmusterTools.lmnfile import LMNFile
 from linuxmusterTools.samba_util import DeviceManager
 from utils.checks import get_printer_or_404
@@ -70,6 +72,40 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
         device['status'] = status
 
     return devices_data
+
+@router.get("/roles", name="List the computer roles a device may have")
+def get_computer_roles(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+    """
+    ## List the roles that are valid in the sophomorixRole column of devices.csv.
+
+    Read from sophomorix.ini, so an installation that defines its own roles gets
+    them. Unlike GET /roles, which reports the roles currently present in LDAP,
+    this is the set a device may be assigned — the two differ on any server where
+    a valid role is not in use yet.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: Valid computer roles, sorted
+    :rtype: list
+    """
+
+
+    try:
+        return sorted(SophomorixIni().computerrole)
+    except (KeyError, configparser.Error) as e:
+        # ConfigParser.read() ignores a missing or unreadable file, and the
+        # constructor then reads a section this endpoint never asked for, so an
+        # unreadable ini surfaces as KeyError('ROLE_USER') — an error about user
+        # roles from the computer roles endpoint.
+        raise HTTPException(
+            status_code=500,
+            detail=f"Unable to read the computer roles from the sophomorix ini: {e!r}",
+        )
 
 @router.get("/{device}", name="Get device details")
 def get_device_details(device: str, credentials: bool = False, who: AuthenticatedUser = Depends(RoleChecker("GS"))):

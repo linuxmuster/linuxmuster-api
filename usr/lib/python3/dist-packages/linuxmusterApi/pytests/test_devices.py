@@ -89,3 +89,9 @@ class TestDevices:
     def test_import_devices_sa_other_school_forbidden(self):
         r = client.get(f"{BASE_URL}/devices/list/other-school/import-devices", headers={"X-API-KEY": SCHOOLADMIN.jwt})
         assert r.status_code == 403
+
+    @pytest.mark.parametrize("user", USERS[2:])
+    def test_get_device_roles_denied(self, user):
+        r = client.get(f"{BASE_URL}/devices/roles", headers={"X-API-KEY": user.jwt})
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
