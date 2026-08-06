@@ -1,12 +1,12 @@
 import os
 import tempfile
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 
 from security import RoleChecker, AuthenticatedUser
 from utils.checks import check_valid_mgmtlist_or_404, check_tmp_dir
 from linuxmusterTools.lmnfile import LMNFile
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
-from utils.sophomorix import lmn_getSophomorixValue, process_user
+from utils.sophomorix import process_user
 from .body_schemas import MgmtList
 
 
@@ -82,9 +82,16 @@ def post_management_list_content(school: str, mgmtlist: str, content: MgmtList, 
         raise HTTPException(status_code=400, detail=f"Error writing {path}: {str(e)}")
 
 @router.get("/sophomorix-check", name="Run sophomorix-check")
-def do_sophomorix_check(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def do_sophomorix_check(background_tasks: BackgroundTasks, request: Request, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
-    ## Run sophomorix-check.
+    ## Run sophomorix-check as a background job.
+
+    Returns a job id (pid) immediately; poll
+    `GET /listmanagement/sophomorix-apply/status/{pid}` for the result (that
+    endpoint isn't apply-specific despite its path, it just reads
+    /tmp/lmnapi/{pid}.sophomorix.{log,status} for any job id). Configure
+    `notifications.callback_url` in config.yml to be notified on completion
+    instead of polling (see utils/notifications.py).
 
     ### Access
     - global-administrators
@@ -95,25 +102,32 @@ def do_sophomorix_check(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     \f
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
-    :return: Output of sophomorix-check
-    :rtype: dict
+    :return: Job id (pid) to poll for the result
+    :rtype: basestring
     """
 
 
-    sophomorixCommand = ['sophomorix-check', '-jj']
-    results = lmn_getSophomorixValue(sophomorixCommand, '')
-    ## Remove UPDATE entries which are also in KILL ( necessary to show it in KILL and UPDATE ? )
+    check_tmp_dir()
 
-    if "CHECK_RESULT" in results:
-        if "UPDATE" in results["CHECK_RESULT"] and "KILL" in results["CHECK_RESULT"]:
-            for user_update in tuple(results["CHECK_RESULT"]["UPDATE"]):
-                if user_update in results["CHECK_RESULT"]["KILL"]:
-                    del results["CHECK_RESULT"]["UPDATE"][user_update]
-    return results
+    _, logpath = tempfile.mkstemp(prefix=f'{who.school}.check.', suffix='.sophomorix.log', dir='/tmp/lmnapi')
+    pid = logpath.replace(".sophomorix.log", "").replace("/tmp/lmnapi/", "")
+
+    # -jj writes its JSON payload to stderr (see lmn_getSophomorixValue),
+    # so both streams need to land in logpath, not just stdout.
+    script = f'sophomorix-check -jj >> {logpath} 2>&1;'
+
+    background_tasks.add_task(
+        process_user, script, pid,
+        command='sophomorix-check', school=who.school, caller=who.user,
+        notifications_config=request.app.state.notifications,
+    )
+
+    return pid
 
 @router.get("/sophomorix-apply", name="Run sophomorix-add, sophomorix-update, sophomorix-kill or all together.")
 def do_sophomorix_apply(
         background_tasks: BackgroundTasks,
+        request: Request,
         school: str,
         add: bool = False,
         update: bool = False,
@@ -154,26 +168,34 @@ def do_sophomorix_apply(
     _, logpath = tempfile.mkstemp(prefix=f'{school}.', suffix='.sophomorix.log', dir='/tmp/lmnapi')
 
     script = ''
+    commands_run = []
 
     if add:
         script += f'sophomorix-add --school {school} >> {logpath};'
+        commands_run.append('sophomorix-add')
 
     if update:
         script += f'sophomorix-update --school {school} >> {logpath};'
+        commands_run.append('sophomorix-update')
 
     if kill:
         script += f'sophomorix-kill --school {school} >> {logpath};'
+        commands_run.append('sophomorix-kill')
 
     try:
         pid = logpath.replace(".sophomorix.log", "").replace("/tmp/lmnapi/", "")
-        background_tasks.add_task(process_user, script, pid)
+        background_tasks.add_task(
+            process_user, script, pid,
+            command='+'.join(commands_run), school=school, caller=who.user,
+            notifications_config=request.app.state.notifications,
+        )
 
         return pid
 
     except Exception as e:
         raise HTTPException(status_code=400, detail=f"Error applying changes with sophomorix: {str(e)}")
 
-@router.get("/sophomorix-apply/status/{pid}", name="Get log from an existing sophomorix process for management list.")
+@router.get("/sophomorix-jobs/status/{pid}", name="Get log from an existing sophomorix process for management list.")
 def get_status_sophomorix_apply(pid: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Get last log of a sophomorix process for management list.
