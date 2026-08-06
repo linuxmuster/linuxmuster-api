@@ -11,6 +11,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request as FARequest
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import PlainTextResponse, StreamingResponse, Response
 
 from security import AuthenticatedUser, RoleChecker
@@ -743,7 +744,9 @@ async def upload_image_file(
 
     body = await request.body()
     try:
-        return receive_upload_chunk(IMAGES_DIR, image_name, filename, body, offset)
+        return await run_in_threadpool(
+            receive_upload_chunk, IMAGES_DIR, image_name, filename, body, offset
+        )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except FileNotFoundError as e:
