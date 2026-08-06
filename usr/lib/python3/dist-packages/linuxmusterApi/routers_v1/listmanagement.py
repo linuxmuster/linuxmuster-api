@@ -87,7 +87,7 @@ def do_sophomorix_check(background_tasks: BackgroundTasks, request: Request, who
     ## Run sophomorix-check as a background job.
 
     Returns a job id (pid) immediately; poll
-    `GET /listmanagement/sophomorix-apply/status/{pid}` for the result (that
+    `GET /listmanagement/sophomorix-jobs/status/{pid}` for the result (that
     endpoint isn't apply-specific despite its path, it just reads
     /tmp/lmnapi/{pid}.sophomorix.{log,status} for any job id). Configure
     `notifications.callback_url` in config.yml to be notified on completion

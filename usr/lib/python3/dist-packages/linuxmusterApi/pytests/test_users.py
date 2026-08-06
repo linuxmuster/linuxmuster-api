@@ -88,6 +88,19 @@ class TestUserPasswords:
     WEAK_PASSWORD = "weak"
     STRONG_PASSWORD = "Str0ngP@ssw0rd!"
 
+    @pytest.fixture(autouse=True)
+    def _restore_fixture_password(self):
+        # Every test below actually changes STUDENT's real password/first
+        # password. Put it back on credentials.py's own value afterward so
+        # test_auth.py (and anyone logging in as this account by hand) isn't
+        # left depending on file execution order to still work.
+        yield
+        client.post(
+            f"{BASE_URL}/users/{STUDENT.cn}/set-first-password",
+            headers={"X-API-KEY": GLOBALADMIN.jwt},
+            json={"password": STUDENT.password, "set_current": True},
+        )
+
     def test_set_first_password_weak_rejected(self):
         r = client.post(
             f"{BASE_URL}/users/{STUDENT.cn}/set-first-password",
@@ -150,6 +163,34 @@ class TestUserPasswords:
         )
         assert r.json()["FirstPasswordSet"] is True
 
+    def test_set_first_password_omitted_reset_failure_surfaces_clear_error(self, monkeypatch):
+        """
+        Regression test for linuxmuster-webui7#203: if the stored first
+        password no longer satisfies Samba's own policy (e.g. accounts
+        migrated from 6.2 with complexity checks disabled during import),
+        the reset must fail loudly (400 with a clear message) instead of
+        silently doing nothing while the webui reports success.
+        """
+
+        class FakeUserRejectedBySamba:
+            def __init__(self, cn, school):
+                self.data = {'sophomorixFirstPassword': 'Str0ngButNoLongerValid!'}
+
+            def set_actual_password(self, password):
+                raise Exception('Password does not meet complexity requirements')
+
+        monkeypatch.setattr(users_router, 'LMNUser', FakeUserRejectedBySamba)
+
+        r = client.post(
+            f"{BASE_URL}/users/{STUDENT.cn}/set-first-password",
+            headers={"X-API-KEY": GLOBALADMIN.jwt},
+            json={},
+        )
+
+        assert r.status_code == 400
+        assert "Cannot reset current password" in r.json()["detail"]
+        assert "does not meet complexity requirements" in r.json()["detail"]
+
 
 class TestUserRandomFirstPassword:
     """
@@ -160,14 +201,13 @@ class TestUserRandomFirstPassword:
     @pytest.fixture(autouse=True)
     def _restore_known_password(self):
         # The generated password is unknown once the test ends; put the
-        # account back on a known, policy-compliant value (same one
-        # TestUserPasswords already leaves it on) instead of an unrecoverable
-        # random one, in case another test run depends on it.
+        # account back on credentials.py's own fixture value instead of an
+        # unrecoverable random one, in case another test run depends on it.
         yield
         client.post(
             f"{BASE_URL}/users/{STUDENT.cn}/set-first-password",
             headers={"X-API-KEY": GLOBALADMIN.jwt},
-            json={"password": TestUserPasswords.STRONG_PASSWORD, "set_current": True},
+            json={"password": STUDENT.password, "set_current": True},
         )
 
     def test_set_random_first_password_returns_and_sets_a_password(self):

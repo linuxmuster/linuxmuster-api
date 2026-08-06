@@ -126,11 +126,11 @@ class TestSophomorixApplyStatus:
 
     @pytest.mark.parametrize("user", USERS[2:])
     def test_denied(self, user):
-        r = client.get(f"{BASE_URL}/listmanagement/sophomorix-apply/status/ghost", headers={"X-API-Key": user.jwt})
+        r = client.get(f"{BASE_URL}/listmanagement/sophomorix-jobs/status/ghost", headers={"X-API-Key": user.jwt})
         assert r.status_code == 401
 
     def test_unknown_pid_is_404(self):
-        r = client.get(f"{BASE_URL}/listmanagement/sophomorix-apply/status/does-not-exist", headers={"X-API-Key": GLOBALADMIN.jwt})
+        r = client.get(f"{BASE_URL}/listmanagement/sophomorix-jobs/status/does-not-exist", headers={"X-API-Key": GLOBALADMIN.jwt})
         assert r.status_code == 404
 
     def test_reads_back_log_and_status_regardless_of_which_endpoint_created_them(self):
@@ -146,7 +146,7 @@ class TestSophomorixApplyStatus:
             f.write('Process pytest.status.check was started ... and was completed at ...')
 
         try:
-            r = client.get(f"{BASE_URL}/listmanagement/sophomorix-apply/status/{pid}", headers={"X-API-Key": GLOBALADMIN.jwt})
+            r = client.get(f"{BASE_URL}/listmanagement/sophomorix-jobs/status/{pid}", headers={"X-API-Key": GLOBALADMIN.jwt})
             assert r.status_code == 200
             data = r.json()
             assert data['log'] == ['line1\n', 'line2\n']
