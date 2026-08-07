@@ -1,3 +1,43 @@
+linuxmuster-api7 (7.4.8) lmn74; urgency=medium
+
+  * [linbo] Add a dedicated /linbo/sync router: POST /linbo/sync/run
+    (build and run a linbo-remote command), GET /linbo/sync/sessions
+    (list running tmux sessions), GET /linbo/sync/sessions/{hostname}/log
+    (read a session's log) and GET /linbo/sync/hosts/{hostname}/status
+    (probe a host's boot state). Open to school-administrators, scoped to
+    their own school; global-administrators are unrestricted. Closes #32
+    (thanks @TomlDev).
+  * [linbo] Align GET /linbo/hosts/image-status on the same access model:
+    open to school-administrators, filtered to their own school's hosts.
+  * [linbo] Expose LINBO host state and boot logs over HTTP: POST
+    /linbo/hosts/scan (probe online status), POST /linbo/wol (send
+    Wake-on-LAN), GET /linbo/hosts/image-status (last applied image per
+    host) and GET/DELETE /linbo/boot-logs[/{filename}]. Closes #29
+    (thanks @TomlDev). Hardened afterwards: scan_hosts now probes hosts
+    concurrently via asyncio instead of blocking the event loop, and
+    image uploads await each chunk instead of blocking on it too.
+  * [tests] Add a pytest config and a `make test` target that seeds
+    pytests/credentials.py from credentials.sample.py on a clean
+    checkout, so mock-based tests run without real LDAP access. Closes
+    #28, #30 (thanks @TomlDev).
+  * [sophomorix] Notify a configured webhook when a background
+    sophomorix-check/add/update/kill job completes: HMAC-SHA256-signed
+    POST, timestamp mixed into the signature to stop replay, silent
+    no-op without a configured callback_url, never raises. New
+    `notifications:` section in config.yml.
+  * [sophomorix] sophomorix-check now runs as a background job like
+    sophomorix-apply already did, polled via GET
+    /listmanagement/sophomorix-jobs/status/{pid}. Fixes -jj's JSON output
+    being written to stderr and never captured by the job's own output
+    redirection.
+  * [managementgroups] Add/remove members through
+    linuxmuster-tools' GroupManager (batch, proper errors) instead of
+    LMNMgmtGroup (per-member loop, silently warning instead of failing on
+    an unknown user). Scope group/member changes to a given school via
+    @require_school, like the rest of the API.
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Fri, 07 Aug 2026 15:30:00 +0200
+
 linuxmuster-api7 (7.4.7) lmn74; urgency=medium
 
   * [passwords] Add POST /v1/users/{user}/set-random-first-password:
