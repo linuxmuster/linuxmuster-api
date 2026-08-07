@@ -13,6 +13,7 @@ def test_routes_require_global_or_school_admin():
     expected = {
         ("POST", "/linbo/sync/run"),
         ("GET", "/linbo/sync/sessions"),
+        ("GET", "/linbo/sync/sessions/{hostname}/log"),
         ("GET", "/linbo/sync/hosts/{hostname}/status"),
     }
     actual = {
@@ -177,6 +178,87 @@ def test_get_running_sessions_school_admin_is_filtered(monkeypatch):
     result = linbo_sync.get_running_sessions(who=who)
 
     assert result == {"sessions": [{"hostname": "lehrer-pc002"}]}
+
+
+# ── /sessions/{hostname}/log ────────────────────────────────────────────
+
+
+def test_get_session_log_global_admin_unrestricted(monkeypatch):
+    boot_logs = Mock()
+    boot_logs.read_log.return_value = "sync started\nsync finished\n"
+    monkeypatch.setattr(linbo_sync, "LinboBootLogs", lambda: boot_logs)
+
+    who = Mock(school="global")
+    result = linbo_sync.get_session_log("any-host", who=who)
+
+    assert result == "sync started\nsync finished\n"
+    boot_logs.read_log.assert_called_once_with("any-host.linbo-remote")
+
+
+def test_get_session_log_school_admin_own_host(monkeypatch):
+    boot_logs = Mock()
+    boot_logs.read_log.return_value = "sync started\n"
+    monkeypatch.setattr(linbo_sync, "LinboBootLogs", lambda: boot_logs)
+    devices = Mock()
+    devices.devices = [{"hostname": "pc002"}]
+    monkeypatch.setattr(linbo_sync, "Devices", lambda school: devices)
+
+    who = Mock(school="lehrer")
+    result = linbo_sync.get_session_log("lehrer-pc002", who=who)
+
+    assert result == "sync started\n"
+
+
+def test_get_session_log_school_admin_other_school_is_404(monkeypatch):
+    devices = Mock()
+    devices.devices = [{"hostname": "pc002"}]
+    monkeypatch.setattr(linbo_sync, "Devices", lambda school: devices)
+
+    who = Mock(school="lehrer")
+
+    with pytest.raises(HTTPException) as exc_info:
+        linbo_sync.get_session_log("other-school-pc099", who=who)
+
+    assert exc_info.value.status_code == 404
+
+
+def test_get_session_log_missing_is_404(monkeypatch):
+    boot_logs = Mock()
+    boot_logs.read_log.return_value = None
+    monkeypatch.setattr(linbo_sync, "LinboBootLogs", lambda: boot_logs)
+
+    who = Mock(school="global")
+
+    with pytest.raises(HTTPException) as exc_info:
+        linbo_sync.get_session_log("no-such-host", who=who)
+
+    assert exc_info.value.status_code == 404
+
+
+def test_get_session_log_unsafe_filename_is_400(monkeypatch):
+    boot_logs = Mock()
+    boot_logs.read_log.side_effect = ValueError("Unsafe filename: ../etc/passwd.linbo-remote")
+    monkeypatch.setattr(linbo_sync, "LinboBootLogs", lambda: boot_logs)
+
+    who = Mock(school="global")
+
+    with pytest.raises(HTTPException) as exc_info:
+        linbo_sync.get_session_log("../etc/passwd", who=who)
+
+    assert exc_info.value.status_code == 400
+
+
+def test_get_session_log_too_large_is_413(monkeypatch):
+    boot_logs = Mock()
+    boot_logs.read_log.side_effect = ValueError("File too large: 999 bytes (max 5242880)")
+    monkeypatch.setattr(linbo_sync, "LinboBootLogs", lambda: boot_logs)
+
+    who = Mock(school="global")
+
+    with pytest.raises(HTTPException) as exc_info:
+        linbo_sync.get_session_log("pc001", who=who)
+
+    assert exc_info.value.status_code == 413
 
 
 # ── /hosts/{hostname}/status ──────────────────────────────────────────────

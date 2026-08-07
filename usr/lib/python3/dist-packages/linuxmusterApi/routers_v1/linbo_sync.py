@@ -7,9 +7,11 @@ linuxmusterTools.linbo (LinboRemote, list_running_sessions, classify_host).
 """
 
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import PlainTextResponse
 
 from linuxmusterTools.devices import Devices
 from linuxmusterTools.linbo import (
+    LinboBootLogs,
     LinboRemote,
     LinboRemoteParameterError,
     list_running_sessions,
@@ -106,6 +108,51 @@ def get_running_sessions(
         for device in Devices(school=who.school).devices
     }
     return {"sessions": [s for s in sessions if s['hostname'] in known_hostnames]}
+
+
+@router.get(
+    "/sessions/{hostname}/log",
+    name="Read a host's linbo-remote session log",
+    response_class=PlainTextResponse,
+)
+def get_session_log(
+    hostname: str,
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
+):
+    """
+    ## Read a host's linbo-remote session log.
+
+    tmux's pipe-pane duplicates the session's output to this log as it runs,
+    and it stays readable after the session ends. A school-administrator can
+    only read hosts belonging to their own school.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param hostname: Hostname whose session log to read
+    """
+
+
+    if who.school != 'global':
+        known_hostnames = {
+            f'{who.school}-{device["hostname"]}' if who.school != 'default-school' else device['hostname']
+            for device in Devices(school=who.school).devices
+        }
+        if hostname not in known_hostnames:
+            raise HTTPException(status_code=404, detail=f"Host {hostname} not found")
+
+    try:
+        content = LinboBootLogs().read_log(f'{hostname}.linbo-remote')
+    except ValueError as error:
+        status_code = 413 if "too large" in str(error).lower() else 400
+        raise HTTPException(status_code=status_code, detail=str(error)) from error
+
+    if content is None:
+        raise HTTPException(status_code=404, detail=f"No session log for {hostname}")
+
+    return content
 
 
 @router.get("/hosts/{hostname}/status", name="Probe a host's boot state")
