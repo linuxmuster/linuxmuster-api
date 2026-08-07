@@ -293,6 +293,27 @@ class StartConfRawBody(BaseModel):
 
     content: str
 
+class LinboRemoteRunBody(BaseModel):
+    """
+    Parameters to build and run a linbo-remote command via LinboRemote.
+
+    Exactly one of group, room or clients must be given — LinboRemote itself
+    validates that (and everything else: unknown commands, nr out of range
+    for the target's start.conf, etc.), surfaced as a 400 if it rejects them.
+    """
+
+
+    cmd: str
+    group: str | None = None
+    room: str | None = None
+    clients: list[str] = []
+    wait: int = 0
+    wol: int = 0
+    disable_gui: bool = False
+    broadcast: bool = False
+    bypass: bool = False
+    onboot: bool = False
+
 class LinboDriverProfileCreate(BaseModel):
     """
     Data required to create a hardware-matched driver profile.
