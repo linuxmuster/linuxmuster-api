@@ -80,7 +80,11 @@ def test_every_linbo_route_is_global_admin_only():
     # router carries endpoints from several features, and a new one that forgets
     # its Depends(RoleChecker("G")) has to fail here. This checks the declaration
     # only — TestLinbo in test_misc.py covers the enforcement over HTTP.
+    # /hosts/image-status is the one exception, checked separately below: it
+    # also accepts school-administrators, scoped to their own school.
     for route in linbo.router.routes:
+        if route.path == "/linbo/hosts/image-status":
+            continue
         checkers = [
             dependency.call
             for dependency in route.dependant.dependencies
@@ -88,6 +92,17 @@ def test_every_linbo_route_is_global_admin_only():
         ]
         assert len(checkers) == 1, f"{route.path} has {len(checkers)} role checkers"
         assert checkers[0].roles == ["globaladministrator"], route.path
+
+
+def test_image_status_route_is_global_or_school_admin():
+    route = next(r for r in linbo.router.routes if r.path == "/linbo/hosts/image-status")
+    checkers = [
+        dependency.call
+        for dependency in route.dependant.dependencies
+        if isinstance(dependency.call, RoleChecker)
+    ]
+    assert len(checkers) == 1
+    assert checkers[0].roles == ["globaladministrator", "schooladministrator"]
 
 
 # ── Scan ───────────────────────────────────────────────────────────
@@ -317,10 +332,36 @@ def test_image_status_reports_one_entry_per_host(linbo_backends):
         },
     }
 
-    result = linbo.hosts_image_status(None)
+    who = Mock(school="global")
+    result = linbo.hosts_image_status(who)
 
     assert result["hosts"] == image_status.return_value
     assert result["total"] == 3
+
+
+def test_image_status_school_admin_is_filtered(linbo_backends):
+    devices, _, _, _, image_status, _ = linbo_backends
+    image_status.return_value = {
+        "pc100": {
+            "lastSync": "2026-03-24T11:42:00.000Z",
+            "action": "applied",
+            "image": "win11_pro.qcow2",
+            "imageVersion": "202601271107",
+        },
+        "lehrer-pc101": {
+            "lastSync": "2026-03-24T11:44:00.000Z",
+            "action": "applied",
+            "image": "win11_pro.qcow2",
+            "imageVersion": "202601271107",
+        },
+    }
+    devices.devices = [{"hostname": "pc101"}]
+
+    who = Mock(school="lehrer")
+    result = linbo.hosts_image_status(who)
+
+    assert result["hosts"] == {"lehrer-pc101": image_status.return_value["lehrer-pc101"]}
+    assert result["total"] == 1
 
 
 # ── Boot logs ──────────────────────────────────────────────────────

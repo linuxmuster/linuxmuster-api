@@ -192,7 +192,15 @@ class TestLinbo:
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
-    @pytest.mark.parametrize("user", USERS[1:])
+    def test_get_linbo_hosts_image_status_ga(self):
+        r = client.get(f"{BASE_URL}/linbo/hosts/image-status", headers={"X-API-KEY": GLOBALADMIN.jwt})
+        assert r.status_code == 200
+
+    def test_get_linbo_hosts_image_status_sa(self):
+        r = client.get(f"{BASE_URL}/linbo/hosts/image-status", headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 200
+
+    @pytest.mark.parametrize("user", USERS[2:])
     def test_get_linbo_hosts_image_status_denied(self, user):
         r = client.get(f"{BASE_URL}/linbo/hosts/image-status", headers={"X-API-KEY": user.jwt})
         assert r.status_code == 401
