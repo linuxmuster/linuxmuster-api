@@ -499,21 +499,34 @@ def wake_hosts(
 
 @router.get("/hosts/image-status", name="Last sync per host from the boot logs")
 def hosts_image_status(
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Report the last applied image per host, read from the LINBO boot logs.
 
-    Hosts that never reported carry no entry.
+    Hosts that never reported carry no entry. A global-administrator sees
+    every host; a school-administrator only sees hosts belonging to their
+    own school.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     """
 
 
     hosts = get_host_image_status()
+
+    if who.school == 'global':
+        return {"hosts": hosts, "total": len(hosts)}
+
+    prefix = f'{who.school}-' if who.school != 'default-school' else ''
+    known_hostnames = {
+        f'{prefix}{device["hostname"]}'
+        for device in Devices(school=who.school).devices
+    }
+    hosts = {hostname: status for hostname, status in hosts.items() if hostname in known_hostnames}
     return {"hosts": hosts, "total": len(hosts)}
 
 
