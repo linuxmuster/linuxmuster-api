@@ -1,3 +1,16 @@
+linuxmuster-api7 (7.4.9) lmn74; urgency=medium
+
+  * [security] check_user_header(), check_host_header() and
+    BasicAuthChecker (GET /v1/auth/) now catch
+    linuxmusterTools.common.LdapNotProvisionedError and return a 503
+    "linuxmuster is not provisioned yet" instead of a raw 500 (header.py)
+    or a misleading 400 "Malformated username" (basic_auth.py) on a fresh
+    install where Samba hasn't been provisioned yet.
+  * [tests] Add pytests/test_header.py and pytests/test_basic_auth.py,
+    mocking the LDAP layer directly (no TestClient needed).
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sat, 08 Aug 2026 16:00:00 +0200
+
 linuxmuster-api7 (7.4.8) lmn74; urgency=medium
 
   * [linbo] Add a dedicated /linbo/sync router: POST /linbo/sync/run
