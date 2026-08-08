@@ -5,6 +5,7 @@ import jwt
 from datetime import datetime, timezone, timedelta
 from typing_extensions import Annotated
 
+from linuxmusterTools.common import LdapNotProvisionedError
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.ldapconnector.models import check_password
 
@@ -30,6 +31,11 @@ class BasicAuthChecker:
     def __call__(self, request: Request, credentials: Annotated[HTTPBasicCredentials, Depends(BASIC_AUTH)]) -> str:
         try:
             user = lr.get(f'/users/{credentials.username}', as_dict=False)
+        except LdapNotProvisionedError:
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail="linuxmuster is not provisioned yet",
+            )
         except Exception as e:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,

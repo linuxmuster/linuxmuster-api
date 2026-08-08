@@ -5,6 +5,7 @@ import jwt
 import hmac
 from pydantic import BaseModel
 
+from linuxmusterTools.common import LdapNotProvisionedError
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
 
@@ -64,7 +65,13 @@ def check_user_header(apikey, secret) -> AuthenticatedUser:
         )
 
     # role may be eventually None
-    user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole', 'sophomorixSchoolname', 'distinguishedName'])
+    try:
+        user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole', 'sophomorixSchoolname', 'distinguishedName'])
+    except LdapNotProvisionedError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="linuxmuster is not provisioned yet",
+        )
 
     if user_details.get('sophomorixRole', None) is None:
         raise HTTPException(
@@ -115,7 +122,13 @@ def check_host_header(hostkey, client_ip, keys, host_key_auth_enable) -> Authent
         )
 
     # role may be eventually None
-    user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole', 'sophomorixSchoolname', 'distinguishedName'])
+    try:
+        user_details = lr.getvalues(f'/users/{user}', ['sophomorixRole', 'sophomorixSchoolname', 'distinguishedName'])
+    except LdapNotProvisionedError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="linuxmuster is not provisioned yet",
+        )
 
     if user_details.get('sophomorixRole', None) is None:
         raise HTTPException(
