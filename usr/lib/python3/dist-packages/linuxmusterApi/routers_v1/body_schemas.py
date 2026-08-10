@@ -293,6 +293,37 @@ class StartConfRawBody(BaseModel):
 
     content: str
 
+class LinboImageNameBody(BaseModel):
+    """
+    Target name for a rename or duplicate, validated as a linbo image name by
+    the endpoint before it reaches LinboImageManager.
+    """
+
+
+    new_name: str
+
+class LinboImageExtrasBody(BaseModel):
+    """
+    Content of an image's sidecar files, as LinboImage.save_extras expects it.
+
+    A field left out or set to null deletes that sidecar — that is
+    save_extras' own semantics, not something the endpoint adds. desc is the
+    exception: an empty string writes an empty file.
+
+    info is required for exactly that reason. LinboImage.load_info parses it
+    for every image that is not a backup and raises IncompleteImageInfoError
+    without it, so letting a request omit it would leave the image unreadable
+    for the manifest, for LINBO and for any later call to this endpoint.
+    """
+
+
+    info: str
+    desc: str | None = None
+    vdi: str | None = None
+    reg: str | None = None
+    postsync: str | None = None
+    prestart: str | None = None
+
 class LinboRemoteRunBody(BaseModel):
     """
     Parameters to build and run a linbo-remote command via LinboRemote.
