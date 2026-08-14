@@ -1,9 +1,18 @@
+import logging
 import os
 from functools import wraps
+from pathlib import Path
+
 from fastapi import HTTPException
 
+from linuxmusterTools.common.checks import NameChecker
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from linuxmusterTools.linbo import ImageExistsError, IncompleteImageInfoError, LINBO_PATH, timestamp2date
 from linuxmusterTools.passwords import PasswordRules
+
+
+logger = logging.getLogger(__name__)
+linbo_name_checker = NameChecker()
 
 
 def check_tmp_dir():
@@ -263,3 +272,104 @@ def check_password_constraints_rules_or_400(role: str, entries: list):
         except Exception as e:
             raise HTTPException(status_code=400,
                                 detail=f"Invalid rule for role '{role}': {e}")
+
+def check_linbo_image_group_or_404(manager, image_name):
+    """
+    Resolve a LINBO image group by name. LinboImageManager's own operations
+    (delete, rename, restore, save_extras) silently do nothing for an unknown
+    group, so callers must resolve it first to answer 404 themselves.
+
+    An image whose .info is unreadable is refused with 409: LinboImageGroup.load()
+    stops in that case, leaving base as None and diff_image never assigned, so
+    touching group.diff_image would raise AttributeError.
+
+    :param manager: LinboImageManager instance
+    :param image_name: Name of the LINBO image
+    :return: The resolved LinboImageGroup
+    """
+
+
+    group = manager.groups.get(image_name)
+    if group is None:
+        raise HTTPException(status_code=404, detail=f"No image named {image_name}")
+
+    if group.base is None:
+        raise HTTPException(status_code=409, detail=f"Image {image_name} is not usable: {group.error}")
+
+    return group
+
+def check_new_linbo_image_name_or_409(manager, new_name):
+    """
+    Validate a name for a new LINBO image (rename/duplicate target). Unlike
+    check_linbo_image_group_or_404, new_name is about to be used to build a
+    filesystem path and become a real directory name, so its format is
+    validated here.
+
+    :param manager: LinboImageManager instance
+    :param new_name: Candidate name
+    :return: The validated name
+    """
+
+
+    if not linbo_name_checker.check_linbo_image_name(new_name):
+        raise HTTPException(status_code=400, detail=f"Invalid image name: {new_name}")
+
+    if new_name in manager.groups or Path(LINBO_PATH, new_name).exists():
+        raise HTTPException(status_code=409, detail=f"An image named {new_name} already exists")
+
+    return new_name
+
+def check_linbo_backup_date_or_404(group, timestamp):
+    """
+    Resolve a %Y%m%d%H%M path segment to the display date LinboImageGroup keys
+    its backups by. The manager's delete/restore take that display form, while
+    save_extras takes the raw timestamp — endpoints always take the raw
+    timestamp and convert here, so the URL shape stays uniform.
+
+    :param group: LinboImageGroup instance
+    :param timestamp: Backup timestamp, YYYYMMDDhhmm
+    :return: The display-form date key into group.backups
+    """
+
+
+    try:
+        date = timestamp2date(timestamp)
+    except ValueError as error:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid backup timestamp {timestamp}, expected YYYYMMDDhhmm",
+        ) from error
+
+    if date not in group.backups:
+        raise HTTPException(status_code=404, detail=f"No backup {timestamp} for image {group.name}")
+
+    return date
+
+def run_linbo_image_operation(operation):
+    """
+    Run a LinboImageManager mutation and map its failure modes onto status
+    codes. RuntimeError is what LinboImageGroup raises for a group whose
+    .info is missing or incomplete: the image exists but cannot be operated
+    on. This is not a check: it executes the operation rather than
+    validating input ahead of it.
+
+    :param operation: Zero-argument callable performing the actual mutation
+    :return: Whatever operation() returns
+    """
+
+
+    try:
+        return operation()
+    except ImageExistsError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except RuntimeError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+    except IncompleteImageInfoError as error:
+        # rename and duplicate re-read the .info they just rewrote. If that
+        # read fails the operation has already half-happened, so this is a
+        # server-side inconsistency to report, not a bad request to reject.
+        logger.error("LINBO image left unreadable after an operation: %r", error)
+        raise HTTPException(status_code=500, detail=f"Image is no longer readable: {error}") from error
+    except OSError as error:
+        logger.error("LINBO image operation failed: %r", error)
+        raise HTTPException(status_code=500, detail=f"Image operation failed: {error}") from error
