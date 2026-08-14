@@ -172,7 +172,7 @@ class TestLinbo:
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
-    @pytest.mark.parametrize("user", USERS[1:])
+    @pytest.mark.parametrize("user", USERS[2:])
     def test_post_linbo_hosts_scan_denied(self, user):
         r = client.post(
             f"{BASE_URL}/linbo/hosts/scan",

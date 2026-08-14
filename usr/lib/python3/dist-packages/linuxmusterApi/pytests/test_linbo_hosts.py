@@ -1,5 +1,6 @@
 import asyncio
 from datetime import datetime, timedelta
+from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -75,15 +76,33 @@ def test_new_routes_are_registered():
     assert expected <= actual
 
 
+# Endpoints where the underlying linuxmusterTools.linbo call is already scoped
+# per school (school-owned devices.csv, school-owned groups), so opening them
+# to school-administrators does not leak another school's data. Endpoints
+# whose underlying manager reads/writes by raw id without checking school
+# ownership (startconfs, configs, images, boot-logs) or that have no school
+# concept at all (wol) must stay global-admin-only until that ownership check
+# exists in linuxmusterTools.linbo.
+SCHOOL_SCOPED_ROUTES = {
+    "/linbo/hosts/image-status",
+    "/linbo/changes",
+    "/linbo/hosts/query",
+    "/linbo/grub-configs",
+    "/linbo/dhcp/export/isc-dhcp",
+    "/linbo/hosts/scan",
+    "/linbo/dhcp/export/dnsmasq-proxy",
+}
+
+
 def test_every_linbo_route_is_global_admin_only():
     # An invariant over the whole router rather than a pinned route list: this
     # router carries endpoints from several features, and a new one that forgets
     # its Depends(RoleChecker("G")) has to fail here. This checks the declaration
     # only — TestLinbo in test_misc.py covers the enforcement over HTTP.
-    # /hosts/image-status is the one exception, checked separately below: it
-    # also accepts school-administrators, scoped to their own school.
+    # SCHOOL_SCOPED_ROUTES are the exceptions, checked separately below: they
+    # also accept school-administrators, scoped to their own school.
     for route in linbo.router.routes:
-        if route.path == "/linbo/hosts/image-status":
+        if route.path in SCHOOL_SCOPED_ROUTES:
             continue
         checkers = [
             dependency.call
@@ -94,8 +113,9 @@ def test_every_linbo_route_is_global_admin_only():
         assert checkers[0].roles == ["globaladministrator"], route.path
 
 
-def test_image_status_route_is_global_or_school_admin():
-    route = next(r for r in linbo.router.routes if r.path == "/linbo/hosts/image-status")
+@pytest.mark.parametrize("path", sorted(SCHOOL_SCOPED_ROUTES))
+def test_school_scoped_routes_are_global_or_school_admin(path):
+    route = next(r for r in linbo.router.routes if r.path == path)
     checkers = [
         dependency.call
         for dependency in route.dependant.dependencies
@@ -210,6 +230,25 @@ def test_scan_without_any_host_is_404(linbo_backends):
     assert error.value.status_code == 404
     assert error.value.detail == "No hosts found"
     scan.assert_not_called()
+
+
+def test_scan_school_admin_cannot_target_another_school(linbo_backends):
+    who = SimpleNamespace(school="other-school")
+
+    with pytest.raises(HTTPException) as error:
+        asyncio.run(linbo.probe_hosts(LinboHostScanBody(), "default-school", who))
+
+    assert error.value.status_code == 403
+
+
+def test_scan_school_admin_can_target_their_own_school(linbo_backends):
+    devices, _, scan, _, _, _ = linbo_backends
+    devices.get_clients.return_value = [{"mac": "00:11:22:33:44:55", "ip": "10.0.0.100"}]
+    who = SimpleNamespace(school="default-school")
+
+    asyncio.run(linbo.probe_hosts(LinboHostScanBody(), "default-school", who))
+
+    scan.assert_called_once()
 
 
 def test_scan_timestamp_is_utc_aware(linbo_backends):

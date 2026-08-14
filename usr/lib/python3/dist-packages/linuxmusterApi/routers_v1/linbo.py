@@ -19,6 +19,7 @@ from utils.checks import (
     check_linbo_image_group_or_404,
     check_new_linbo_image_name_or_409,
     check_valid_school_or_404,
+    require_school,
     run_linbo_image_operation,
 )
 from .body_schemas import (
@@ -152,16 +153,18 @@ def linbo_health(
 
 
 @router.get("/changes", name="Delta feed for LINBO sync")
+@require_school
 def get_changes(
     since: str = "0",
     school: str = "default-school",
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Get changes since last sync (delta feed).
 
     ### Access
     - global-administrators
+    - school-administrators (scoped to their own school)
 
     \f
     :param since: Cursor from previous sync (unix timestamp), or '0' for full snapshot
@@ -175,16 +178,18 @@ def get_changes(
 
 
 @router.post("/hosts/query", name="Query hosts by MAC address list")
+@require_school
 def query_hosts(
     body: LinboBatchMacs,
     school: str = "default-school",
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Get host records for a list of MAC addresses.
 
     ### Access
     - global-administrators
+    - school-administrators (scoped to their own school)
 
     \f
     :param body: List of MAC addresses to look up
@@ -331,16 +336,18 @@ def get_configs(
     name="DHCP export for dnsmasq proxy mode",
     response_class=PlainTextResponse,
 )
+@require_school
 def dhcp_export_dnsmasq(
     request: FARequest,
     school: str = "default-school",
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Generate dnsmasq proxy-DHCP configuration.
 
     ### Access
     - global-administrators
+    - school-administrators (scoped to their own school)
 
     \f
     :param school: School name (default: default-school)
@@ -375,15 +382,17 @@ def dhcp_export_dnsmasq(
 
 
 @router.get("/grub-configs", name="All GRUB configs for a school")
+@require_school
 def get_all_grub_configs(
     school: str = "default-school",
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Export all GRUB config files for a school.
 
     ### Access
     - global-administrators
+    - school-administrators (scoped to their own school)
 
     \f
     :param school: School name (default: default-school)
@@ -404,15 +413,17 @@ def get_all_grub_configs(
 
 
 @router.get("/dhcp/export/isc-dhcp", name="ISC DHCP export for school")
+@require_school
 def dhcp_export_isc(
     school: str = "default-school",
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Export ISC DHCP configuration for a school.
 
     ### Access
     - global-administrators
+    - school-administrators (scoped to their own school)
 
     \f
     :param school: School name (default: default-school)
@@ -432,7 +443,7 @@ def dhcp_export_isc(
 async def probe_hosts(
     body: LinboHostScanBody,
     school: str = "default-school",
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Probe hosts over TCP and report which ones are online.
@@ -441,12 +452,18 @@ async def probe_hosts(
 
     ### Access
     - global-administrators
+    - school-administrators (scoped to their own school)
 
     \f
     :param body: MAC addresses to probe, empty for all clients of the school
     :param school: School name (default: default-school)
     """
 
+    # probe_hosts is async, so it can't use @require_school (sync-only): guard
+    # inline instead. `who` is None in the direct-call unit tests below, which
+    # predate school-admin access and never exercised permissions here.
+    if who is not None and who.school not in ('global', school):
+        raise HTTPException(status_code=403, detail="school-administrators can only operate on their own school.")
 
     check_valid_school_or_404(school)
 
