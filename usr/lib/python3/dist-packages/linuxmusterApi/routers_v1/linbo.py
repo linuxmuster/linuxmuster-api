@@ -210,6 +210,11 @@ def query_hosts(
     return {"hosts": hosts}
 
 
+# TODO: startconfs/configs (this section) stay G-only on purpose — group_id has
+# no school ownership anywhere in linuxmusterTools.linbo (raw, flat, global
+# /srv/linbo/start.conf.<id>), same gap as the legacy lmn_linbo4 plugin. Opening
+# to school-admins needs real per-school ownership in lmntools first, not a
+# quick RoleChecker flip.
 @router.get("/startconfs", name="Get start.conf files by ID")
 def get_startconfs(
     id: list[str] = Query(..., alias="id", description="One or more start.conf IDs"),
@@ -490,6 +495,10 @@ async def probe_hosts(
     }
 
 
+# TODO: wol stays G-only for now, but unlike startconfs/images this one is a
+# cheap fix whenever it's picked up — no lmntools change needed, just check
+# each MAC against Devices(who.school) before opening to school-admins, same
+# pattern already used for /hosts/image-status.
 @router.post("/wol", name="Wake hosts with a magic packet")
 def wake_hosts(
     body: LinboWolBody,
@@ -553,6 +562,9 @@ def hosts_image_status(
     return {"hosts": hosts, "total": len(hosts)}
 
 
+# TODO: boot-logs (this section) stays G-only for now, but like wol it's a
+# cheap fix later — filenames are "<hostname>.log", so hostname just needs
+# checking against Devices(who.school), same pattern as /hosts/image-status.
 # ── Boot logs ──────────────────────────────────────────────────────
 
 
@@ -643,6 +655,11 @@ def delete_boot_log(
     return {"filename": filename, "status": "deleted"}
 
 
+# TODO: every images/* route (this section onward) stays G-only on purpose —
+# LinboImageManager/LinboImageGroup have no school concept at all, images are
+# one shared pool at /srv/linbo/images for the whole server, same as the
+# legacy lmn_linbo4 plugin. Opening to school-admins would need a real school
+# ownership scheme in lmntools first (new feature, not a bugfix).
 # ── Image Manifest ─────────────────────────────────────────────────
 
 
