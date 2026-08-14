@@ -5,7 +5,6 @@ All business logic lives in linuxmusterTools.linbo modules.
 This router only handles HTTP concerns (auth, validation, responses).
 """
 
-import logging
 import os.path
 from datetime import datetime, timezone
 from pathlib import Path
@@ -15,10 +14,18 @@ from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import PlainTextResponse, StreamingResponse, Response
 
 from security import AuthenticatedUser, RoleChecker
-from utils.checks import check_valid_school_or_404
+from utils.checks import (
+    check_linbo_backup_date_or_404,
+    check_linbo_image_group_or_404,
+    check_new_linbo_image_name_or_409,
+    check_valid_school_or_404,
+    run_linbo_image_operation,
+)
 from .body_schemas import (
     LinboBatchMacs,
     LinboHostScanBody,
+    LinboImageExtrasBody,
+    LinboImageNameBody,
     LinboWolBody,
     StartConfRawBody,
 )
@@ -33,7 +40,6 @@ from linuxmusterTools.common.checks import NameChecker
 
 
 name_checker = NameChecker()
-logger = logging.getLogger(__name__)
 
 router = APIRouter(
     prefix="/linbo",
@@ -856,3 +862,258 @@ def cancel_upload_endpoint(
         return cancel_upload(IMAGES_DIR, image_name)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+
+# ── Image Management ───────────────────────────────────────────────
+
+
+@router.get("/images", name="List LINBO images with backups and sidecars")
+def list_images(
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## List every LINBO image with its sidecars, backups and differential image.
+
+    `/images/manifest` reports what the sync clients need. This reports what an
+    image management UI needs: the `reg`, `postsync` and `prestart` contents and
+    the backup list, which the manifest leaves out.
+
+    ### Access
+    - global-administrators
+
+    \f
+    """
+
+
+    manager = LinboImageManager()
+    images = [group.to_dict() for group in manager.groups.values()]
+    return {"images": images, "total": len(images)}
+
+
+@router.get("/images/{image_name}/backups", name="List an image's backups")
+def list_image_backups(
+    image_name: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## List the backups of one LINBO image.
+
+    Keys are the `YYYYMMDDhhmm` timestamps the other backup endpoints take.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param image_name: Name of the LINBO image
+    """
+
+
+    group = check_linbo_image_group_or_404(LinboImageManager(), image_name)
+    backups = {
+        backup.timestamp: backup.to_dict()
+        for backup in group.backups.values()
+    }
+    return {"image": image_name, "backups": backups, "total": len(backups)}
+
+
+@router.delete("/images/{image_name}", name="Delete a LINBO image")
+def delete_image(
+    image_name: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Delete a LINBO image with its backups, differential image and sidecars.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param image_name: Name of the LINBO image
+    """
+
+
+    manager = LinboImageManager()
+    check_linbo_image_group_or_404(manager, image_name)
+
+    run_linbo_image_operation(lambda: manager.delete(image_name))
+    return {"image": image_name, "status": "deleted"}
+
+
+@router.delete("/images/{image_name}/diff", name="Delete an image's differential image")
+def delete_image_diff(
+    image_name: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Delete only the differential image of a LINBO image.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param image_name: Name of the LINBO image
+    """
+
+
+    manager = LinboImageManager()
+    group = check_linbo_image_group_or_404(manager, image_name)
+
+    if group.diff_image is None:
+        raise HTTPException(status_code=404, detail=f"Image {image_name} has no differential image")
+
+    run_linbo_image_operation(lambda: manager.delete(image_name, diff=True))
+    return {"image": image_name, "status": "diff-deleted"}
+
+
+@router.delete("/images/{image_name}/backups/{timestamp}", name="Delete one backup of an image")
+def delete_image_backup(
+    image_name: str,
+    timestamp: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Delete a single backup of a LINBO image.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param image_name: Name of the LINBO image
+    :param timestamp: Backup timestamp, `YYYYMMDDhhmm`
+    """
+
+
+    manager = LinboImageManager()
+    group = check_linbo_image_group_or_404(manager, image_name)
+    date = check_linbo_backup_date_or_404(group, timestamp)
+
+    run_linbo_image_operation(lambda: manager.delete(image_name, date=date))
+    return {"image": image_name, "backup": timestamp, "status": "deleted"}
+
+
+@router.post("/images/{image_name}/backups/{timestamp}/restore", name="Restore a backup of an image")
+def restore_image_backup(
+    image_name: str,
+    timestamp: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Restore a backup over the base image.
+
+    The base image is moved to a new backup first, so the operation is
+    reversible.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param image_name: Name of the LINBO image
+    :param timestamp: Backup timestamp to restore, `YYYYMMDDhhmm`
+    """
+
+
+    manager = LinboImageManager()
+    group = check_linbo_image_group_or_404(manager, image_name)
+    date = check_linbo_backup_date_or_404(group, timestamp)
+
+    run_linbo_image_operation(lambda: manager.restore(image_name, date))
+    return {"image": image_name, "backup": timestamp, "status": "restored"}
+
+
+@router.post("/images/{image_name}/rename", name="Rename a LINBO image")
+def rename_image(
+    image_name: str,
+    body: LinboImageNameBody,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Rename a LINBO image with its backups, differential image and sidecars.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param image_name: Current name of the LINBO image
+    :param body: New name
+    """
+
+
+    manager = LinboImageManager()
+    check_linbo_image_group_or_404(manager, image_name)
+    new_name = check_new_linbo_image_name_or_409(manager, body.new_name)
+
+    run_linbo_image_operation(lambda: manager.rename(image_name, new_name))
+    return {"image": new_name, "previousName": image_name, "status": "renamed"}
+
+
+@router.post("/images/{image_name}/duplicate", name="Duplicate a LINBO image")
+def duplicate_image(
+    image_name: str,
+    body: LinboImageNameBody,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Copy a LINBO image under a new name, without its backups.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param image_name: Name of the LINBO image to copy
+    :param body: Name for the copy
+    """
+
+
+    manager = LinboImageManager()
+    check_linbo_image_group_or_404(manager, image_name)
+    new_name = check_new_linbo_image_name_or_409(manager, body.new_name)
+
+    run_linbo_image_operation(lambda: manager.duplicate(image_name, new_name))
+    return {"image": new_name, "sourceImage": image_name, "status": "duplicated"}
+
+
+@router.put("/images/{image_name}/extras", name="Write an image's sidecar files")
+def save_image_extras(
+    image_name: str,
+    body: LinboImageExtrasBody,
+    timestamp: str | None = Query(
+        None,
+        description="Write the sidecars of this backup instead of the base image",
+    ),
+    diff: bool = Query(False, description="Write the sidecars of the differential image"),
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Write the `info`, `desc`, `vdi`, `reg`, `postsync` and `prestart` sidecars.
+
+    A field left out of the body deletes that sidecar, which is why `info` is
+    required — an image without it cannot be read back. `timestamp` and `diff`
+    are mutually exclusive.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param image_name: Name of the LINBO image
+    :param body: Sidecar contents
+    :param timestamp: Backup timestamp, `YYYYMMDDhhmm`
+    :param diff: Target the differential image
+    """
+
+
+    if timestamp and diff:
+        raise HTTPException(status_code=400, detail="timestamp and diff are mutually exclusive")
+
+    manager = LinboImageManager()
+    group = check_linbo_image_group_or_404(manager, image_name)
+
+    if timestamp:
+        check_linbo_backup_date_or_404(group, timestamp)
+
+    if diff and group.diff_image is None:
+        raise HTTPException(status_code=404, detail=f"Image {image_name} has no differential image")
+
+    run_linbo_image_operation(
+        lambda: manager.save_extras(image_name, body.model_dump(), timestamp=timestamp, diff=diff)
+    )
+    return {"image": image_name, "status": "saved"}
