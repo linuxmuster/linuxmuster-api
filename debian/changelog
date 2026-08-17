@@ -1,3 +1,27 @@
+linuxmuster-api7 (7.4.10) lmn74; urgency=medium
+
+  * [linbo] Route the LINBO image management operations: 9 endpoints under
+    /v1/linbo/images (list, backups, delete, delete diff, delete backup,
+    restore backup, rename, duplicate, extras). Images could until now be
+    uploaded/downloaded via the API but never managed. Unknown group
+    resolved to 404 instead of a silent 200; an image with an unreadable
+    .info is reported 409 instead of crashing on AttributeError. Picks up
+    PR #33 "Route the LINBO image management operations" from TomlDev,
+    closed without merging and reimplemented directly (linbo.py,
+    body_schemas.py, checks.py, test_linbo_image_management.py).
+  * [linbo] Open /linbo/changes, /linbo/hosts/query, /linbo/grub-configs,
+    /linbo/dhcp/export/isc-dhcp, /linbo/hosts/scan and
+    /linbo/dhcp/export/dnsmasq-proxy to school-administrators, scoped to
+    their own school. startconfs/configs/images/boot-logs/wol stay
+    global-admin-only until linuxmusterTools.linbo has real per-school
+    ownership (documented as TODOs in linbo.py).
+  * [devices] Add GET /v1/devices/roles, listing the computer roles
+    configured in sophomorix.ini's [computerrole.*] sections (until now
+    hardcoded client-side). Merge pull request #34 from
+    edulution-io/add-computer-roles-endpoint (@TomlDev).
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Mon, 17 Aug 2026 00:00:00 +0200
+
 linuxmuster-api7 (7.4.9) lmn74; urgency=medium
 
   * [security] check_user_header(), check_host_header() and
