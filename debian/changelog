@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.4.11) lmn74; urgency=medium
+
+  * [linbo] Add endpoint to list linbo groups. Fix #35.
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 19 Aug 2026 23:21:42 +0200
+
 linuxmuster-api7 (7.4.10) lmn74; urgency=medium
 
   * [linbo] Route the LINBO image management operations: 9 endpoints under
