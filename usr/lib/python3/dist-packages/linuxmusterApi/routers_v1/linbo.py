@@ -215,6 +215,20 @@ def query_hosts(
 # /srv/linbo/start.conf.<id>), same gap as the legacy lmn_linbo4 plugin. Opening
 # to school-admins needs real per-school ownership in lmntools first, not a
 # quick RoleChecker flip.
+@router.get("/linbo-groups", name="List LINBO hardware group IDs")
+def get_linbo_groups(
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## List the hardware group IDs with an existing start.conf file.
+
+    ### Access
+    - global-administrators
+    """
+
+
+    return {"groups": LinboConfigManager().linbo_groups()}
+
 @router.get("/startconfs", name="Get start.conf files by ID")
 def get_startconfs(
     id: list[str] = Query(..., alias="id", description="One or more start.conf IDs"),

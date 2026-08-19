@@ -153,6 +153,17 @@ class TestLinbo:
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
+    def test_get_linbo_groups_ga(self):
+        r = client.get(f"{BASE_URL}/linbo/linbo-groups", headers={"X-API-KEY": GLOBALADMIN.jwt})
+        assert r.status_code == 200
+        assert "groups" in r.json()
+
+    @pytest.mark.parametrize("user", USERS[1:])
+    def test_get_linbo_groups_denied(self, user):
+        r = client.get(f"{BASE_URL}/linbo/linbo-groups", headers={"X-API-KEY": user.jwt})
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
+
     @pytest.mark.parametrize("user", USERS[1:])
     def test_post_linbo_startconf_denied(self, user):
         r = client.post(
