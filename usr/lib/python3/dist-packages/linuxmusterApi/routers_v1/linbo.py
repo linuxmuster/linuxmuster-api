@@ -140,7 +140,7 @@ def linbo_health(
 
     check_valid_school_or_404(school)
     csv_path_exists = os.path.isfile(Devices(school).path)
-    config_ids = LinboConfigManager().linbo_groups()
+    config_ids = LinboConfigManager().group_ids
     grub_reader = LinboGrubReader()
 
     return {
@@ -227,7 +227,7 @@ def get_linbo_groups(
     """
 
 
-    return {"groups": LinboConfigManager().linbo_groups()}
+    return {"groups": LinboConfigManager().group_ids}
 
 @router.get("/startconfs", name="Get start.conf files by ID")
 def get_startconfs(
