@@ -35,7 +35,7 @@ def get_all_users(who: AuthenticatedUser = Depends(RoleChecker("G"))):
     """
 
 
-    return lr.get('/users', attributes=['sn', 'givenName', 'sophomorixRole', 'sophomorixAdminClass'])
+    return lr.get('/users', attributes=['cn', 'sn', 'givenName', 'sophomorixRole', 'sophomorixAdminClass'])
 
 @router.get("/{user}", name="User details")
 def get_user(user: str, check_first_pw: bool = False, who: AuthenticatedUser = Depends(UserChecker("GST"))):
