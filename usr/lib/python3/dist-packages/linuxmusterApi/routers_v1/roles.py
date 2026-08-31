@@ -10,6 +10,9 @@ router = APIRouter(
     responses={404: {"description": "Not found"}},
 )
 
+# TODO: structure/sort inconsistency — returns an unsorted set() of strings, while
+# GET /devices/roles (same kind of data: list of role names) returns a sorted list.
+# Keep this out of /users (scope is users+devices via /search/, unlike /roles/{role}).
 @router.get("/", name="List all existing roles")
 def get_all_roles(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
@@ -29,6 +32,11 @@ def get_all_roles(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
 
     return set([k['sophomorixRole'] for k in lr.get('/search/', attributes=['sophomorixRole']) if k['sophomorixRole']])
 
+# TODO: structure inconsistency — returns list[dict] (full user objects) while GET /roles/
+# returns list[str] (role names), under the same router. Scope is users-only
+# (objectClass=user) unlike /roles/: should move to /users/roles/{role} (breaking change,
+# check webui7/cli7 callers first). check_parents also switches the response schema
+# (LMNUserModel vs LMNRawUserModel) without this being visible in OpenAPI (no response_model).
 @router.get("/{role}", name="List all members with a specific role")
 def get_role_users(role: str, check_parents: bool = False, school: str | None = 'default-school', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """

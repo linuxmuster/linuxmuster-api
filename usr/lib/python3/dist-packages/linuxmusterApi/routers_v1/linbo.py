@@ -254,6 +254,8 @@ def get_startconfs(
 
     return {"startConfs": raw_startconfs}
 
+# TODO: HTTP verb inconsistency — this is an upsert (create-or-update), compare with
+# save_image_extras (full overwrite, same kind of operation) which uses PUT instead
 @router.post("/startconfs/{group_id}", name="Create or update a start.conf file")
 def write_startconf(
     group_id: str,
@@ -1120,6 +1122,8 @@ def duplicate_image(
     return {"image": new_name, "sourceImage": image_name, "status": "duplicated"}
 
 
+# TODO: HTTP verb inconsistency — full overwrite (upsert), compare with write_startconf
+# (same kind of operation) which uses POST instead
 @router.put("/images/{image_name}/extras", name="Write an image's sidecar files")
 def save_image_extras(
     image_name: str,

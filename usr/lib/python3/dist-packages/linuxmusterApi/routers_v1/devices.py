@@ -73,6 +73,8 @@ def get_all_devices(school: str, who: AuthenticatedUser = Depends(RoleChecker("G
 
     return devices_data
 
+# TODO: sort inconsistency — returns a sorted list, while GET /roles/ (same kind of data:
+# list of role names) returns an unsorted set().
 @router.get("/roles", name="List the computer roles a device may have")
 def get_computer_roles(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """

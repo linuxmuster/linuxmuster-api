@@ -71,6 +71,9 @@ def get_user(user: str, check_first_pw: bool = False, who: AuthenticatedUser = D
     else:
         return user_details
 
+# TODO: HTTP verb inconsistency — this is a partial attribute update, should be PATCH for
+# consistency with devices/groups/printers/projects/schoolclasses (breaking change, check
+# webui7/cli7 callers first)
 @router.post("/{user}", name="Update user's data")
 def post_user_data(user: str, user_details: User, who: AuthenticatedUser = Depends(UserChecker("GST"))):
     """
