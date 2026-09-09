@@ -33,6 +33,7 @@ from .body_schemas import (
 
 
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from linuxmusterTools.ldapconnector.checks import valid_schools
 from linuxmusterTools.devices import Devices
 
 from linuxmusterTools.linbo import *
@@ -102,7 +103,7 @@ def get_server_info(
     if not ini:
         raise HTTPException(status_code=500, detail="setup.ini empty or invalid")
 
-    schools = lr.getval('/schools', 'ou')
+    schools = valid_schools()
 
     return {
         "serverip": ini.get("serverip", ""),

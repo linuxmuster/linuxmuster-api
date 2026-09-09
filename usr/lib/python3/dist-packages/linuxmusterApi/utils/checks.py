@@ -7,6 +7,7 @@ from fastapi import HTTPException
 
 from linuxmusterTools.common.checks import NameChecker
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+from linuxmusterTools.ldapconnector.checks import is_valid_school
 from linuxmusterTools.linbo import ImageExistsError, IncompleteImageInfoError, LINBO_PATH, timestamp2date
 from linuxmusterTools.passwords import PasswordRules
 
@@ -191,7 +192,7 @@ def check_valid_school_or_404(school):
     Check if the given school is a valid school.
     """
 
-    if school not in lr.getval('/schools', 'ou'):
+    if not is_valid_school(school):
         raise HTTPException(status_code=404,
                             detail=f"{school} is not a valid school")
 

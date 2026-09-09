@@ -3,7 +3,7 @@ import tempfile
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 
 from security import RoleChecker, AuthenticatedUser
-from utils.checks import check_valid_mgmtlist_or_404, check_tmp_dir
+from utils.checks import check_valid_mgmtlist_or_404, check_valid_school_or_404, check_tmp_dir
 from linuxmusterTools.lmnfile import LMNFile
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from utils.sophomorix import process_user
@@ -157,8 +157,7 @@ def do_sophomorix_apply(
     """
 
 
-    if school not in lr.getval('/schools', 'ou'):
-        raise HTTPException(status_code=404, detail=f"{school} is not a valid school")
+    check_valid_school_or_404(school)
 
     if who.school != "global" and who.school != school:
         raise HTTPException(status_code=403, detail=f"Forbidden")
