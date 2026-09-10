@@ -64,6 +64,7 @@ def test_new_routes_are_registered():
         ("POST", "/linbo/hosts/scan"),
         ("POST", "/linbo/wol"),
         ("GET", "/linbo/hosts/image-status"),
+        ("GET", "/linbo/hosts/{hostname}/status"),
         ("GET", "/linbo/boot-logs"),
         ("GET", "/linbo/boot-logs/{filename}"),
         ("DELETE", "/linbo/boot-logs/{filename}"),
@@ -91,6 +92,7 @@ SCHOOL_SCOPED_ROUTES = {
     "/linbo/dhcp/export/isc-dhcp",
     "/linbo/hosts/scan",
     "/linbo/dhcp/export/dnsmasq-proxy",
+    "/linbo/hosts/{hostname}/status",
 }
 
 
@@ -401,6 +403,220 @@ def test_image_status_school_admin_is_filtered(linbo_backends):
 
     assert result["hosts"] == {"lehrer-pc101": image_status.return_value["lehrer-pc101"]}
     assert result["total"] == 1
+
+
+# ── Single host status ─────────────────────────────────────────────
+
+
+@pytest.fixture
+def host_status_backends(monkeypatch):
+    """Every linuxmusterTools call host_status() makes, mocked."""
+
+    devices = Mock()
+    devices.get_host.return_value = {
+        "hostname": "pc100",
+        "group": "win11",
+        "room": "R101",
+        "mac": "00:11:22:33:44:55",
+        "ip": "10.0.0.100",
+        "sophomorixRole": "classroom-studentcomputer",
+        "pxeEnabled": True,
+    }
+    workstations = Mock(return_value={"win11": {"os": []}})
+    config = Mock(return_value=[])
+    sync = Mock(return_value=False)
+    classify = Mock(return_value="Off")
+
+    monkeypatch.setattr(linbo, "Devices", lambda school: devices)
+    monkeypatch.setattr(linbo, "list_workstations", workstations)
+    monkeypatch.setattr(linbo, "read_config", config)
+    monkeypatch.setattr(linbo, "last_sync", sync)
+    monkeypatch.setattr(linbo, "classify_host", classify)
+    return devices, workstations, config, sync, classify
+
+
+def _one_image_group(baseimage="win11.qcow2", partition=2, name="Windows 11"):
+    return (
+        {"win11": {"os": [{"baseimage": baseimage, "partition": partition}]}},
+        [{"BaseImage": baseimage, "Name": name}],
+    )
+
+
+def test_host_status_rejects_an_invalid_hostname(host_status_backends):
+    devices, _, _, _, _ = host_status_backends
+
+    with pytest.raises(HTTPException) as error:
+        linbo.host_status(
+            hostname="../../etc/passwd",
+            school="default-school",
+            who=SimpleNamespace(school="default-school"),
+        )
+
+    assert error.value.status_code == 400
+    devices.get_host.assert_not_called()
+
+
+def test_host_status_unknown_host_is_404(host_status_backends):
+    devices, _, _, _, _ = host_status_backends
+    devices.get_host.return_value = None
+
+    with pytest.raises(HTTPException) as error:
+        linbo.host_status(
+            hostname="pc404",
+            school="default-school",
+            who=SimpleNamespace(school="default-school"),
+        )
+
+    assert error.value.status_code == 404
+
+
+def test_host_status_reports_inventory_from_devices_csv(host_status_backends):
+    result = linbo.host_status(
+        hostname="pc100",
+        school="default-school",
+        probe=False,
+        who=SimpleNamespace(school="default-school"),
+    )
+
+    assert result["mac"] == "00:11:22:33:44:55"
+    assert result["ip"] == "10.0.0.100"
+    assert result["group"] == "win11"
+    assert result["room"] == "R101"
+    assert result["role"] == "classroom-studentcomputer"
+    assert result["pxeEnabled"] is True
+
+
+def test_host_status_one_entry_per_start_conf_image(host_status_backends):
+    _, workstations, config, sync, _ = host_status_backends
+    workstations.return_value = {
+        "win11": {
+            "os": [
+                {"baseimage": "win11.qcow2", "partition": 2},
+                {"baseimage": "jammy.qcow2", "partition": 3},
+            ]
+        }
+    }
+    config.return_value = [
+        {"BaseImage": "win11.qcow2", "Name": "Windows 11"},
+        {"BaseImage": "jammy.qcow2", "Name": "Ubuntu 22.04"},
+    ]
+    # Only the first image was ever applied on this host.
+    sync.side_effect = lambda hostname, image: 1757340000.0 if image == "win11.qcow2" else False
+
+    result = linbo.host_status(
+        hostname="pc100",
+        school="default-school",
+        probe=False,
+        who=SimpleNamespace(school="default-school"),
+    )
+
+    assert [image["image"] for image in result["images"]] == ["win11.qcow2", "jammy.qcow2"]
+    assert [image["name"] for image in result["images"]] == ["Windows 11", "Ubuntu 22.04"]
+    assert [image["partition"] for image in result["images"]] == [2, 3]
+    assert result["images"][1]["lastSync"] is None
+
+
+def test_host_status_last_sync_is_utc_aware(host_status_backends):
+    _, workstations, config, sync, _ = host_status_backends
+    workstations.return_value, config.return_value = _one_image_group()
+    sync.return_value = 1757340000.0
+
+    result = linbo.host_status(
+        hostname="pc100",
+        school="default-school",
+        probe=False,
+        who=SimpleNamespace(school="default-school"),
+    )
+    last_sync_at = datetime.fromisoformat(result["images"][0]["lastSync"])
+
+    assert last_sync_at.tzinfo is not None
+    assert last_sync_at.utcoffset() == timedelta(0)
+
+
+def test_host_status_looks_up_the_log_under_the_school_prefixed_name(host_status_backends):
+    _, workstations, config, sync, _ = host_status_backends
+    workstations.return_value, config.return_value = _one_image_group()
+
+    linbo.host_status(
+        hostname="pc100",
+        school="lehrer",
+        probe=False,
+        who=SimpleNamespace(school="lehrer"),
+    )
+
+    # LINBO writes the log as <school>-<hostname>_image.status outside
+    # default-school, while devices.csv holds the bare name.
+    sync.assert_called_once_with("lehrer-pc100", "win11.qcow2")
+
+
+def test_host_status_without_probe_leaves_the_state_unknown(host_status_backends):
+    _, _, _, _, classify = host_status_backends
+
+    result = linbo.host_status(
+        hostname="pc100",
+        school="default-school",
+        probe=False,
+        who=SimpleNamespace(school="default-school"),
+    )
+
+    assert result["online"] is None
+    assert result["osState"] is None
+    classify.assert_not_called()
+
+
+def test_host_status_maps_the_classification_to_a_lowercase_enum(host_status_backends):
+    _, _, _, _, classify = host_status_backends
+    classify.return_value = "OS Windows"
+
+    result = linbo.host_status(
+        hostname="pc100",
+        school="default-school",
+        who=SimpleNamespace(school="default-school"),
+    )
+
+    classify.assert_called_once_with("10.0.0.100")
+    assert result["osState"] == "windows"
+    assert result["online"] is True
+
+
+def test_host_status_off_host_is_not_online(host_status_backends):
+    _, _, _, _, classify = host_status_backends
+    classify.return_value = "Off"
+
+    result = linbo.host_status(
+        hostname="pc100",
+        school="default-school",
+        who=SimpleNamespace(school="default-school"),
+    )
+
+    assert result["osState"] == "off"
+    assert result["online"] is False
+
+
+def test_host_status_a_host_without_ip_is_never_probed(host_status_backends):
+    devices, _, _, _, classify = host_status_backends
+    devices.get_host.return_value = dict(devices.get_host.return_value, ip="")
+
+    result = linbo.host_status(
+        hostname="pc100",
+        school="default-school",
+        who=SimpleNamespace(school="default-school"),
+    )
+
+    classify.assert_not_called()
+    assert result["ip"] is None
+    assert result["online"] is None
+
+
+def test_host_status_school_admin_cannot_target_another_school(host_status_backends):
+    with pytest.raises(HTTPException) as error:
+        linbo.host_status(
+            hostname="pc100",
+            school="default-school",
+            who=SimpleNamespace(school="other-school"),
+        )
+
+    assert error.value.status_code == 403
 
 
 # ── Boot logs ──────────────────────────────────────────────────────

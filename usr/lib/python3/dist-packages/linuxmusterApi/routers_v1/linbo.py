@@ -579,6 +579,101 @@ def hosts_image_status(
     return {"hosts": hosts, "total": len(hosts)}
 
 
+@router.get("/hosts/{hostname}/status", name="Full state of a single LINBO host")
+@require_school
+def host_status(
+    hostname: str,
+    school: str = "default-school",
+    probe: bool = True,
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
+):
+    """
+    ## Inventory, boot state and per-image last sync of a single host.
+
+    One entry per image of the host's start.conf group, with the date it was
+    last applied on that host, or null if it never was. With probe=false the
+    host is not contacted and online/osState stay null.
+
+    ### Access
+    - global-administrators
+    - school-administrators (scoped to their own school)
+
+    \f
+    :param hostname: Host name as written in devices.csv, without school prefix
+    :param school: School name (default: default-school)
+    :param probe: Contact the host on 2222/22/135 to classify its boot state
+    """
+
+
+    # classify_os() returns UI labels ("OS Linux"); expose a stable lowercase
+    # enum instead, so the webui wording stays free to change.
+    os_states = {
+        "Off": "off",
+        "Linbo": "linbo",
+        "OS Linux": "linux",
+        "OS Windows": "windows",
+        "OS Unknown": "unknown",
+    }
+
+    # Rejects path separators and "..", so hostname stays safe to build a log
+    # path from even if the device lookup below is ever moved or dropped.
+    if not name_checker.check_host_name(hostname):
+        raise HTTPException(status_code=400, detail=f"Invalid hostname {hostname}")
+
+    device = Devices(school=school).get_host(hostname)
+    if not device:
+        raise HTTPException(status_code=404, detail=f"Host {hostname} not found in {school}")
+
+    # LINBO logs a host under its prefixed name in a multischool setup, same
+    # rule as list_workstations().
+    logged_hostname = hostname if school == "default-school" else f"{school}-{hostname}"
+
+    group = device["group"]
+    # Empty for a device whose group has no start.conf, or with pxeFlag not in
+    # (1, 2): such a host has no image to sync.
+    os_entries = list_workstations(school=school, groups=[group]).get(group, {}).get("os", [])
+
+    # group_os() drops the OS display name, so read it back from start.conf.
+    os_names = {
+        section.get("BaseImage"): section.get("Name")
+        for section in (read_config(group) or [])
+    }
+
+    images = []
+    for entry in os_entries:
+        baseimage = entry["baseimage"]
+        # last_sync() reads the LINBO timestamp as server-local time (mktime),
+        # so this yields a true UTC instant.
+        epoch = last_sync(logged_hostname, baseimage)
+        images.append({
+            "image": baseimage,
+            "name": os_names.get(baseimage),
+            "partition": entry["partition"],
+            "lastSync": datetime.fromtimestamp(epoch, tz=timezone.utc).isoformat() if epoch else None,
+        })
+
+    online, os_state = None, None
+    if probe and device["ip"]:
+        # Sync endpoint on purpose: FastAPI runs it in its threadpool, so the
+        # blocking sockets of classify_host() never hold the event loop.
+        os_state = os_states.get(classify_host(device["ip"]), "unknown")
+        online = os_state != "off"
+
+    return {
+        "hostname": hostname,
+        "school": school,
+        "group": group,
+        "room": device["room"],
+        "mac": device["mac"],
+        "ip": device["ip"] or None,
+        "role": device["sophomorixRole"],
+        "pxeEnabled": device["pxeEnabled"],
+        "online": online,
+        "osState": os_state,
+        "images": images,
+    }
+
+
 # TODO: boot-logs (this section) stays G-only for now, but like wol it's a
 # cheap fix later — filenames are "<hostname>.log", so hostname just needs
 # checking against Devices(who.school), same pattern as /hosts/image-status.
