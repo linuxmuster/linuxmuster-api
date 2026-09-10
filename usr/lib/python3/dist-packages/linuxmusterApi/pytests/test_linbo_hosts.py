@@ -354,19 +354,19 @@ def test_image_status_reports_one_entry_per_host(linbo_backends):
     _, _, _, _, image_status, _ = linbo_backends
     image_status.return_value = {
         "pc100": {
-            "lastSync": "2026-03-24T11:42:00.000Z",
+            "lastSync": "2026-03-24T11:42:00+00:00",
             "action": "applied",
             "image": "win11_pro.qcow2",
             "imageVersion": "202601271107",
         },
         "pc101": {
-            "lastSync": "2026-03-24T11:44:00.000Z",
+            "lastSync": "2026-03-24T11:44:00+00:00",
             "action": "applied",
             "image": "win11_pro.qcow2",
             "imageVersion": "202601271107",
         },
         "pc102": {
-            "lastSync": "2026-03-25T08:03:00.000Z",
+            "lastSync": "2026-03-25T08:03:00+00:00",
             "action": "created",
             "image": "ubuntu2404.qcow2",
             "imageVersion": None,
@@ -384,13 +384,13 @@ def test_image_status_school_admin_is_filtered(linbo_backends):
     devices, _, _, _, image_status, _ = linbo_backends
     image_status.return_value = {
         "pc100": {
-            "lastSync": "2026-03-24T11:42:00.000Z",
+            "lastSync": "2026-03-24T11:42:00+00:00",
             "action": "applied",
             "image": "win11_pro.qcow2",
             "imageVersion": "202601271107",
         },
         "lehrer-pc101": {
-            "lastSync": "2026-03-24T11:44:00.000Z",
+            "lastSync": "2026-03-24T11:44:00+00:00",
             "action": "applied",
             "image": "win11_pro.qcow2",
             "imageVersion": "202601271107",
