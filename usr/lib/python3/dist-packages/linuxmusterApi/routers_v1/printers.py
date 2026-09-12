@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, AuthenticatedUser
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNPrinter
-from utils.checks import get_printer_or_404
+from utils.checks import check_dn_or_404, get_printer_or_404
 from utils.sophomorix import lmn_getSophomorixValue
 from .body_schemas import Printer
 
@@ -122,25 +122,25 @@ def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser
     members_changed = False
 
     for user in printer_details.addmembers:
-        user_dn = lr.getval(f'/users/{user}', 'distinguishedName')
+        user_dn = check_dn_or_404('users', user, 'User')
         if user_dn not in printer_member:
             printer_member.append(user_dn)
             members_changed = True
 
     for user in printer_details.removemembers:
-        user_dn = lr.getval(f'/users/{user}', 'distinguishedName')
+        user_dn = check_dn_or_404('users', user, 'User')
         if user_dn in printer_member:
             printer_member.remove(user_dn)
             members_changed = True
 
     for group in printer_details.addmembergroups:
-        group_dn = lr.getval(f'/units/{group}', 'distinguishedName')
+        group_dn = check_dn_or_404('units', group, 'Group')
         if group_dn not in printer_member:
             printer_member.append(group_dn)
             members_changed = True
 
     for group in printer_details.removemembergroups:
-        group_dn = lr.getval(f'/units/{group}', 'distinguishedName')
+        group_dn = check_dn_or_404('units', group, 'Group')
         if group_dn in printer_member:
             printer_member.remove(group_dn)
             members_changed = True

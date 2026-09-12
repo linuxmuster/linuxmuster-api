@@ -160,3 +160,29 @@ class TestPrinters:
             client.patch(url, headers=headers, json={"addmembers": members})
 
         assert len(client.get(url, headers=headers).json()["member"]) == len(members)
+
+    @_need_printer
+    @pytest.mark.parametrize("field,kind", [
+        ("addmembers", "User"),
+        ("removemembers", "User"),
+        ("addmembergroups", "Group"),
+        ("removemembergroups", "Group"),
+    ])
+    def test_patch_printer_404s_on_an_unknown_name(self, field, kind):
+        """
+        getval() answers None for a name that does not exist. That None used
+        to reach the LDAP modify as a DN, answering 500 with an
+        INVALID_DN_SYNTAX the caller cannot act on.
+        """
+
+        url = f"{BASE_URL}/printers/{PRINTER}"
+        headers = {"X-API-KEY": GLOBALADMIN.jwt}
+        before = client.get(url, headers=headers).json()["member"]
+
+        r = client.patch(url, headers=headers, json={field: ["does-not-exist-xyz"]})
+        assert r.status_code == 404
+        assert r.json()["detail"] == f"{kind} does-not-exist-xyz not found"
+
+        # The whole patch is refused: nothing was written
+        assert client.get(url, headers=headers).json()["member"] == before
+
