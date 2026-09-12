@@ -218,7 +218,7 @@ def join_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
     if not printer_data.sophomorixJoinable:
         raise HTTPException(status_code=403, detail=f"Printer {printer} is not joinable.")
 
-    printer_writer = LMNPrinter(printer)
+    printer_writer = LMNPrinter(printer, school=who.school)
     printer_writer.add_member(who.user)
 
     return ''
@@ -260,7 +260,7 @@ def quit_printer(printer: str, who: AuthenticatedUser = Depends(RoleChecker("T")
     if not printer_data.sophomorixJoinable:
         raise HTTPException(status_code=403, detail=f"Printer {printer} is not joinable and cannot be quitted.")
 
-    printer_writer = LMNPrinter(printer)
+    printer_writer = LMNPrinter(printer, school=who.school)
     printer_writer.remove_member(who.user)
 
     return ''
