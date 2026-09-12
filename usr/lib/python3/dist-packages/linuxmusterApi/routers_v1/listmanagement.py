@@ -3,7 +3,7 @@ import tempfile
 from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks, Request
 
 from security import RoleChecker, AuthenticatedUser
-from utils.checks import check_valid_mgmtlist_or_404, check_valid_school_or_404, check_tmp_dir
+from utils.checks import get_mgmtlist_path_or_404, check_valid_school_or_404, check_tmp_dir
 from linuxmusterTools.lmnfile import LMNFile
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from utils.sophomorix import process_user
@@ -39,7 +39,7 @@ def get_management_list_content(school: str, mgmtlist: str, who: AuthenticatedUs
     """
 
 
-    path = check_valid_mgmtlist_or_404(mgmtlist, school)
+    path = get_mgmtlist_path_or_404(mgmtlist, school)
 
     try:
         with LMNFile(path, 'r') as list:
@@ -73,7 +73,7 @@ def post_management_list_content(school: str, mgmtlist: str, content: MgmtList, 
     """
 
 
-    path = check_valid_mgmtlist_or_404(mgmtlist, school)
+    path = get_mgmtlist_path_or_404(mgmtlist, school)
 
     try:
         with LMNFile(path, 'w') as list:

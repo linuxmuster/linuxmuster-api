@@ -89,7 +89,7 @@ def test_delete_image_404s_on_an_unknown_image(manager):
 
 def test_delete_image_404s_on_a_path_like_name(manager):
     """
-    check_linbo_image_group_or_404 only ever looks image_name up as a dict
+    get_linbo_image_group_or_404 only ever looks image_name up as a dict
     key, never builds a path from it, so a path-traversal-shaped name is not
     a special case: it simply is not a key, like any other unknown name.
     """

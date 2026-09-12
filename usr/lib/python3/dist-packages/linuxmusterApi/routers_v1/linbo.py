@@ -16,9 +16,9 @@ from fastapi.responses import PlainTextResponse, StreamingResponse, Response
 from security import AuthenticatedUser, RoleChecker
 from utils.checks import (
     check_linbo_backup_date_or_404,
-    check_linbo_image_group_or_404,
     check_new_linbo_image_name_or_409,
     check_valid_school_or_404,
+    get_linbo_image_group_or_404,
     require_school,
     run_linbo_image_operation,
 )
@@ -1054,7 +1054,7 @@ def list_image_backups(
     """
 
 
-    group = check_linbo_image_group_or_404(LinboImageManager(), image_name)
+    group = get_linbo_image_group_or_404(LinboImageManager(), image_name)
     backups = {
         backup.timestamp: backup.to_dict()
         for backup in group.backups.values()
@@ -1079,7 +1079,7 @@ def delete_image(
 
 
     manager = LinboImageManager()
-    check_linbo_image_group_or_404(manager, image_name)
+    get_linbo_image_group_or_404(manager, image_name)
 
     run_linbo_image_operation(lambda: manager.delete(image_name))
     return {"image": image_name, "status": "deleted"}
@@ -1102,7 +1102,7 @@ def delete_image_diff(
 
 
     manager = LinboImageManager()
-    group = check_linbo_image_group_or_404(manager, image_name)
+    group = get_linbo_image_group_or_404(manager, image_name)
 
     if group.diff_image is None:
         raise HTTPException(status_code=404, detail=f"Image {image_name} has no differential image")
@@ -1130,7 +1130,7 @@ def delete_image_backup(
 
 
     manager = LinboImageManager()
-    group = check_linbo_image_group_or_404(manager, image_name)
+    group = get_linbo_image_group_or_404(manager, image_name)
     date = check_linbo_backup_date_or_404(group, timestamp)
 
     run_linbo_image_operation(lambda: manager.delete(image_name, date=date))
@@ -1159,7 +1159,7 @@ def restore_image_backup(
 
 
     manager = LinboImageManager()
-    group = check_linbo_image_group_or_404(manager, image_name)
+    group = get_linbo_image_group_or_404(manager, image_name)
     date = check_linbo_backup_date_or_404(group, timestamp)
 
     run_linbo_image_operation(lambda: manager.restore(image_name, date))
@@ -1185,7 +1185,7 @@ def rename_image(
 
 
     manager = LinboImageManager()
-    check_linbo_image_group_or_404(manager, image_name)
+    get_linbo_image_group_or_404(manager, image_name)
     new_name = check_new_linbo_image_name_or_409(manager, body.new_name)
 
     run_linbo_image_operation(lambda: manager.rename(image_name, new_name))
@@ -1211,7 +1211,7 @@ def duplicate_image(
 
 
     manager = LinboImageManager()
-    check_linbo_image_group_or_404(manager, image_name)
+    get_linbo_image_group_or_404(manager, image_name)
     new_name = check_new_linbo_image_name_or_409(manager, body.new_name)
 
     run_linbo_image_operation(lambda: manager.duplicate(image_name, new_name))
@@ -1253,7 +1253,7 @@ def save_image_extras(
         raise HTTPException(status_code=400, detail="timestamp and diff are mutually exclusive")
 
     manager = LinboImageManager()
-    group = check_linbo_image_group_or_404(manager, image_name)
+    group = get_linbo_image_group_or_404(manager, image_name)
 
     if timestamp:
         check_linbo_backup_date_or_404(group, timestamp)

@@ -187,7 +187,7 @@ def get_printer_or_404(printer, school):
 
     return printer_details
 
-def check_dn_or_404(route, name, kind):
+def get_dn_or_404(route, name, kind):
     """
     Resolve the distinguishedName of an object, or raise a 404 naming it.
 
@@ -266,7 +266,7 @@ def require_school(func):
 
     return wrapper
 
-def check_valid_mgmtlist_or_404(mgmtlist, school):
+def get_mgmtlist_path_or_404(mgmtlist, school):
     """
     Check if the given mgmtlist name exists and returns the path of the CSV file.
     """
@@ -296,7 +296,7 @@ def check_password_constraints_rules_or_400(role: str, entries: list):
             raise HTTPException(status_code=400,
                                 detail=f"Invalid rule for role '{role}': {e}")
 
-def check_linbo_image_group_or_404(manager, image_name):
+def get_linbo_image_group_or_404(manager, image_name):
     """
     Resolve a LINBO image group by name. LinboImageManager's own operations
     (delete, rename, restore, save_extras) silently do nothing for an unknown
@@ -324,7 +324,7 @@ def check_linbo_image_group_or_404(manager, image_name):
 def check_new_linbo_image_name_or_409(manager, new_name):
     """
     Validate a name for a new LINBO image (rename/duplicate target). Unlike
-    check_linbo_image_group_or_404, new_name is about to be used to build a
+    get_linbo_image_group_or_404, new_name is about to be used to build a
     filesystem path and become a real directory name, so its format is
     validated here.
 
