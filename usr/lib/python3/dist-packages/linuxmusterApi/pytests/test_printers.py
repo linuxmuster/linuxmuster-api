@@ -135,3 +135,28 @@ class TestPrinters:
         finally:
             client.patch(url, headers=headers, json=restore)
 
+    @_need_printer
+    def test_patch_printer_can_remove_the_last_member(self):
+        """
+        Clearing the member list is a valid state. setattr() refuses an empty
+        value, so the endpoint has to go through delattr() instead of raising
+        a ValueError and answering 500.
+        """
+
+        url = f"{BASE_URL}/printers/{PRINTER}"
+        headers = {"X-API-KEY": GLOBALADMIN.jwt}
+        members = [
+            dn.split(",")[0].removeprefix("CN=")
+            for dn in client.get(url, headers=headers).json()["member"]
+        ]
+        if not members:
+            pytest.skip(f"Printer {PRINTER} has no member to remove")
+
+        try:
+            r = client.patch(url, headers=headers, json={"removemembers": members})
+            assert r.status_code == 204
+            assert client.get(url, headers=headers).json()["member"] == []
+        finally:
+            client.patch(url, headers=headers, json={"addmembers": members})
+
+        assert len(client.get(url, headers=headers).json()["member"]) == len(members)

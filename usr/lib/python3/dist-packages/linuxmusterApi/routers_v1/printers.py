@@ -145,10 +145,13 @@ def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser
             printer_member.remove(group_dn)
             members_changed = True
 
-    if members_changed:
-        to_change = {'member': printer_member}
-    else:
-        to_change = {}
+    # An empty member list is a valid state, but setattr() refuses an empty
+    # value: clearing an attribute goes through delattr().
+    members_cleared = members_changed and not printer_member
+
+    to_change = {}
+    if members_changed and printer_member:
+        to_change['member'] = printer_member
 
     if printer_details.description:
         to_change['description'] = printer_details.description
@@ -169,7 +172,12 @@ def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser
         to_change['displayName'] = printer_details.displayName
 
     PrinterWriter = LMNPrinter(printer.lower(), school=who.school)
-    PrinterWriter.setattr(data=to_change)
+
+    if members_cleared:
+        PrinterWriter.delattr(data={'member': None})
+
+    if to_change:
+        PrinterWriter.setattr(data=to_change)
 
     return
 
