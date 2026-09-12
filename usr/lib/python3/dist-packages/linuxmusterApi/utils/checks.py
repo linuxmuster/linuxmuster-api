@@ -187,6 +187,28 @@ def get_printer_or_404(printer, school):
 
     return printer_details
 
+def check_dn_or_404(route, name, kind):
+    """
+    Resolve the distinguishedName of an object, or raise a 404 naming it.
+
+    lr.getval() answers None for a name that does not exist. Passing that None
+    on to an LDAP modify fails with "could not parse None as a DN", a 500 that
+    tells the caller nothing about which name was wrong.
+
+    :param route: Ldap router path of the object type, e.g. "users" or "units"
+    :param name: cn of the object to resolve
+    :param kind: Human readable object type, used in the error detail
+    :return: The distinguishedName of the object
+    """
+
+
+    dn = lr.getval(f'/{route}/{name}', 'distinguishedName')
+
+    if not dn:
+        raise HTTPException(status_code=404, detail=f"{kind} {name} not found")
+
+    return dn
+
 def check_valid_school_or_404(school):
     """
     Check if the given school is a valid school.
