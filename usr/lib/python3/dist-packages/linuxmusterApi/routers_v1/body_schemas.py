@@ -60,11 +60,11 @@ class Printer(BaseModel):
     addmembergroups: list = []
     description: str | None = ''
     displayName: str | None = ''
-    join: bool = True
-    hide: bool = False
+    join: bool | None = None
+    hide: bool | None = None
     removemembers: list = []
     removemembergroups: list = []
-    school: str = 'default-school'
+    school: str | None = None
 
 class Project(BaseModel):
     """

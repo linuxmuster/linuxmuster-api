@@ -153,15 +153,14 @@ def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser
     if printer_details.description:
         to_change['description'] = printer_details.description
 
-    if printer_details.join:
-        to_change['sophomorixJoinable'] = "TRUE"
-    else:
-        to_change['sophomorixJoinable'] = "FALSE"
+    # None means "not sent": a partial patch must not rewrite an attribute the
+    # caller never mentioned, or a patch adding a member would also unhide the
+    # printer and make it joinable, straight from the schema defaults.
+    if printer_details.join is not None:
+        to_change['sophomorixJoinable'] = "TRUE" if printer_details.join else "FALSE"
 
-    if printer_details.hide:
-        to_change['sophomorixHidden'] = "TRUE"
-    else:
-        to_change['sophomorixHidden'] = "FALSE"
+    if printer_details.hide is not None:
+        to_change['sophomorixHidden'] = "TRUE" if printer_details.hide else "FALSE"
 
     if printer_details.school:
         to_change['sophomorixSchoolname'] = printer_details.school

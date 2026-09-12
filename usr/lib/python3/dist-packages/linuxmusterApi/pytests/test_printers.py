@@ -74,3 +74,64 @@ class TestPrinters:
         r = client.post(f"{BASE_URL}/printers/{PRINTER}/quit", headers={"X-API-KEY": user.jwt})
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
+
+    @_need_printer
+    def test_patch_printer_leaves_unsent_attributes_alone(self):
+        """
+        A partial patch must not rewrite what the caller never sent. The
+        schema used to default join to True and hide to False, so a patch
+        adding a member also unhid the printer and made it joinable.
+        """
+
+        url = f"{BASE_URL}/printers/{PRINTER}"
+        headers = {"X-API-KEY": GLOBALADMIN.jwt}
+        before = client.get(url, headers=headers).json()
+        restore = {
+            "join": before["sophomorixJoinable"],
+            "hide": before["sophomorixHidden"],
+            "school": before["sophomorixSchoolname"],
+            "description": before["description"],
+        }
+
+        try:
+            # Put the printer in a state that differs from the old defaults
+            client.patch(url, headers=headers, json=dict(restore, join=False, hide=True))
+            staged = client.get(url, headers=headers).json()
+            assert staged["sophomorixJoinable"] is False
+            assert staged["sophomorixHidden"] is True
+
+            # A patch that only carries a description must change only that
+            r = client.patch(url, headers=headers, json={"description": "partial patch"})
+            assert r.status_code == 204
+
+            after = client.get(url, headers=headers).json()
+            assert after["description"] == "partial patch"
+            assert after["sophomorixJoinable"] is False
+            assert after["sophomorixHidden"] is True
+            assert after["sophomorixSchoolname"] == restore["school"]
+        finally:
+            client.patch(url, headers=headers, json=restore)
+
+    @_need_printer
+    def test_patch_printer_still_applies_what_is_sent(self):
+        """The guard must not swallow an explicit false."""
+
+        url = f"{BASE_URL}/printers/{PRINTER}"
+        headers = {"X-API-KEY": GLOBALADMIN.jwt}
+        before = client.get(url, headers=headers).json()
+        restore = {
+            "join": before["sophomorixJoinable"],
+            "hide": before["sophomorixHidden"],
+            "school": before["sophomorixSchoolname"],
+            "description": before["description"],
+        }
+
+        try:
+            client.patch(url, headers=headers, json={"join": False})
+            assert client.get(url, headers=headers).json()["sophomorixJoinable"] is False
+
+            client.patch(url, headers=headers, json={"join": True})
+            assert client.get(url, headers=headers).json()["sophomorixJoinable"] is True
+        finally:
+            client.patch(url, headers=headers, json=restore)
+
