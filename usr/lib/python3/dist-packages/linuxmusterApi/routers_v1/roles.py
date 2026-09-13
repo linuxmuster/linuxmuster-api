@@ -38,7 +38,7 @@ def get_all_roles(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
 # check webui7/cli7 callers first). check_parents also switches the response schema
 # (LMNUserModel vs LMNRawUserModel) without this being visible in OpenAPI (no response_model).
 @router.get("/{role}", name="List all members with a specific role")
-def get_role_users(role: str, check_parents: bool = False, school: str | None = 'default-school', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def get_role_users(role: str, check_parents: bool = False, school: str | None = None, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## List all users (and all their details) having a specific role
 
@@ -51,7 +51,9 @@ def get_role_users(role: str, check_parents: bool = False, school: str | None = 
     \f
     :param role: The role to request (student, schooladministrator, etc...)
     :type role: basestring
-    :param school: The school where to get the users
+    :param school: The school where to get the users. A school-administrator
+    may only name their own, and gets it by default; default-school is the
+    default for a global-administrator
     :type school: basestring
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
@@ -60,13 +62,29 @@ def get_role_users(role: str, check_parents: bool = False, school: str | None = 
     """
 
 
+    if who.school != 'global':
+        if school and school != who.school:
+            raise HTTPException(
+                status_code=403,
+                detail="school-administrators can only read their own school."
+            )
+
+        school = who.school
+
     if check_parents:
         endpoint = 'roles'
     else:
         endpoint = 'rawroles'
 
-    if 'global' in role:
+    if role.startswith('global'):
+        if who.school != 'global':
+            raise HTTPException(
+                status_code=403,
+                detail=f"Only global-administrators can list the {role}s."
+            )
+
         return lr.get(f'/{endpoint}/{role}')
 
-    return lr.get(f'/{endpoint}/{role}', school=school)
+    # A global-administrator naming no school reads default-school, as before.
+    return lr.get(f'/{endpoint}/{role}', school=school or 'default-school')
 
