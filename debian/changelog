@@ -1,3 +1,40 @@
+linuxmuster-api7 (7.4.12) lmn74; urgency=medium
+
+  * [printers] PATCH /v1/printers/{printer} was rewriting attributes a
+    partial patch never sent: a patch adding a member also unhid the
+    printer, made it joinable and reset its school to default-school.
+    Only the attributes actually sent are written now.
+  * [printers] Removing the last member answered 500 (empty value refused
+    by setattr) and an unknown name answered 500 (None used as a DN).
+    Both are handled: the member list can be cleared, and an unknown name
+    is refused with a 404 naming it, the whole patch being rejected.
+  * [printers] An exam account is refused with a 400 saying so, instead
+    of a "not found" for an account which does exist. 
+  * [printers] Members are applied through one targeted LDAP modify, so
+    adding users and groups in the same operation no longer loses one of
+    the two. Reported by @ebert.
+  * [printers] Pass the caller's school to the writer (multischool). 
+  * [roles] GET /v1/roles/{role} is scoped to the caller's school: a
+    school-administrator can no longer read the users of another school,
+    and an empty school parameter no longer widens the query to every
+    school. Global roles, which are read unfiltered, are restricted to
+    global-administrators. Reported by the edulution-ui team.
+  * [listmanagement] Both /v1/listmanagement/{school}/{mgmtlist} routes
+    are scoped to the caller's school: a school-administrator could read
+    and, above all, overwrite the management CSV of another school.
+  * [checks] require_school() treats an empty school as absent and
+    derives it from the caller's token.
+  * [linbo] New endpoint returning the last LINBO status of a given
+    device.
+  * [linbo] POST /linbo/hosts/scan no longer returns lastSeen: the field
+    held the time of the scan itself, not a last-seen date. Tracking last
+    reachability is up to the caller.
+  * [linbo] Use the new group_ids attribute. Fix #36.
+  * [users] Add cn to the user list. Merge pull request #40 from
+    @JanHolger. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 13 Sep 2026 16:06:28 +0200
+
 linuxmuster-api7 (7.4.11) lmn74; urgency=medium
 
   * [linbo] Add endpoint to list linbo groups. Fix #35.
