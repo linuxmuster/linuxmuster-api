@@ -243,7 +243,10 @@ def require_school(func):
 
     A school-administrator is scoped to their own school: if they pass a
     `school` different from `who.school`, the request is rejected instead of
-    silently operating on another school.
+    silently operating on another school, and one they leave empty is replaced
+    by their own rather than passed on. An empty school is not "no filter":
+    `LdapReader._filter_result()` only narrows the search when a school is
+    given, so an empty one reaches the directory as every school at once.
 
     Only applies to endpoints whose `school` is a direct parameter (not nested
     in a body schema, e.g. `group_details.school`).
@@ -264,6 +267,9 @@ def require_school(func):
                     status_code=403,
                     detail="school-administrators can only operate on their own school."
                 )
+
+            kwargs['school'] = who.school
+
             return func(*args, **kwargs)
 
         if not school:

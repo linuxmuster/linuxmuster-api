@@ -28,6 +28,23 @@ class TestRequireSchool:
         who = SimpleNamespace(school='default-school')
         assert _dummy_endpoint(school='', who=who) == 'ok'
 
+    def test_an_empty_school_is_replaced_by_the_caller_own_school(self):
+        """
+        An empty school is not "no school": LdapReader only narrows the search
+        when one is given, so an empty one used to read every school at once.
+        """
+
+        seen = {}
+
+        @require_school
+        def _endpoint(school='', who=None):
+            seen['school'] = school
+            return 'ok'
+
+        who = SimpleNamespace(school='default-school')
+        assert _endpoint(school='', who=who) == 'ok'
+        assert seen['school'] == 'default-school'
+
     def test_raises_400_when_global_and_no_school(self):
         who = SimpleNamespace(school='global')
         with pytest.raises(HTTPException) as exc_info:
@@ -55,3 +72,4 @@ class TestRequireSchool:
         with pytest.raises(HTTPException) as exc_info:
             _dummy_endpoint(school='other-school', who=who)
         assert exc_info.value.status_code == 403
+
