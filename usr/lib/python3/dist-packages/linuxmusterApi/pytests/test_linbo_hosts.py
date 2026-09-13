@@ -145,7 +145,6 @@ def test_scan_without_macs_probes_every_client(linbo_backends):
             "ip": "10.0.0.100",
             "hostname": "pc100",
             "online": True,
-            "lastSeen": "2026-03-24T11:42:00+00:00",
         },
     ]
 
