@@ -154,3 +154,41 @@ class TestSophomorixApplyStatus:
         finally:
             os.remove(logpath)
             os.remove(statuspath)
+
+
+class TestManagementListSchoolScoping:
+    """
+    Both {school} routes took the school straight from the URL: a
+    school-administrator could read, and above all overwrite, the management
+    CSV of another school — whose accounts the next sophomorix-kill deletes.
+    """
+
+    @pytest.mark.parametrize("mgmtlist", ['students', 'teachers'])
+    def test_reading_another_school_is_403(self, mgmtlist):
+        r = client.get(
+            f"{BASE_URL}/listmanagement/other-school/{mgmtlist}",
+            headers={"X-API-Key": SCHOOLADMIN.jwt},
+        )
+        assert r.status_code == 403
+
+    def test_writing_another_school_is_403(self):
+        r = client.post(
+            f"{BASE_URL}/listmanagement/other-school/students",
+            json={"content": []},
+            headers={"X-API-Key": SCHOOLADMIN.jwt},
+        )
+        assert r.status_code == 403
+
+    def test_reading_own_school_is_allowed(self):
+        r = client.get(
+            f"{BASE_URL}/listmanagement/{SCHOOLADMIN.school}/students",
+            headers={"X-API-Key": SCHOOLADMIN.jwt},
+        )
+        assert r.status_code == 200
+
+    def test_an_invalid_school_is_404_for_a_global_admin(self):
+        r = client.get(
+            f"{BASE_URL}/listmanagement/not-a-real-school/students",
+            headers={"X-API-Key": GLOBALADMIN.jwt},
+        )
+        assert r.status_code == 404
