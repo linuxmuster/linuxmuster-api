@@ -186,3 +186,29 @@ class TestPrinters:
         # The whole patch is refused: nothing was written
         assert client.get(url, headers=headers).json()["member"] == before
 
+    @_need_printer
+    def test_patch_printer_400s_on_an_exam_account(self):
+        """
+        The /users/ route only matches the six regular sophomorix roles, so an
+        exam account resolves to None like an unknown name would. Answering
+        "User <cn> not found" for an account that does exist — and that the
+        webui search does offer — sends the caller hunting for a typo.
+        """
+
+        from linuxmusterTools.ldapconnector import LMNLdapReader as lr
+
+        examusers = lr.get('/users/exam', attributes=['cn'])
+        if not examusers:
+            pytest.skip("No exam account in this LDAP")
+
+        examuser = examusers[0]['cn']
+        url = f"{BASE_URL}/printers/{PRINTER}"
+        headers = {"X-API-KEY": GLOBALADMIN.jwt}
+        before = client.get(url, headers=headers).json()["member"]
+
+        r = client.patch(url, headers=headers, json={"addmembers": [examuser]})
+        assert r.status_code == 400
+        assert r.json()["detail"] == f"User {examuser} is an exam account and cannot be used here"
+
+        # The whole patch is refused: nothing was written
+        assert client.get(url, headers=headers).json()["member"] == before

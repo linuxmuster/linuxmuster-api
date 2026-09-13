@@ -116,42 +116,21 @@ def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser
     """
 
 
-    printer_exists = get_printer_or_404(printer, who.school)
+    get_printer_or_404(printer, who.school)
 
-    printer_member = printer_exists.member
-    members_changed = False
+    # Resolve every name before writing anything: those fields are lists, and
+    # a partial refusal would let the caller believe the whole patch went
+    # through. The writer resolves them again, cheaply, when it applies them.
+    for user in printer_details.addmembers + printer_details.removemembers:
+        get_dn_or_404('users', user, 'User')
 
-    for user in printer_details.addmembers:
-        user_dn = get_dn_or_404('users', user, 'User')
-        if user_dn not in printer_member:
-            printer_member.append(user_dn)
-            members_changed = True
+    for group in printer_details.addmembergroups + printer_details.removemembergroups:
+        get_dn_or_404('units', group, 'Group')
 
-    for user in printer_details.removemembers:
-        user_dn = get_dn_or_404('users', user, 'User')
-        if user_dn in printer_member:
-            printer_member.remove(user_dn)
-            members_changed = True
-
-    for group in printer_details.addmembergroups:
-        group_dn = get_dn_or_404('units', group, 'Group')
-        if group_dn not in printer_member:
-            printer_member.append(group_dn)
-            members_changed = True
-
-    for group in printer_details.removemembergroups:
-        group_dn = get_dn_or_404('units', group, 'Group')
-        if group_dn in printer_member:
-            printer_member.remove(group_dn)
-            members_changed = True
-
-    # An empty member list is a valid state, but setattr() refuses an empty
-    # value: clearing an attribute goes through delattr().
-    members_cleared = members_changed and not printer_member
+    members_to_add = printer_details.addmembers + printer_details.addmembergroups
+    members_to_remove = printer_details.removemembers + printer_details.removemembergroups
 
     to_change = {}
-    if members_changed and printer_member:
-        to_change['member'] = printer_member
 
     if printer_details.description:
         to_change['description'] = printer_details.description
@@ -173,8 +152,19 @@ def patch_printer(printer: str, printer_details: Printer, who: AuthenticatedUser
 
     PrinterWriter = LMNPrinter(printer.lower(), school=who.school)
 
-    if members_cleared:
-        PrinterWriter.delattr(data={'member': None})
+    # add_members() and remove_members() each apply one targeted LDAP modify,
+    # so two patches landing at the same time cannot overwrite each other.
+    failures = []
+
+    if members_to_add:
+        failures.extend(PrinterWriter.add_members(members_to_add))
+
+    if members_to_remove:
+        failures.extend(PrinterWriter.remove_members(members_to_remove))
+
+    if failures:
+        detail = ", ".join(f"{member}: {error}" for member, error in failures)
+        raise HTTPException(status_code=500, detail=f"Could not update the members of {printer}: {detail}")
 
     if to_change:
         PrinterWriter.setattr(data=to_change)

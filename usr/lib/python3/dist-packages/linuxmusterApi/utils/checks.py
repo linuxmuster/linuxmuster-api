@@ -189,22 +189,34 @@ def get_printer_or_404(printer, school):
 
 def get_dn_or_404(route, name, kind):
     """
-    Resolve the distinguishedName of an object, or raise a 404 naming it.
+    Resolve the distinguishedName of an object, or raise an error naming it.
 
     lr.getval() answers None for a name that does not exist. Passing that None
     on to an LDAP modify fails with "could not parse None as a DN", a 500 that
     tells the caller nothing about which name was wrong.
 
+    The /users/ route only matches the six regular sophomorix roles, so an
+    exam account resolves to None as well. Answering "not found" for a name
+    that does exist sends the caller hunting for a typo, so that case raises
+    a 400 saying what the name actually is.
+
     :param route: Ldap router path of the object type, e.g. "users" or "units"
     :param name: cn of the object to resolve
     :param kind: Human readable object type, used in the error detail
     :return: The distinguishedName of the object
+    :raises HTTPException: 400 for an exam account, 404 for an unknown name
     """
 
 
     dn = lr.getval(f'/{route}/{name}', 'distinguishedName')
 
     if not dn:
+        if route == 'users' and lr.getval(f'/users/exam/{name}', 'distinguishedName'):
+            raise HTTPException(
+                status_code=400,
+                detail=f"{kind} {name} is an exam account and cannot be used here"
+            )
+
         raise HTTPException(status_code=404, detail=f"{kind} {name} not found")
 
     return dn
