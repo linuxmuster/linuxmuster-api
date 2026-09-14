@@ -234,7 +234,6 @@ def get_linbo_groups(
 @router.get("/startconfs", name="Get start.conf files by ID")
 def get_startconfs(
     id: list[str] = Query(..., alias="id", description="One or more start.conf IDs"),
-    school: str = "default-school",
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
     """
@@ -245,11 +244,9 @@ def get_startconfs(
 
     \f
     :param id: List of start.conf group IDs, either repeated or comma-separated
-    :param school: School name (default: default-school)
     """
 
 
-    check_valid_school_or_404(school)
     ids = _parse_list_query(id, "id", 100)
 
     raw_startconfs = LinboConfigManager().load_raw_startconfs(ids)
@@ -262,7 +259,6 @@ def get_startconfs(
 def write_startconf(
     group_id: str,
     body: StartConfRawBody,
-    school: str = "default-school",
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
     """
@@ -278,11 +274,8 @@ def write_startconf(
     \f
     :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
     :param body: Raw start.conf content
-    :param school: School name (default: default-school)
     """
 
-
-    check_valid_school_or_404(school)
 
     try:
         LinboConfigManager().write_raw_startconf(group_id, body.content)
@@ -295,7 +288,6 @@ def write_startconf(
 @router.delete("/startconfs/{group_id}", name="Delete a start.conf file")
 def delete_startconf(
     group_id: str,
-    school: str = "default-school",
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
     """
@@ -308,11 +300,8 @@ def delete_startconf(
 
     \f
     :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
-    :param school: School name (default: default-school)
     """
 
-
-    check_valid_school_or_404(school)
 
     try:
         LinboConfigManager().delete_startconf(group_id)
@@ -417,7 +406,6 @@ def delete_startconf_vdi(
 @router.get("/configs", name="Get GRUB configs by ID")
 def get_configs(
     id: list[str] = Query(..., alias="id", description="One or more GRUB config IDs"),
-    school: str = "default-school",
     who: AuthenticatedUser = Depends(RoleChecker("G")),
 ):
     """
@@ -428,11 +416,9 @@ def get_configs(
 
     \f
     :param id: List of GRUB config group IDs, either repeated or comma-separated
-    :param school: School name (default: default-school)
     """
 
 
-    check_valid_school_or_404(school)
     ids = _parse_list_query(id, "id", 100)
 
     grub_reader = LinboGrubReader()
