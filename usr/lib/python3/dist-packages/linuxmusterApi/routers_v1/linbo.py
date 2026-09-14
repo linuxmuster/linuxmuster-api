@@ -313,6 +313,103 @@ def delete_startconf(
     return {"id": group_id, "status": "deleted"}
 
 
+@router.get("/startconfs/{group_id}/backups", name="List a start.conf's backups")
+def list_startconf_backups(
+    group_id: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## List the backups kept for a group's start.conf, newest first.
+
+    Each write leaves one behind, identified by the epoch its file is named
+    with. The history is short by design: the ten previous versions are kept
+    and the oldest is dropped when an eleventh is written.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
+    """
+
+
+    try:
+        backups = LinboConfigManager().list_startconf_backups(group_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return {"id": group_id, "backups": backups, "total": len(backups)}
+
+
+@router.post(
+    "/startconfs/{group_id}/backups/{timestamp}/restore",
+    name="Restore a start.conf from one of its backups",
+)
+def restore_startconf_backup(
+    group_id: str,
+    timestamp: int,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Put a backup back in place as the group's start.conf.
+
+    The current start.conf is backed up first, so this can itself be undone,
+    and the backup is copied verbatim - comments and formatting included.
+    The backup restored from is kept.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
+    :param timestamp: Epoch timestamp of the backup, as listed
+    """
+
+
+    try:
+        LinboConfigManager().restore_startconf_backup(group_id, timestamp)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    return {"id": group_id, "timestamp": timestamp, "status": "restored"}
+
+
+@router.delete(
+    "/startconfs/{group_id}/backups/{timestamp}",
+    name="Delete one backup of a start.conf",
+)
+def delete_startconf_backup(
+    group_id: str,
+    timestamp: int,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Delete one backup of a group's start.conf.
+
+    Irreversible, and rarely needed: the ten-version rotation already drops
+    old backups on its own.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
+    :param timestamp: Epoch timestamp of the backup, as listed
+    """
+
+
+    try:
+        LinboConfigManager().delete_startconf_backup(group_id, timestamp)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    return {"id": group_id, "timestamp": timestamp, "status": "deleted"}
+
+
 @router.get("/startconfs/{group_id}/vdi", name="Get a group's VDI config")
 def get_startconf_vdi(
     group_id: str,
