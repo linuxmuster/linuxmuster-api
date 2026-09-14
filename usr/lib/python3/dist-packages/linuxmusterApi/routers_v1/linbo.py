@@ -27,6 +27,7 @@ from .body_schemas import (
     LinboHostScanBody,
     LinboImageExtrasBody,
     LinboImageNameBody,
+    LinboVdiConfigBody,
     LinboWolBody,
     StartConfRawBody,
 )
@@ -315,6 +316,96 @@ def delete_startconf(
 
     try:
         LinboConfigManager().delete_startconf(group_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    return {"id": group_id, "status": "deleted"}
+
+
+@router.get("/startconfs/{group_id}/vdi", name="Get a group's VDI config")
+def get_startconf_vdi(
+    group_id: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Get the VDI config of a LINBO group (start.conf.<group_id>.vdi).
+
+    A group without that file simply has VDI disabled, hence the 404 rather
+    than an empty object. This is the group's VDI config, not the `vdi`
+    sidecar of an image (see PUT /linbo/images/{image_name}/extras).
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
+    """
+
+
+    try:
+        return LinboConfigManager().read_vdi_config(group_id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+
+@router.put("/startconfs/{group_id}/vdi", name="Write a group's VDI config")
+def write_startconf_vdi(
+    group_id: str,
+    body: LinboVdiConfigBody,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Create or replace the VDI config of a LINBO group.
+
+    The body replaces the file as a whole: a field left out of the request is
+    left out of the file, and the previous version is backed up. Unknown
+    fields are written back as sent, since edulution-linbo-vdi owns the
+    schema of this file.
+
+    The group's start.conf does not have to exist for its VDI config to be
+    written, and is never touched by this endpoint.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
+    :param body: Full VDI config
+    """
+
+
+    try:
+        LinboConfigManager().write_vdi_config(group_id, body.model_dump(exclude_unset=True))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+    return {"id": group_id, "status": "ok"}
+
+
+@router.delete("/startconfs/{group_id}/vdi", name="Delete a group's VDI config")
+def delete_startconf_vdi(
+    group_id: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Delete the VDI config of a LINBO group, disabling VDI for that group.
+
+    The group's start.conf is left untouched.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
+    """
+
+
+    try:
+        LinboConfigManager().delete_vdi_config(group_id)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except FileNotFoundError as e:
