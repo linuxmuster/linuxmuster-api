@@ -1,3 +1,4 @@
+from types import SimpleNamespace
 from unittest.mock import Mock
 
 import pytest
@@ -33,7 +34,7 @@ def managers(monkeypatch):
     return drivers, images, inventory
 
 
-def test_routes_are_global_admin_only():
+def test_routes_are_open_to_admins():
     expected = {
         ("GET", "/linbo/drivers/inventory"),
         ("GET", "/linbo/drivers/inventory/{hostname}"),
@@ -60,7 +61,7 @@ def test_routes_are_global_admin_only():
             if isinstance(dependency.call, RoleChecker)
         ]
         assert len(checkers) == 1
-        assert checkers[0].roles == ["globaladministrator"]
+        assert checkers[0].roles == ["globaladministrator", "schooladministrator"]
 
 
 def test_inventory_delegates_to_inventory_manager(managers):
@@ -69,15 +70,48 @@ def test_inventory_delegates_to_inventory_manager(managers):
     inventory.list.return_value = expected
     inventory.get.return_value = expected[0]
 
-    assert linbo_drivers.list_driver_inventory("default-school", None) == expected
+    admin = SimpleNamespace(school="global")
+    assert linbo_drivers.list_driver_inventory(school="default-school", who=admin) == expected
     assert (
         linbo_drivers.get_driver_inventory(
-            "client01",
-            "default-school",
-            None,
+            hostname="client01",
+            school="default-school",
+            who=admin,
         )
         == expected[0]
     )
+
+
+def test_a_school_admin_cannot_read_another_schools_inventory(managers):
+    """
+    Unlike the profiles, an inventory describes machines, and machines have a
+    school: require_school answers 403 rather than reading the other one.
+    """
+
+    schooladmin = SimpleNamespace(school="school1")
+
+    with pytest.raises(HTTPException) as error:
+        linbo_drivers.list_driver_inventory(school="school2", who=schooladmin)
+
+    assert error.value.status_code == 403
+
+
+def test_a_school_admin_inventory_is_forced_to_its_own_school(managers, monkeypatch):
+    _, _, inventory = managers
+    inventory.list.return_value = []
+    asked_for = []
+
+    def inventory_manager(school):
+        asked_for.append(school)
+        return inventory
+
+    monkeypatch.setattr(linbo_drivers, "LinboHardwareInventoryManager", inventory_manager)
+
+    linbo_drivers.list_driver_inventory(school="", who=SimpleNamespace(school="school1"))
+
+    # require_school replaced the empty school by the caller's own, instead of
+    # letting an empty one through as "every school".
+    assert asked_for == ["school1"]
 
 
 def test_profile_crud_delegates_to_driver_manager(managers):

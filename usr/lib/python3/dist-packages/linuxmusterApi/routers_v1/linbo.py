@@ -126,13 +126,14 @@ def get_server_info(
 @router.get("/health", name="LINBO subsystem health check")
 def linbo_health(
     school: str = "default-school",
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## LINBO subsystem health check.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param school: School name (default: default-school)
@@ -212,20 +213,21 @@ def query_hosts(
     return {"hosts": hosts}
 
 
-# TODO: startconfs/configs (this section) stay G-only on purpose — group_id has
-# no school ownership anywhere in linuxmusterTools.linbo (raw, flat, global
-# /srv/linbo/start.conf.<id>), same gap as the legacy lmn_linbo4 plugin. Opening
-# to school-admins needs real per-school ownership in lmntools first, not a
-# quick RoleChecker flip.
+# startconfs/configs, like everything else under /srv/linbo, carry no school:
+# group_id addresses one flat, server-wide set of files. School-admins were
+# given access anyway (issue #37), since the school console has always given
+# them the same, and each dangerous endpoint says so in its description. The
+# real fix is per-school LINBO files, planned separately.
 @router.get("/linbo-groups", name="List LINBO hardware group IDs")
 def get_linbo_groups(
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## List the hardware group IDs with an existing start.conf file.
 
     ### Access
     - global-administrators
+    - school-administrators
     """
 
 
@@ -234,13 +236,14 @@ def get_linbo_groups(
 @router.get("/startconfs", name="Get start.conf files by ID")
 def get_startconfs(
     id: list[str] = Query(..., alias="id", description="One or more start.conf IDs"),
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Get start.conf file contents for a list of group IDs.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param id: List of start.conf group IDs, either repeated or comma-separated
@@ -259,10 +262,14 @@ def get_startconfs(
 def write_startconf(
     group_id: str,
     body: StartConfRawBody,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Create or update a start.conf file for a LINBO group.
+
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
 
     The payload is the raw file content (comments and formatting preserved
     verbatim), matching the shape returned by GET /startconfs. The file is
@@ -270,6 +277,7 @@ def write_startconf(
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
@@ -288,15 +296,20 @@ def write_startconf(
 @router.delete("/startconfs/{group_id}", name="Delete a start.conf file")
 def delete_startconf(
     group_id: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Delete a start.conf file and its associated GRUB config.
+
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
 
     Same behaviour as the legacy webui `lmn_linbo4` plugin.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
@@ -316,7 +329,7 @@ def delete_startconf(
 @router.get("/startconfs/{group_id}/backups", name="List a start.conf's backups")
 def list_startconf_backups(
     group_id: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## List the backups kept for a group's start.conf, newest first.
@@ -327,6 +340,7 @@ def list_startconf_backups(
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
@@ -348,10 +362,14 @@ def list_startconf_backups(
 def restore_startconf_backup(
     group_id: str,
     timestamp: int,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Put a backup back in place as the group's start.conf.
+
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
 
     The current start.conf is backed up first, so this can itself be undone,
     and the backup is copied verbatim - comments and formatting included.
@@ -359,6 +377,7 @@ def restore_startconf_backup(
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
@@ -383,16 +402,21 @@ def restore_startconf_backup(
 def delete_startconf_backup(
     group_id: str,
     timestamp: int,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Delete one backup of a group's start.conf.
+
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
 
     Irreversible, and rarely needed: the ten-version rotation already drops
     old backups on its own.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
@@ -413,7 +437,7 @@ def delete_startconf_backup(
 @router.get("/startconfs/{group_id}/vdi", name="Get a group's VDI config")
 def get_startconf_vdi(
     group_id: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Get the VDI config of a LINBO group (start.conf.<group_id>.vdi).
@@ -424,6 +448,7 @@ def get_startconf_vdi(
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
@@ -442,10 +467,14 @@ def get_startconf_vdi(
 def write_startconf_vdi(
     group_id: str,
     body: LinboVdiConfigBody,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Create or replace the VDI config of a LINBO group.
+
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
 
     The body replaces the file as a whole: a field left out of the request is
     left out of the file, and the previous version is backed up. Unknown
@@ -457,6 +486,7 @@ def write_startconf_vdi(
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
@@ -475,15 +505,20 @@ def write_startconf_vdi(
 @router.delete("/startconfs/{group_id}/vdi", name="Delete a group's VDI config")
 def delete_startconf_vdi(
     group_id: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Delete the VDI config of a LINBO group, disabling VDI for that group.
+
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
 
     The group's start.conf is left untouched.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param group_id: LINBO group id (the `<id>` in start.conf.<id>)
@@ -501,7 +536,7 @@ def delete_startconf_vdi(
 
 
 @router.get("/iso", name="Download linbo.iso")
-def download_linbo_iso(who: AuthenticatedUser = Depends(RoleChecker("G"))):
+def download_linbo_iso(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## Download the LINBO boot image the server builds, /srv/linbo/linbo.iso.
 
@@ -511,6 +546,7 @@ def download_linbo_iso(who: AuthenticatedUser = Depends(RoleChecker("G"))):
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     """
@@ -528,7 +564,7 @@ def download_linbo_iso(who: AuthenticatedUser = Depends(RoleChecker("G"))):
 
 
 @router.get("/examples", name="List the example configs LINBO ships")
-def list_linbo_examples(who: AuthenticatedUser = Depends(RoleChecker("G"))):
+def list_linbo_examples(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
     ## List the ready-made configs in /srv/linbo/examples.
 
@@ -538,6 +574,7 @@ def list_linbo_examples(who: AuthenticatedUser = Depends(RoleChecker("G"))):
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     """
@@ -550,7 +587,7 @@ def list_linbo_examples(who: AuthenticatedUser = Depends(RoleChecker("G"))):
 @router.get("/examples/{name}", name="Get one example config")
 def get_linbo_example(
     name: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Return the content of one example, by the name GET /examples reports.
@@ -560,6 +597,7 @@ def get_linbo_example(
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param name: File name as listed by GET /linbo/examples
@@ -577,13 +615,14 @@ def get_linbo_example(
 @router.get("/configs", name="Get GRUB configs by ID")
 def get_configs(
     id: list[str] = Query(..., alias="id", description="One or more GRUB config IDs"),
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Get GRUB configuration files for a list of group IDs.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param id: List of GRUB config group IDs, either repeated or comma-separated
@@ -760,20 +799,20 @@ async def probe_hosts(
     }
 
 
-# TODO: wol stays G-only for now, but unlike startconfs/images this one is a
-# cheap fix whenever it's picked up — no lmntools change needed, just check
-# each MAC against Devices(who.school) before opening to school-admins, same
-# pattern already used for /hosts/image-status.
+# Unlike everything reading /srv/linbo, wol and the boot logs act on machines,
+# and machines do have a school: devices.csv. Both are therefore filtered per
+# school instead of being opened server-wide.
 @router.post("/wol", name="Wake hosts with a magic packet")
 def wake_hosts(
     body: LinboWolBody,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Send Wake-on-LAN magic packets to a list of MAC addresses.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param body: MAC addresses to wake, with broadcast address, port and packet count
@@ -786,8 +825,20 @@ def wake_hosts(
     if len(body.macs) > MAX_HOSTS_PER_SCAN:
         raise HTTPException(status_code=400, detail=f"Maximum {MAX_HOSTS_PER_SCAN} MACs per request")
 
+    macs = body.macs
+    if who.school != 'global':
+        known_macs = set(Devices(school=who.school).macs)
+        # normalize_mac() accepts the three spellings of a MAC and returns None
+        # for anything else, which never matches an inventory entry.
+        macs = [mac for mac in macs if name_checker.normalize_mac(mac) in known_macs]
+        if not macs:
+            raise HTTPException(
+                status_code=404,
+                detail=f"None of these MAC addresses belongs to a device of {who.school}",
+            )
+
     return send_wol_bulk(
-        body.macs,
+        macs,
         broadcast=str(body.broadcast) if body.broadcast else None,
         port=body.port,
         count=body.count,
@@ -818,11 +869,7 @@ def hosts_image_status(
     if who.school == 'global':
         return {"hosts": hosts, "total": len(hosts)}
 
-    prefix = f'{who.school}-' if who.school != 'default-school' else ''
-    known_hostnames = {
-        f'{prefix}{device["hostname"]}'
-        for device in Devices(school=who.school).devices
-    }
+    known_hostnames = Devices(school=who.school).prefixed_hostnames
     hosts = {hostname: status for hostname, status in hosts.items() if hostname in known_hostnames}
     return {"hosts": hosts, "total": len(hosts)}
 
@@ -922,27 +969,30 @@ def host_status(
     }
 
 
-# TODO: boot-logs (this section) stays G-only for now, but like wol it's a
-# cheap fix later — filenames are "<hostname>.log", so hostname just needs
-# checking against Devices(who.school), same pattern as /hosts/image-status.
 # ── Boot logs ──────────────────────────────────────────────────────
 
 
 @router.get("/boot-logs", name="List LINBO client boot logs")
 def list_boot_logs(
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## List the client boot logs, newest first.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     """
 
 
     logs = LinboBootLogs().list_logs()
+
+    if who.school != 'global':
+        known_hostnames = Devices(school=who.school).prefixed_hostnames
+        logs = [log for log in logs if log["hostname"] in known_hostnames]
+
     return {"logs": logs, "total": len(logs)}
 
 
@@ -953,18 +1003,30 @@ def list_boot_logs(
 )
 def read_boot_log(
     filename: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Read one boot log.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param filename: Name of the log file
     """
 
+
+    if who.school != 'global':
+        # 404 and not 403: a log of another school, and a log that belongs to
+        # no machine at all, are answered exactly like a log that does not
+        # exist. Telling them apart would itself say something about the
+        # other school's inventory.
+        known_hostnames = Devices(school=who.school).prefixed_hostnames
+        mine = {log["filename"] for log in LinboBootLogs().list_logs()
+                if log["hostname"] in known_hostnames}
+        if filename not in mine:
+            raise HTTPException(status_code=404, detail=f"Boot log {filename} not found")
 
     try:
         content = LinboBootLogs().read_log(filename)
@@ -984,18 +1046,30 @@ def read_boot_log(
 @router.delete("/boot-logs/{filename}", name="Delete a LINBO client boot log")
 def delete_boot_log(
     filename: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Delete one boot log.
 
+    A log outside the caller's school, and one belonging to no machine at
+    all, both answer 404.
+
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param filename: Name of the log file
     """
 
+
+    if who.school != 'global':
+        # Same 404 as when reading one: not found, not theirs, same answer.
+        known_hostnames = Devices(school=who.school).prefixed_hostnames
+        mine = {log["filename"] for log in LinboBootLogs().list_logs()
+                if log["hostname"] in known_hostnames}
+        if filename not in mine:
+            raise HTTPException(status_code=404, detail=f"Boot log {filename} not found")
 
     try:
         deleted = LinboBootLogs().delete_log(filename)
@@ -1015,23 +1089,24 @@ def delete_boot_log(
     return {"filename": filename, "status": "deleted"}
 
 
-# TODO: every images/* route (this section onward) stays G-only on purpose —
-# LinboImageManager/LinboImageGroup have no school concept at all, images are
-# one shared pool at /srv/linbo/images for the whole server, same as the
-# legacy lmn_linbo4 plugin. Opening to school-admins would need a real school
-# ownership scheme in lmntools first (new feature, not a bugfix).
+# images/* is one shared pool at /srv/linbo/images for the whole server:
+# LinboImageManager/LinboImageGroup have no school concept at all. A
+# school-admin therefore deletes, renames or overwrites images every school
+# uses — the accepted risk of issue #37, stated in each such endpoint's
+# description, until per-school LINBO files exist.
 # ── Image Manifest ─────────────────────────────────────────────────
 
 
 @router.get("/images/manifest", name="Image manifest for sync")
 def get_image_manifest(
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## List all LINBO images with metadata.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     """
@@ -1055,13 +1130,14 @@ def download_image_file(
     image_name: str,
     filename: str,
     request: FARequest,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Download an image or extra_file with HTTP Range support.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     """
@@ -1148,13 +1224,18 @@ def download_image_file(
 @router.put("/images/upload/{image_name}/{filename}", name="Upload image or extra_file (chunked)")
 async def upload_image_file(
     image_name: str, filename: str, request: FARequest,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Upload an image or extra_file with Content-Range support.
 
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
+
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     """
@@ -1193,13 +1274,14 @@ async def upload_image_file(
 @router.get("/images/upload/{image_name}/{filename}/status", name="Check upload status for resume")
 def upload_status_endpoint(
     image_name: str, filename: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Check how many bytes have been received for a chunked upload.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     """
@@ -1214,16 +1296,21 @@ def upload_status_endpoint(
 @router.post("/images/upload/{image_name}/complete", name="Finalize image upload")
 def finalize_upload_endpoint(
     image_name: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Move uploaded files from staging to final images directory.
+
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
 
     If the target directory already contains image files, they are backed up
     to a timestamped subdirectory before being replaced.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     """
@@ -1240,13 +1327,18 @@ def finalize_upload_endpoint(
 @router.delete("/images/upload/{image_name}", name="Cancel/cleanup upload")
 def cancel_upload_endpoint(
     image_name: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Clean up staged upload files on cancel or failure.
 
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
+
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     """
@@ -1263,7 +1355,7 @@ def cancel_upload_endpoint(
 
 @router.get("/images", name="List LINBO images with backups and sidecars")
 def list_images(
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## List every LINBO image with its sidecars, backups and differential image.
@@ -1274,6 +1366,7 @@ def list_images(
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     """
@@ -1287,7 +1380,7 @@ def list_images(
 @router.get("/images/{image_name}/backups", name="List an image's backups")
 def list_image_backups(
     image_name: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## List the backups of one LINBO image.
@@ -1296,6 +1389,7 @@ def list_image_backups(
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param image_name: Name of the LINBO image
@@ -1313,13 +1407,18 @@ def list_image_backups(
 @router.delete("/images/{image_name}", name="Delete a LINBO image")
 def delete_image(
     image_name: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Delete a LINBO image with its backups, differential image and sidecars.
 
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
+
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param image_name: Name of the LINBO image
@@ -1336,13 +1435,18 @@ def delete_image(
 @router.delete("/images/{image_name}/diff", name="Delete an image's differential image")
 def delete_image_diff(
     image_name: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Delete only the differential image of a LINBO image.
 
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
+
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param image_name: Name of the LINBO image
@@ -1363,13 +1467,18 @@ def delete_image_diff(
 def delete_image_backup(
     image_name: str,
     timestamp: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Delete a single backup of a LINBO image.
 
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
+
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param image_name: Name of the LINBO image
@@ -1389,16 +1498,21 @@ def delete_image_backup(
 def restore_image_backup(
     image_name: str,
     timestamp: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Restore a backup over the base image.
+
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
 
     The base image is moved to a new backup first, so the operation is
     reversible.
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param image_name: Name of the LINBO image
@@ -1418,13 +1532,18 @@ def restore_image_backup(
 def rename_image(
     image_name: str,
     body: LinboImageNameBody,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Rename a LINBO image with its backups, differential image and sidecars.
 
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
+
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param image_name: Current name of the LINBO image
@@ -1444,13 +1563,18 @@ def rename_image(
 def duplicate_image(
     image_name: str,
     body: LinboImageNameBody,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Copy a LINBO image under a new name, without its backups.
 
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
+
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param image_name: Name of the LINBO image to copy
@@ -1477,10 +1601,14 @@ def save_image_extras(
         description="Write the sidecars of this backup instead of the base image",
     ),
     diff: bool = Query(False, description="Write the sidecars of the differential image"),
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
     ## Write the `info`, `desc`, `vdi`, `reg`, `postsync` and `prestart` sidecars.
+
+    **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
+    server, so a school-administrator changes here what every school uses.
+    Per-school LINBO files are a later step.
 
     A field left out of the body deletes that sidecar, which is why `info` is
     required — an image without it cannot be read back. `timestamp` and `diff`
@@ -1488,6 +1616,7 @@ def save_image_extras(
 
     ### Access
     - global-administrators
+    - school-administrators
 
     \f
     :param image_name: Name of the LINBO image

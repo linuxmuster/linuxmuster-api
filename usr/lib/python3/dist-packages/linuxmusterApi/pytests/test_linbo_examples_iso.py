@@ -38,7 +38,7 @@ def linbo_dir(tmp_path, monkeypatch):
     return tmp_path
 
 
-def test_routes_are_global_admin_only():
+def test_routes_are_open_to_admins():
     routes = [
         route
         for route in linbo.router.routes
@@ -54,7 +54,7 @@ def test_routes_are_global_admin_only():
             if isinstance(dependency.call, RoleChecker)
         ]
         assert len(checkers) == 1
-        assert checkers[0].roles == ["globaladministrator"]
+        assert checkers[0].roles == ["globaladministrator", "schooladministrator"]
 
 
 # ── GET /linbo/iso ───────────────────────────────────────────────────────────

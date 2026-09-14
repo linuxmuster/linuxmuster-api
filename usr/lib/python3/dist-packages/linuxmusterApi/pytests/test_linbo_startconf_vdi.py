@@ -36,10 +36,10 @@ def manager(monkeypatch):
     return instance
 
 
-def test_vdi_routes_are_global_admin_only():
+def test_vdi_routes_are_open_to_admins():
     """
-    Same access as the start.conf routes they sit next to. Opening the LINBO
-    routes to school admins is issue #37's subject, not this endpoint's.
+    Same access as the start.conf routes they sit next to, opened to school
+    admins with the rest of /srv/linbo (issue #37).
     """
 
     routes = [
@@ -57,7 +57,7 @@ def test_vdi_routes_are_global_admin_only():
             if isinstance(dependency.call, RoleChecker)
         ]
         assert len(checkers) == 1
-        assert checkers[0].roles == ["globaladministrator"]
+        assert checkers[0].roles == ["globaladministrator", "schooladministrator"]
 
 
 # ── GET ──────────────────────────────────────────────────────────────────────

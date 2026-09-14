@@ -137,7 +137,11 @@ class TestLinbo:
         r = client.get(f"{BASE_URL}/linbo/health", headers={"X-API-KEY": GLOBALADMIN.jwt})
         assert r.status_code == 200
 
-    @pytest.mark.parametrize("user", USERS[1:])
+    def test_get_linbo_health_sa(self):
+        r = client.get(f"{BASE_URL}/linbo/health", headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 200
+
+    @pytest.mark.parametrize("user", USERS[2:])
     def test_get_linbo_health_denied(self, user):
         r = client.get(f"{BASE_URL}/linbo/health", headers={"X-API-KEY": user.jwt})
         assert r.status_code == 401
@@ -158,13 +162,18 @@ class TestLinbo:
         assert r.status_code == 200
         assert "groups" in r.json()
 
-    @pytest.mark.parametrize("user", USERS[1:])
+    def test_get_linbo_groups_sa(self):
+        r = client.get(f"{BASE_URL}/linbo/linbo-groups", headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 200
+        assert "groups" in r.json()
+
+    @pytest.mark.parametrize("user", USERS[2:])
     def test_get_linbo_groups_denied(self, user):
         r = client.get(f"{BASE_URL}/linbo/linbo-groups", headers={"X-API-KEY": user.jwt})
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
-    @pytest.mark.parametrize("user", USERS[1:])
+    @pytest.mark.parametrize("user", USERS[2:])
     def test_post_linbo_startconf_denied(self, user):
         r = client.post(
             f"{BASE_URL}/linbo/startconfs/pytest-startconf",
@@ -174,7 +183,7 @@ class TestLinbo:
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
-    @pytest.mark.parametrize("user", USERS[1:])
+    @pytest.mark.parametrize("user", USERS[2:])
     def test_delete_linbo_startconf_denied(self, user):
         r = client.delete(
             f"{BASE_URL}/linbo/startconfs/pytest-startconf",
@@ -193,7 +202,17 @@ class TestLinbo:
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
-    @pytest.mark.parametrize("user", USERS[1:])
+    def test_post_linbo_wol_sa_is_limited_to_its_own_devices(self):
+        # Reaches the endpoint now, but a MAC that is in no devices.csv of the
+        # school is not woken: nothing to send, hence 404 and not 200.
+        r = client.post(
+            f"{BASE_URL}/linbo/wol",
+            headers={"X-API-KEY": SCHOOLADMIN.jwt},
+            json={"macs": ["00:11:22:33:44:55"]},
+        )
+        assert r.status_code == 404
+
+    @pytest.mark.parametrize("user", USERS[2:])
     def test_post_linbo_wol_denied(self, user):
         r = client.post(
             f"{BASE_URL}/linbo/wol",
@@ -217,13 +236,27 @@ class TestLinbo:
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
-    @pytest.mark.parametrize("user", USERS[1:])
+    def test_get_linbo_boot_logs_sa(self):
+        r = client.get(f"{BASE_URL}/linbo/boot-logs", headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 200
+        assert "logs" in r.json()
+
+    def test_get_linbo_boot_log_of_another_host_is_not_found_for_sa(self):
+        # Not "permission denied": a log that belongs to no machine of the
+        # school is answered like a log that does not exist.
+        r = client.get(
+            f"{BASE_URL}/linbo/boot-logs/pytest-nonexistent.log",
+            headers={"X-API-KEY": SCHOOLADMIN.jwt},
+        )
+        assert r.status_code == 404
+
+    @pytest.mark.parametrize("user", USERS[2:])
     def test_get_linbo_boot_logs_denied(self, user):
         r = client.get(f"{BASE_URL}/linbo/boot-logs", headers={"X-API-KEY": user.jwt})
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
-    @pytest.mark.parametrize("user", USERS[1:])
+    @pytest.mark.parametrize("user", USERS[2:])
     def test_get_linbo_boot_log_denied(self, user):
         r = client.get(
             f"{BASE_URL}/linbo/boot-logs/pytest-nonexistent.log",
@@ -232,7 +265,7 @@ class TestLinbo:
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
-    @pytest.mark.parametrize("user", USERS[1:])
+    @pytest.mark.parametrize("user", USERS[2:])
     def test_delete_linbo_boot_log_denied(self, user):
         r = client.delete(
             f"{BASE_URL}/linbo/boot-logs/pytest-nonexistent.log",

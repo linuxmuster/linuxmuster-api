@@ -13,6 +13,9 @@ from routers_v1.body_schemas import LinboHostScanBody, LinboWolBody
 from security import RoleChecker
 
 
+GLOBAL_ADMIN = SimpleNamespace(school="global")
+SCHOOL_ADMIN = SimpleNamespace(school="school1")
+
 MAX_MACS = linbo.MAX_HOSTS_PER_SCAN
 TOO_MANY_MACS_DETAIL = f"Maximum {MAX_MACS} MACs per request"
 NO_MACS_DETAIL = "At least one MAC address is required"
@@ -77,13 +80,21 @@ def test_new_routes_are_registered():
     assert expected <= actual
 
 
-# Endpoints where the underlying linuxmusterTools.linbo call is already scoped
-# per school (school-owned devices.csv, school-owned groups), so opening them
-# to school-administrators does not leak another school's data. Endpoints
-# whose underlying manager reads/writes by raw id without checking school
-# ownership (startconfs, configs, images, boot-logs) or that have no school
-# concept at all (wol) must stay global-admin-only until that ownership check
-# exists in linuxmusterTools.linbo.
+# /srv/linbo is one flat, server-wide set of files: no group id, image name or
+# config there carries a school. Rather than keep the whole router closed until
+# per-school LINBO files exist, school-administrators were given access to it
+# as the school console already gives it to them, with the risk stated in each
+# dangerous endpoint's description (issue #37).
+#
+# server-info is the exception: it reports the server's own network setup and
+# the list of every school, which is not a LINBO file.
+GLOBAL_ADMIN_ONLY_ROUTES = {
+    "/linbo/server-info",
+}
+
+# Among those, the endpoints that do not act on /srv/linbo but on machines,
+# which do belong to a school: they filter on the caller's own devices.csv
+# instead of answering server-wide.
 SCHOOL_SCOPED_ROUTES = {
     "/linbo/hosts/image-status",
     "/linbo/changes",
@@ -93,26 +104,32 @@ SCHOOL_SCOPED_ROUTES = {
     "/linbo/hosts/scan",
     "/linbo/dhcp/export/dnsmasq-proxy",
     "/linbo/hosts/{hostname}/status",
+    "/linbo/wol",
+    "/linbo/boot-logs",
+    "/linbo/boot-logs/{filename}",
 }
 
 
-def test_every_linbo_route_is_global_admin_only():
-    # An invariant over the whole router rather than a pinned route list: this
-    # router carries endpoints from several features, and a new one that forgets
-    # its Depends(RoleChecker("G")) has to fail here. This checks the declaration
-    # only — TestLinbo in test_misc.py covers the enforcement over HTTP.
-    # SCHOOL_SCOPED_ROUTES are the exceptions, checked separately below: they
-    # also accept school-administrators, scoped to their own school.
+def test_every_linbo_route_is_open_to_school_admins():
+    # An invariant over the whole router rather than a pinned route list: a new
+    # endpoint that forgets its Depends(RoleChecker(...)) has to fail here. This
+    # checks the declaration only - TestLinbo in test_misc.py covers the
+    # enforcement over HTTP.
     for route in linbo.router.routes:
-        if route.path in SCHOOL_SCOPED_ROUTES:
-            continue
         checkers = [
             dependency.call
             for dependency in route.dependant.dependencies
             if isinstance(dependency.call, RoleChecker)
         ]
         assert len(checkers) == 1, f"{route.path} has {len(checkers)} role checkers"
-        assert checkers[0].roles == ["globaladministrator"], route.path
+
+        if route.path in GLOBAL_ADMIN_ONLY_ROUTES:
+            assert checkers[0].roles == ["globaladministrator"], route.path
+        else:
+            assert checkers[0].roles == [
+                "globaladministrator",
+                "schooladministrator",
+            ], route.path
 
 
 @pytest.mark.parametrize("path", sorted(SCHOOL_SCOPED_ROUTES))
@@ -279,7 +296,7 @@ def test_wol_delegates_with_packet_parameters(linbo_backends):
     }
 
     body = LinboWolBody(macs=macs, broadcast="10.0.0.255", port=7, count=5)
-    result = linbo.wake_hosts(body, None)
+    result = linbo.wake_hosts(body, GLOBAL_ADMIN)
 
     # broadcast is an IPvAnyAddress on the model and a str on the socket call.
     wol.assert_called_once_with(macs, broadcast="10.0.0.255", port=7, count=5)
@@ -290,7 +307,7 @@ def test_wol_falls_back_to_the_schema_packet_defaults(linbo_backends):
     _, _, _, wol, _, _ = linbo_backends
     macs = ["00:11:22:33:44:55"]
 
-    linbo.wake_hosts(LinboWolBody(macs=macs), None)
+    linbo.wake_hosts(LinboWolBody(macs=macs), GLOBAL_ADMIN)
 
     wol.assert_called_once_with(macs, broadcast=None, port=9, count=3)
 
@@ -314,11 +331,55 @@ def test_wol_packet_parameters_are_bounded_by_the_schema(field, value):
         LinboWolBody(macs=["00:11:22:33:44:55"], **{field: value})
 
 
+def test_wol_wakes_only_the_devices_of_the_callers_school(linbo_backends):
+    devices, _, _, wol, _, _ = linbo_backends
+    devices.macs = ["00:11:22:33:44:55"]
+
+    linbo.wake_hosts(
+        LinboWolBody(macs=["00:11:22:33:44:55", "AA-BB-CC-DD-EE-FF"]),
+        SCHOOL_ADMIN,
+    )
+
+    assert wol.call_args[0][0] == ["00:11:22:33:44:55"]
+
+
+def test_wol_accepts_the_three_spellings_of_a_known_mac(linbo_backends):
+    devices, _, _, wol, _, _ = linbo_backends
+    devices.macs = ["00:11:22:33:44:55"]
+
+    linbo.wake_hosts(
+        LinboWolBody(macs=["00-11-22-33-44-55", "001122334455", "00:11:22:33:44:55"]),
+        SCHOOL_ADMIN,
+    )
+
+    assert len(wol.call_args[0][0]) == 3
+
+
+def test_wol_on_no_device_of_the_school_is_404(linbo_backends):
+    devices, _, _, wol, _, _ = linbo_backends
+    devices.macs = ["00:11:22:33:44:55"]
+
+    with pytest.raises(HTTPException) as e:
+        linbo.wake_hosts(LinboWolBody(macs=["AA:BB:CC:DD:EE:FF"]), SCHOOL_ADMIN)
+
+    assert e.value.status_code == 404
+    wol.assert_not_called()
+
+
+def test_a_global_admin_wakes_any_mac(linbo_backends):
+    devices, _, _, wol, _, _ = linbo_backends
+    devices.macs = []
+
+    linbo.wake_hosts(LinboWolBody(macs=["AA:BB:CC:DD:EE:FF"]), GLOBAL_ADMIN)
+
+    assert wol.call_args[0][0] == ["AA:BB:CC:DD:EE:FF"]
+
+
 def test_wol_without_macs_is_rejected(linbo_backends):
     _, _, _, wol, _, _ = linbo_backends
 
     with pytest.raises(HTTPException) as error:
-        linbo.wake_hosts(LinboWolBody(macs=[]), None)
+        linbo.wake_hosts(LinboWolBody(macs=[]), GLOBAL_ADMIN)
 
     assert error.value.status_code == 400
     assert error.value.detail == NO_MACS_DETAIL
@@ -330,7 +391,7 @@ def test_wol_rejects_more_than_the_mac_cap(linbo_backends):
     body = LinboWolBody(macs=_macs(MAX_MACS + 1))
 
     with pytest.raises(HTTPException) as error:
-        linbo.wake_hosts(body, None)
+        linbo.wake_hosts(body, GLOBAL_ADMIN)
 
     assert error.value.status_code == 400
     assert error.value.detail == TOO_MANY_MACS_DETAIL
@@ -341,7 +402,7 @@ def test_wol_accepts_exactly_the_mac_cap(linbo_backends):
     _, _, _, wol, _, _ = linbo_backends
     macs = _macs(MAX_MACS)
 
-    linbo.wake_hosts(LinboWolBody(macs=macs), None)
+    linbo.wake_hosts(LinboWolBody(macs=macs), GLOBAL_ADMIN)
 
     wol.assert_called_once_with(macs, broadcast=None, port=9, count=3)
 
@@ -395,7 +456,8 @@ def test_image_status_school_admin_is_filtered(linbo_backends):
             "imageVersion": "202601271107",
         },
     }
-    devices.devices = [{"hostname": "pc101"}]
+    # Devices names its own hosts the way LINBO logs them, prefix included.
+    devices.prefixed_hostnames = {"lehrer-pc101"}
 
     who = Mock(school="lehrer")
     result = linbo.hosts_image_status(who)
@@ -629,17 +691,90 @@ def test_boot_logs_are_listed_with_one_entry_per_file(linbo_backends):
         {"filename": "pc100.log", "size": 12, "modifiedAt": "2026-03-24T11:42:00+00:00"},
     ]
 
-    result = linbo.list_boot_logs(None)
+    result = linbo.list_boot_logs(GLOBAL_ADMIN)
 
     assert result["logs"] == boot_logs.list_logs.return_value
     assert result["total"] == 3
+
+
+def test_boot_logs_of_other_schools_are_not_listed(linbo_backends):
+    devices, boot_logs, _, _, _, _ = linbo_backends
+    devices.prefixed_hostnames = {"lehrer-pc101"}
+    boot_logs.list_logs.return_value = [
+        {"filename": "lehrer-pc101_linbo.log", "hostname": "lehrer-pc101", "size": 1, "modifiedAt": "x"},
+        {"filename": "gym-pc900_linbo.log", "hostname": "gym-pc900", "size": 1, "modifiedAt": "x"},
+        # Belongs to no machine at all: a multicast log, and a client that
+        # could not identify itself.
+        {"filename": "bionic.cloop_mcast.log", "hostname": "bionic", "size": 1, "modifiedAt": "x"},
+        {"filename": "UNKNOWN_linbo.log", "hostname": "UNKNOWN", "size": 1, "modifiedAt": "x"},
+    ]
+
+    result = linbo.list_boot_logs(SCHOOL_ADMIN)
+
+    assert [log["filename"] for log in result["logs"]] == ["lehrer-pc101_linbo.log"]
+    assert result["total"] == 1
+
+
+def test_a_global_admin_still_sees_every_boot_log(linbo_backends):
+    _, boot_logs, _, _, _, _ = linbo_backends
+    boot_logs.list_logs.return_value = [
+        {"filename": "gym-pc900_linbo.log", "hostname": "gym-pc900", "size": 1, "modifiedAt": "x"},
+        {"filename": "bionic.cloop_mcast.log", "hostname": "bionic", "size": 1, "modifiedAt": "x"},
+    ]
+
+    assert linbo.list_boot_logs(GLOBAL_ADMIN)["total"] == 2
+
+
+OTHER_SCHOOL_LOGS = [
+    {"filename": "lehrer-pc101_linbo.log", "hostname": "lehrer-pc101", "size": 1, "modifiedAt": "x"},
+    {"filename": "gym-pc900_linbo.log", "hostname": "gym-pc900", "size": 1, "modifiedAt": "x"},
+    {"filename": "bionic.cloop_mcast.log", "hostname": "bionic", "size": 1, "modifiedAt": "x"},
+]
+
+
+@pytest.mark.parametrize("filename", ["gym-pc900_linbo.log", "bionic.cloop_mcast.log"])
+def test_reading_a_boot_log_of_another_school_is_404(linbo_backends, filename):
+    # Not 403: a school-administrator is told the same thing for a log that
+    # does not exist and for one that is not theirs.
+    devices, boot_logs, _, _, _, _ = linbo_backends
+    devices.prefixed_hostnames = {"lehrer-pc101"}
+    boot_logs.list_logs.return_value = OTHER_SCHOOL_LOGS
+
+    with pytest.raises(HTTPException) as e:
+        linbo.read_boot_log(filename, SCHOOL_ADMIN)
+
+    assert e.value.status_code == 404
+    boot_logs.read_log.assert_not_called()
+
+
+def test_deleting_a_boot_log_of_another_school_is_404(linbo_backends):
+    devices, boot_logs, _, _, _, _ = linbo_backends
+    devices.prefixed_hostnames = {"lehrer-pc101"}
+    boot_logs.list_logs.return_value = OTHER_SCHOOL_LOGS
+
+    with pytest.raises(HTTPException) as e:
+        linbo.delete_boot_log("gym-pc900_linbo.log", SCHOOL_ADMIN)
+
+    assert e.value.status_code == 404
+    boot_logs.delete_log.assert_not_called()
+
+
+def test_a_school_admin_reads_the_boot_log_of_its_own_host(linbo_backends):
+    devices, boot_logs, _, _, _, _ = linbo_backends
+    devices.prefixed_hostnames = {"lehrer-pc101"}
+    boot_logs.list_logs.return_value = OTHER_SCHOOL_LOGS
+    boot_logs.read_log.return_value = "sync finished"
+
+    response = linbo.read_boot_log("lehrer-pc101_linbo.log", SCHOOL_ADMIN)
+
+    assert response.body == b"sync finished"
 
 
 def test_boot_log_is_returned_as_plain_text(linbo_backends):
     _, boot_logs, _, _, _, _ = linbo_backends
     boot_logs.read_log.return_value = "sync finished"
 
-    response = linbo.read_boot_log("pc100.log", None)
+    response = linbo.read_boot_log("pc100.log", GLOBAL_ADMIN)
 
     boot_logs.read_log.assert_called_once_with("pc100.log")
     assert response.body == b"sync finished"
@@ -652,7 +787,7 @@ def test_an_empty_boot_log_is_returned_as_an_empty_body(linbo_backends):
     _, boot_logs, _, _, _, _ = linbo_backends
     boot_logs.read_log.return_value = ""
 
-    response = linbo.read_boot_log("empty.log", None)
+    response = linbo.read_boot_log("empty.log", GLOBAL_ADMIN)
 
     assert response.status_code == 200
     assert response.body == b""
@@ -663,7 +798,7 @@ def test_missing_boot_log_is_404(linbo_backends):
     boot_logs.read_log.return_value = None
 
     with pytest.raises(HTTPException) as error:
-        linbo.read_boot_log("nope.log", None)
+        linbo.read_boot_log("nope.log", GLOBAL_ADMIN)
 
     assert error.value.status_code == 404
 
@@ -673,7 +808,7 @@ def test_read_log_value_error_maps_to_400(linbo_backends):
     boot_logs.read_log.side_effect = ValueError("Unsafe filename: ../../etc/shadow")
 
     with pytest.raises(HTTPException) as error:
-        linbo.read_boot_log("../../etc/shadow", None)
+        linbo.read_boot_log("../../etc/shadow", GLOBAL_ADMIN)
 
     assert error.value.status_code == 400
     assert "Unsafe filename" in error.value.detail
@@ -686,7 +821,7 @@ def test_an_oversized_boot_log_is_413_not_400(linbo_backends):
     boot_logs.read_log.side_effect = ValueError("File too large: 7340032 bytes (max 5242880)")
 
     with pytest.raises(HTTPException) as error:
-        linbo.read_boot_log("pc100.log", None)
+        linbo.read_boot_log("pc100.log", GLOBAL_ADMIN)
 
     assert error.value.status_code == 413
 
@@ -695,7 +830,7 @@ def test_boot_log_deletion_delegates_the_filename(linbo_backends):
     _, boot_logs, _, _, _, _ = linbo_backends
     boot_logs.delete_log.return_value = True
 
-    result = linbo.delete_boot_log("pc100.log", None)
+    result = linbo.delete_boot_log("pc100.log", GLOBAL_ADMIN)
 
     boot_logs.delete_log.assert_called_once_with("pc100.log")
     assert result == {"filename": "pc100.log", "status": "deleted"}
@@ -706,7 +841,7 @@ def test_deleting_a_missing_boot_log_is_404(linbo_backends):
     boot_logs.delete_log.return_value = False
 
     with pytest.raises(HTTPException) as error:
-        linbo.delete_boot_log("nope.log", None)
+        linbo.delete_boot_log("nope.log", GLOBAL_ADMIN)
 
     assert error.value.status_code == 404
     boot_logs.delete_log.assert_called_once_with("nope.log")
@@ -719,7 +854,7 @@ def test_a_boot_log_deleted_concurrently_is_404(linbo_backends):
     boot_logs.delete_log.side_effect = FileNotFoundError("gone")
 
     with pytest.raises(HTTPException) as error:
-        linbo.delete_boot_log("pc100.log", None)
+        linbo.delete_boot_log("pc100.log", GLOBAL_ADMIN)
 
     assert error.value.status_code == 404
 
@@ -729,7 +864,7 @@ def test_an_undeletable_boot_log_is_500(linbo_backends):
     boot_logs.delete_log.side_effect = PermissionError("read-only file system")
 
     with pytest.raises(HTTPException) as error:
-        linbo.delete_boot_log("pc100.log", None)
+        linbo.delete_boot_log("pc100.log", GLOBAL_ADMIN)
 
     assert error.value.status_code == 500
 
@@ -739,7 +874,7 @@ def test_delete_log_value_error_maps_to_400(linbo_backends):
     boot_logs.delete_log.side_effect = ValueError("Unsafe filename: ../../etc/shadow")
 
     with pytest.raises(HTTPException) as error:
-        linbo.delete_boot_log("../../etc/shadow", None)
+        linbo.delete_boot_log("../../etc/shadow", GLOBAL_ADMIN)
 
     assert error.value.status_code == 400
 
@@ -755,7 +890,7 @@ def test_reading_never_escapes_the_boot_log_directory(real_boot_logs, filename):
     _, secret = real_boot_logs
 
     with pytest.raises(HTTPException) as error:
-        linbo.read_boot_log(filename, None)
+        linbo.read_boot_log(filename, GLOBAL_ADMIN)
 
     assert error.value.status_code == 400
     assert secret.read_text().startswith("root:")
@@ -769,7 +904,7 @@ def test_deleting_never_escapes_the_boot_log_directory(real_boot_logs, filename)
     _, secret = real_boot_logs
 
     with pytest.raises(HTTPException) as error:
-        linbo.delete_boot_log(filename, None)
+        linbo.delete_boot_log(filename, GLOBAL_ADMIN)
 
     assert error.value.status_code == 400
     assert secret.exists()
@@ -780,8 +915,8 @@ def test_a_legitimate_boot_log_name_passes_the_traversal_guard(real_boot_logs):
     # tests above would still pass.
     log_dir, _ = real_boot_logs
 
-    assert linbo.read_boot_log("pc100.log", None).body == b"sync finished"
-    assert linbo.delete_boot_log("pc100.log", None) == {
+    assert linbo.read_boot_log("pc100.log", GLOBAL_ADMIN).body == b"sync finished"
+    assert linbo.delete_boot_log("pc100.log", GLOBAL_ADMIN) == {
         "filename": "pc100.log",
         "status": "deleted",
     }

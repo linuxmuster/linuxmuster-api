@@ -14,7 +14,7 @@ from linuxmusterTools.linbo import (
     LinboImageManager,
 )
 from security import AuthenticatedUser, RoleChecker
-from utils.checks import check_valid_school_or_404
+from utils.checks import check_valid_school_or_404, require_school
 from .body_schemas import (
     LinboDriverImageAssignment,
     LinboDriverMatchUpdate,
@@ -51,11 +51,15 @@ def _profile_response(profile):
 
 
 @router.get("/inventory", name="List LINBO hardware inventories")
+@require_school
 def list_driver_inventory(
     school: str = "default-school",
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
-    """List client hardware inventories (global administrators only)."""
+    """List client hardware inventories.
+
+    A school-administrator sees the machines of their own school only.
+    """
 
     check_valid_school_or_404(school)
     try:
@@ -68,12 +72,16 @@ def list_driver_inventory(
     "/inventory/{hostname}",
     name="Get a LINBO hardware inventory",
 )
+@require_school
 def get_driver_inventory(
     hostname: str,
     school: str = "default-school",
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
-    """Get one client hardware inventory (global administrators only)."""
+    """Get one client hardware inventory.
+
+    A school-administrator can only read a machine of their own school.
+    """
 
     check_valid_school_or_404(school)
     try:
@@ -91,9 +99,9 @@ def get_driver_inventory(
 
 @router.get("/profiles", name="List LINBO driver profiles")
 def list_driver_profiles(
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
-    """List all valid Windows driver profiles (global administrators only)."""
+    """List all valid Windows driver profiles, server-wide."""
 
     return [
         _profile_response(profile) for profile in LinboDriverManager().list_profiles()
@@ -107,9 +115,15 @@ def list_driver_profiles(
 )
 def create_driver_profile(
     body: LinboDriverProfileCreate,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
-    """Create a profile with one DMI match (global administrators only)."""
+    """Create a profile with one DMI match.
+
+    **Not school-scoped.** `/srv/linbo/drivers` holds one set of profiles for
+    the whole server, so a school-administrator changes here what every
+    school deploys. A wrong DMI match sends drivers to hardware that is not
+    theirs, and it only shows at a client's next sync.
+    """
 
     try:
         profile = LinboDriverManager().create_profile(
@@ -128,9 +142,9 @@ def create_driver_profile(
 )
 def get_driver_profile(
     profile_name: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
-    """Get one driver profile and its DMI match (global admins only)."""
+    """Get one driver profile and its DMI match, server-wide."""
 
     try:
         profile = LinboDriverManager().get_profile(profile_name)
@@ -152,9 +166,15 @@ def get_driver_profile(
 def update_driver_profile_match(
     profile_name: str,
     body: LinboDriverMatchUpdate,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
-    """Replace a profile's DMI match (global administrators only)."""
+    """Replace a profile's DMI match.
+
+    **Not school-scoped.** `/srv/linbo/drivers` holds one set of profiles for
+    the whole server, so a school-administrator changes here what every
+    school deploys. A wrong DMI match sends drivers to hardware that is not
+    theirs, and it only shows at a client's next sync.
+    """
 
     try:
         profile = LinboDriverManager().update_match(
@@ -173,9 +193,9 @@ def update_driver_profile_match(
 )
 def get_driver_profile_image(
     profile_name: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
-    """Get a profile's optional image assignment (global admins only)."""
+    """Get a profile's optional image assignment, server-wide."""
 
     try:
         image = LinboImageManager().get_driver_profile_image(profile_name)
@@ -191,9 +211,15 @@ def get_driver_profile_image(
 def assign_driver_profile_image(
     profile_name: str,
     body: LinboDriverImageAssignment,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
-    """Assign an image and publish its hooks (global administrators only)."""
+    """Assign an image and publish its hooks.
+
+    **Not school-scoped.** `/srv/linbo/drivers` holds one set of profiles for
+    the whole server, so a school-administrator changes here what every
+    school deploys. A wrong DMI match sends drivers to hardware that is not
+    theirs, and it only shows at a client's next sync.
+    """
 
     try:
         return LinboImageManager().assign_driver_profile(
@@ -210,9 +236,15 @@ def assign_driver_profile_image(
 )
 def unassign_driver_profile_image(
     profile_name: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
-    """Unassign an image and republish its hook (global admins only)."""
+    """Unassign an image and republish its hook.
+
+    **Not school-scoped.** `/srv/linbo/drivers` holds one set of profiles for
+    the whole server, so a school-administrator changes here what every
+    school deploys. A wrong DMI match sends drivers to hardware that is not
+    theirs, and it only shows at a client's next sync.
+    """
 
     try:
         return LinboImageManager().unassign_driver_profile(profile_name)
@@ -226,9 +258,20 @@ def unassign_driver_profile_image(
 )
 def delete_driver_profile(
     profile_name: str,
-    who: AuthenticatedUser = Depends(RoleChecker("G")),
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
-    """Delete an unassigned driver profile (global administrators only)."""
+    """Delete an unassigned driver profile.
+
+    **Not school-scoped.** `/srv/linbo/drivers` holds one set of profiles for
+    the whole server, so a school-administrator changes here what every
+    school deploys. A wrong DMI match sends drivers to hardware that is not
+    theirs, and it only shows at a client's next sync.
+
+    **No undo here.** This removes the profile directory as a whole, the INF
+    payload an administrator put there included. `match.conf` and `image.conf`
+    are versioned on every edit, a deletion is not: getting the payload back
+    means restoring it from the server's own backups.
+    """
 
     try:
         deleted = LinboDriverManager().delete_profile(profile_name)
