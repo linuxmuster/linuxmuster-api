@@ -11,7 +11,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request as FARequest
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import PlainTextResponse, StreamingResponse, Response
+from fastapi.responses import FileResponse, PlainTextResponse, StreamingResponse, Response
 
 from security import AuthenticatedUser, RoleChecker
 from utils.checks import (
@@ -401,6 +401,80 @@ def delete_startconf_vdi(
         raise HTTPException(status_code=404, detail=str(e))
 
     return {"id": group_id, "status": "deleted"}
+
+
+@router.get("/iso", name="Download linbo.iso")
+def download_linbo_iso(who: AuthenticatedUser = Depends(RoleChecker("G"))):
+    """
+    ## Download the LINBO boot image the server builds, /srv/linbo/linbo.iso.
+
+    The file is a few hundred megabytes, so it is served as a file response,
+    which answers Range and If-Range requests: an interrupted download can be
+    resumed rather than started over.
+
+    ### Access
+    - global-administrators
+
+    \f
+    """
+
+
+    iso_path = LINBO_DIR / "linbo.iso"
+    if not iso_path.is_file():
+        raise HTTPException(status_code=404, detail="linbo.iso not found on this server")
+
+    return FileResponse(
+        iso_path,
+        media_type="application/octet-stream",
+        filename="linbo.iso",
+    )
+
+
+@router.get("/examples", name="List the example configs LINBO ships")
+def list_linbo_examples(who: AuthenticatedUser = Depends(RoleChecker("G"))):
+    """
+    ## List the ready-made configs in /srv/linbo/examples.
+
+    Each entry carries the kind it can be used as a starting point for:
+    `config` for a start.conf template, `reg`, `postsync` or `prestart` for
+    an image sidecar.
+
+    ### Access
+    - global-administrators
+
+    \f
+    """
+
+
+    examples = LinboConfigManager().list_examples()
+    return {"examples": examples, "total": len(examples)}
+
+
+@router.get("/examples/{name}", name="Get one example config")
+def get_linbo_example(
+    name: str,
+    who: AuthenticatedUser = Depends(RoleChecker("G")),
+):
+    """
+    ## Return the content of one example, by the name GET /examples reports.
+
+    A file of that directory which the listing leaves out is not readable
+    here either.
+
+    ### Access
+    - global-administrators
+
+    \f
+    :param name: File name as listed by GET /linbo/examples
+    """
+
+
+    try:
+        content = LinboConfigManager().read_example(name)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+    return {"name": name, "content": content}
 
 
 @router.get("/configs", name="Get GRUB configs by ID")
