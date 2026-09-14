@@ -2,7 +2,7 @@
 The purpose of this file is to gather all classes used as model for post data.
 """
 
-from pydantic import BaseModel, Field, IPvAnyAddress
+from pydantic import BaseModel, ConfigDict, Field, IPvAnyAddress
 
 class UserList(BaseModel):
     """
@@ -292,6 +292,38 @@ class StartConfRawBody(BaseModel):
     """
 
     content: str
+
+class LinboVdiConfigBody(BaseModel):
+    """
+    A LINBO group's VDI config, the content of start.conf.<group>.vdi.
+
+    Every field is optional and unknown fields are kept: the file is consumed
+    by edulution-linbo-vdi, which owns its schema, so a field it adds later
+    has to survive a round trip through this API instead of being dropped.
+    The fields listed here are the ones the legacy webui group editor writes.
+
+    Not to be confused with LinboImageExtrasBody.vdi, the free-text sidecar of
+    an image: same extension, unrelated object.
+    """
+
+
+    model_config = ConfigDict(extra='allow')
+
+    activated: bool | None = None
+    name: str | None = None
+    bios: str | None = None
+    ostype: str | None = None
+    boot: str | None = None
+    hostname: str | None = None
+    ip: str | None = None
+    mac: str | None = None
+    bridge: str | None = None
+    tag: int | None = None
+    cores: int | None = None
+    memory: int | None = None
+    size: str | None = None
+    storage: str | None = None
+    vmids: list[int] | None = None
 
 class LinboImageNameBody(BaseModel):
     """
