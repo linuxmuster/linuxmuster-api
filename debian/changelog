@@ -1,3 +1,50 @@
+linuxmuster-api7 (7.4.13) lmn74; urgency=medium
+
+  * [security] A host key can be restricted to a list of endpoints with a
+    new optional "scope" in its host_keys entry. Without one, nothing
+    changes: the key keeps reaching the whole API with the LDAP role of
+    its user. A scope only ever narrows, the role is still checked behind
+    it. Entries read "<METHOD> <path>" and are matched against the path
+    as it appears on the wire, without the /v1 prefix, with "*" for one
+    path segment and "**" for the rest of the path. An entry matching no
+    route of the API is logged as a warning at startup and never allows
+    anything.
+  * [security] The rate limit of GET /v1/auth/ is configurable through a
+    new rate_limit section (requests, window, whitelist) instead of being
+    fixed at 5 requests per 60 s. The counter stays per client address,
+    which a front-end signing all its users in from one address would
+    spend on the first few of them: such an address can now be
+    whitelisted. Setting requests to 0 or less disables the limiter.
+    Callers on the host itself are still never counted. Fix #41, reported
+    by @Pasemesan.
+  * [linbo] Three routes for a group's VDI config, read, written and
+    deleted at /v1/linbo/startconfs/{group_id}/vdi. Not to be confused
+    with an image's .vdi sidecar. Fix #38, reported by @TomlDev.
+  * [linbo] The start.conf backups the server already keeps are exposed:
+    list, restore and delete under
+    /v1/linbo/startconfs/{group_id}/backups. A restore backs the current
+    file up before overwriting it. Fix #39, reported by @TomlDev.
+  * [linbo] GET /v1/linbo/iso downloads linbo.iso, GET /v1/linbo/examples
+    lists the example configs shipped with the server and
+    /v1/linbo/examples/{name} returns one of them. See #39.
+  * [linbo] School-administrators reach the LINBO routes, which were
+    global-admin only while the Schulkonsole has always granted them the
+    same access. Routes acting on machines (wol, boot logs) are filtered
+    to the school of the caller through devices.csv; the ones reading
+    /srv/linbo address a flat, server-wide set of files and each
+    dangerous endpoint says so in its description. Per-school LINBO files
+    are the real fix and are planned separately. Only /server-info stays
+    global-admin only. Fix #37, reported by @TomlDev.
+  * [linbo] The startconfs and configs routes no longer take a school
+    parameter: group_id addresses one server-wide set of files and the
+    parameter was only validated, never used.
+  * [packaging] postinst: the deprecated venv migration is dropped, and a
+    new linuxmuster-venv dpkg trigger reinstalls the API requirements
+    when linuxmuster-tools7 rebuilds the shared venv after a Python
+    upgrade.
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Tue, 15 Sep 2026 21:19:14 +0200
+
 linuxmuster-api7 (7.4.12) lmn74; urgency=medium
 
   * [printers] PATCH /v1/printers/{printer} was rewriting attributes a
