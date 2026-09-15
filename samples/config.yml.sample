@@ -20,6 +20,18 @@ host_keys:
     ips: [] # All ip allowed
     user: lmn-teacher # cn of a valid ldap user to isolate the permissions
     secret: LONG_AND_SECURE_BASE64_ENCODED_STRING
+# Rate limiting of GET /v1/auth/, the only route that mints a JWT. The counter
+# is per client address and per route. Callers on the host itself (the webui)
+# are never counted and need no entry here.
+rate_limit:
+  requests: 5   # requests allowed per window, 0 or less disables the limiter
+  window: 60    # seconds
+  # Addresses exempted from the limit, compared to the client address as-is:
+  # host names and CIDR ranges are not resolved. Meant for a front-end that
+  # signs all its users in from one address, which would otherwise spend the
+  # whole budget on the first few of them. Entries that are not IP addresses
+  # are logged as warnings when the API starts.
+  whitelist: []
 # CORS configuration
 cors:
   allow_origins:

@@ -1,6 +1,8 @@
 #! /usr/bin/env python3
 
 import time
+import logging
+import ipaddress
 import uvicorn
 import yaml
 import os
@@ -16,6 +18,9 @@ from vars import *
 
 
 from utils.checks import check_tmp_dir
+
+
+logger = logging.getLogger(__name__)
 
 config = {}
 config_path = '/etc/linuxmuster/api/config.yml'
@@ -34,6 +39,36 @@ app = FastAPI(
         "url": "https://www.gnu.org/licenses/gpl-3.0.html"
     },
 )
+
+# Read by the rate limiter on every call it guards, through request.app.state.
+app.state.rate_limit = config.get('rate_limit', {}) or {}
+
+
+def _report_invalid_rate_limit_whitelist():
+    """
+    Log the rate_limit whitelist entries that are not IP addresses.
+
+    An entry is compared to request.client.host verbatim: a host name, a CIDR
+    range or a typo simply never matches, and the caller keeps being limited
+    with nothing to explain why.
+    """
+
+    whitelist = app.state.rate_limit.get('whitelist') or []
+
+    if isinstance(whitelist, str):
+        whitelist = [whitelist]
+
+    for entry in whitelist:
+        try:
+            ipaddress.ip_address(str(entry))
+        except ValueError:
+            logger.warning(
+                f"rate_limit whitelist entry {entry!r} is not an IP address, it will never match. "
+                f"Entries are compared to the client address as-is, host names and CIDR ranges are not resolved."
+            )
+
+
+_report_invalid_rate_limit_whitelist()
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
