@@ -8,6 +8,9 @@ from pydantic import BaseModel
 from linuxmusterTools.common import LdapNotProvisionedError
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 
+from vars import API_V1_PREFIX
+from security.scope import allows
+
 
 class AuthenticatedUser(BaseModel):
     dn: str
@@ -39,9 +42,16 @@ def check_authentication_header(request: Request) -> AuthenticatedUser:
 
     if hostkey:
         client_ip = request.client.host
+        # Scopes are written without the version prefix: an admin restricts a
+        # key to an endpoint, not to a release of the API.
+        path = request.url.path
+        if path.startswith(API_V1_PREFIX):
+            path = path[len(API_V1_PREFIX):] or '/'
+
         return check_host_header(hostkey.strip('"').strip("'"), client_ip,
                                  request.app.state.host_keys,
-                                 request.app.state.host_key_auth_enable)
+                                 request.app.state.host_key_auth_enable,
+                                 request.method, path)
 
     raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -87,7 +97,16 @@ def check_user_header(apikey, secret) -> AuthenticatedUser:
     )
 
 
-def check_host_header(hostkey, client_ip, keys, host_key_auth_enable) -> AuthenticatedUser:
+def check_host_header(hostkey, client_ip, keys, host_key_auth_enable, method, path) -> AuthenticatedUser:
+    """
+    Resolve a x-host-key into the LDAP user it maps to.
+
+    :param method: HTTP method of the request, matched against the key's scope
+    :type method: str
+    :param path: Request path without the version prefix, matched against the
+                 key's scope
+    :type path: str
+    """
 
     user = None
 
@@ -111,6 +130,14 @@ def check_host_header(hostkey, client_ip, keys, host_key_auth_enable) -> Authent
                 raise HTTPException(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="Invalid API Key IP",
+                )
+
+            # A scope only ever narrows: the role of `user` is still checked
+            # by RoleChecker further down the dependency chain.
+            if not allows(key.get('scope', None), method, path):
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="API Key not allowed on this endpoint",
                 )
 
             break

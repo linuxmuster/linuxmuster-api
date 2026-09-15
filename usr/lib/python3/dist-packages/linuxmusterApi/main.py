@@ -19,6 +19,7 @@ from vars import *
 
 
 from utils.checks import check_tmp_dir
+from security.scope import report_unmatched
 
 
 logger = logging.getLogger(__name__)
@@ -37,6 +38,7 @@ async def lifespan(app: FastAPI):
     app.state.host_key_auth_enable = config.get('host_key_auth', False)
     app.state.notifications = config.get('notifications', {})
     app.state.rate_limit = config.get('rate_limit', {}) or {}
+    _report_unreachable_host_key_scopes()
     _report_invalid_rate_limit_whitelist()
     yield
 
@@ -114,7 +116,7 @@ def home():
 
     return HTML_HOME
 
-_V1_PREFIX = "/v1"
+_V1_PREFIX = API_V1_PREFIX
 _V1_ROUTERS = [
     auth.router,
     admins.router_global,
@@ -215,6 +217,33 @@ def _report_invalid_rate_limit_whitelist():
             logger.warning(
                 f"rate_limit whitelist entry {entry!r} is not an IP address, it will never match. "
                 f"Entries are compared to the client address as-is, host names and CIDR ranges are not resolved."
+            )
+
+
+def _report_unreachable_host_key_scopes():
+    """
+    Log the host key scope entries that match no route of this API.
+
+    A typo fails silently otherwise: the key still authenticates and every
+    call it makes is refused with no hint as to why. Only reported, never
+    fatal — the rest of the API is fine, and a scope entry that matches
+    nothing would not have let anything through in any case.
+    """
+
+    routes = []
+
+    for route, path, _regex in _iter_effective_routes():
+        if path.startswith(_V1_PREFIX):
+            path = path[len(_V1_PREFIX):] or '/'
+
+        for method in getattr(route, 'methods', None) or []:
+            routes.append((method, path))
+
+    for name, key in (app.state.host_keys or {}).items():
+        for entry in report_unmatched(key.get('scope'), routes):
+            logger.warning(
+                f"Host key '{name}': scope entry {entry!r} matches no route of this API, "
+                f"it will never allow anything."
             )
 
 

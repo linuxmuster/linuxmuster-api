@@ -61,7 +61,7 @@ class TestCheckHostHeaderProvisioning:
         )
 
         with pytest.raises(HTTPException) as excinfo:
-            check_host_header('host-secret', '10.0.0.1', self.KEYS, True)
+            check_host_header('host-secret', '10.0.0.1', self.KEYS, True, 'GET', '/users/')
 
         assert excinfo.value.status_code == 503
         assert excinfo.value.detail == "linuxmuster is not provisioned yet"
@@ -76,7 +76,7 @@ class TestCheckHostHeaderProvisioning:
             },
         )
 
-        result = check_host_header('host-secret', '10.0.0.1', self.KEYS, True)
+        result = check_host_header('host-secret', '10.0.0.1', self.KEYS, True, 'GET', '/users/')
 
         assert result.user == 'sophomorix'
         assert result.role == 'globaladministrator'

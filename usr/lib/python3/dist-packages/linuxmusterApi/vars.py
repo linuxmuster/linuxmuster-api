@@ -1,4 +1,6 @@
 VERSION = "7.4.12"
+# Version prefix of the v1 routers, also what a host key scope leaves out.
+API_V1_PREFIX = "/v1"
 TITLE = "Linuxmuster.net API"
 
 DESCRIPTION = """
