@@ -1,3 +1,9 @@
+linuxmuster-api7 (7.3.36) lmn73; urgency=medium
+
+  * Configure rate limit and whitelist ips. See #41. 
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Tue, 15 Sep 2026 18:18:17 +0200
+
 linuxmuster-api7 (7.3.35) lmn73; urgency=medium
 
   * Add linbo endpoints for Linbo Docker (@amoalani). EXPERIMENTAL
