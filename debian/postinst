@@ -79,6 +79,16 @@ EOF
 
     ;;
 
+    triggered)
+        # linuxmuster-tools7 rebuilt the shared venv after a Python upgrade:
+        # our own requirements went with it and have to be reinstalled.
+        msg "Reinstalling Python requirements in the linuxmuster venv"
+        /opt/linuxmuster/bin/python3 -m pip install -r /usr/lib/python3/dist-packages/linuxmusterApi/requirements.txt
+
+        msg "Restart service linuxmuster-api"
+        systemctl restart linuxmuster-api
+    ;;
+
     *)
     ;;
 
