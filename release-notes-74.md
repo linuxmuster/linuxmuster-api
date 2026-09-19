@@ -1,10 +1,10 @@
-# Release Notes – linuxmuster-api 7.4
+# 🚀 Release Notes – linuxmuster-api 7.4
 
 **Package version:** 7.4.1 – 7.4.13
 
 ---
 
-## Overview
+## 📋 Overview
 
 Version 7.4 turns linuxmuster-api into the real integration point for
 operations that used to be handled by shell-outs from the webui or the CLI:
@@ -17,7 +17,7 @@ the way.
 
 ---
 
-## LINBO endpoints
+## 🖥️ LINBO endpoints
 
 - Raw `start.conf` write/delete endpoints. The `startconfs` and `configs`
   routes no longer take a `school` parameter: `group_id` addresses one
@@ -63,7 +63,7 @@ the way.
 
 ---
 
-## Password management
+## 🔑 Password management
 
 - Domain-wide password-policy and password-constraints endpoints, scoped by
   role (school-admin vs global-admin); new/current passwords are checked
@@ -75,7 +75,7 @@ the way.
 
 ---
 
-## Groups, printers and roles
+## 👥 Groups, printers and roles
 
 - New endpoints for `lmngroups`, including custom fields.
 - Management-group membership now goes through `GroupManager` (batch,
@@ -107,7 +107,7 @@ the way.
 
 ---
 
-## Background jobs
+## ⏳ Background jobs
 
 - `sophomorix-check` now runs as a background job like `sophomorix-apply`
   already did, polled via
@@ -119,7 +119,7 @@ the way.
 
 ---
 
-## Security and hardening
+## 🔒 Security and hardening
 
 - A host key can be restricted to a list of endpoints with a new optional
   `scope` in its `host_keys` entry. Without one, nothing changes: the key
@@ -152,7 +152,7 @@ the way.
 
 ---
 
-## Packaging and tests
+## 📦 Packaging and tests
 
 - postinst: the deprecated venv migration is dropped, and a new
   `linuxmuster-venv` dpkg trigger reinstalls the API requirements when
@@ -164,7 +164,7 @@ the way.
 
 ---
 
-## Upgrade notes
+## ⚠️ Upgrade notes
 
 - `POST /linbo/hosts/scan` no longer returns a `lastSeen` field. Tracking
   last reachability is up to the caller.
