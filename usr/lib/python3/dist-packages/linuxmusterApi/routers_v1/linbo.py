@@ -207,9 +207,6 @@ def query_hosts(
 
     hosts = Devices(school=school).get_hosts_by_macs(body.macs)
 
-    if not hosts:
-        raise HTTPException(status_code=404, detail="No hosts found for given MACs")
-
     return {"hosts": hosts}
 
 
@@ -634,9 +631,6 @@ def get_configs(
     grub_reader = LinboGrubReader()
     results = grub_reader.get_configs_by_ids(ids)
 
-    if not results:
-        raise HTTPException(status_code=404, detail="No GRUB configs found for given IDs")
-
     return {"configs": results}
 
 
@@ -781,9 +775,6 @@ async def probe_hosts(
 
     devices_mgr = Devices(school=school)
     hosts = devices_mgr.get_hosts_by_macs(body.macs) if body.macs else devices_mgr.get_clients()
-
-    if not hosts:
-        raise HTTPException(status_code=404, detail="No hosts found")
 
     # The cap above only covers an explicit list; an empty one resolves to every
     # client of the school, which is unbounded.

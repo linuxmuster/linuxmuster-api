@@ -9,7 +9,7 @@ from fastapi import HTTPException
 from linuxmusterTools.linbo import LinboBootLogs
 
 from routers_v1 import linbo
-from routers_v1.body_schemas import LinboHostScanBody, LinboWolBody
+from routers_v1.body_schemas import LinboBatchMacs, LinboHostScanBody, LinboWolBody
 from security import RoleChecker
 
 
@@ -238,16 +238,37 @@ def test_scan_caps_the_resolved_host_list_too(linbo_backends):
     scan.assert_not_called()
 
 
-def test_scan_without_any_host_is_404(linbo_backends):
+# An empty result is a successful query with no matches, not a missing
+# resource (#45).
+
+def test_scan_without_any_host_returns_an_empty_list(linbo_backends):
     devices, _, scan, _, _, _ = linbo_backends
     devices.get_clients.return_value = []
 
-    with pytest.raises(HTTPException) as error:
-        asyncio.run(linbo.probe_hosts(LinboHostScanBody(), "default-school", None))
+    result = asyncio.run(linbo.probe_hosts(LinboHostScanBody(), "default-school", None))
 
-    assert error.value.status_code == 404
-    assert error.value.detail == "No hosts found"
-    scan.assert_not_called()
+    assert result["hosts"] == []
+
+
+def test_query_without_any_match_returns_an_empty_list(linbo_backends):
+    devices, _, _, _, _, _ = linbo_backends
+    devices.get_hosts_by_macs.return_value = []
+
+    result = linbo.query_hosts(
+        LinboBatchMacs(macs=["00:11:22:33:44:55"]),
+        school="default-school",
+        who=SimpleNamespace(school="default-school"),
+    )
+
+    assert result == {"hosts": []}
+
+
+def test_configs_without_any_match_returns_an_empty_list(monkeypatch):
+    reader = Mock()
+    reader.get_configs_by_ids.return_value = []
+    monkeypatch.setattr(linbo, "LinboGrubReader", lambda: reader)
+
+    assert linbo.get_configs(["unknown"], None) == {"configs": []}
 
 
 def test_scan_school_admin_cannot_target_another_school(linbo_backends):
