@@ -15,6 +15,9 @@ def test_routes_require_global_or_school_admin():
         ("GET", "/linbo/sync/sessions"),
         ("GET", "/linbo/sync/sessions/{hostname}/log"),
         ("GET", "/linbo/sync/hosts/{hostname}/status"),
+        ("GET", "/linbo/sync/onboot"),
+        ("GET", "/linbo/sync/onboot/{hostname}"),
+        ("DELETE", "/linbo/sync/onboot/{hostname}"),
     }
     actual = {
         (method, route.path)
@@ -296,3 +299,109 @@ def test_get_host_status_school_admin_other_school_is_404(monkeypatch):
         linbo_sync.get_host_status("other-school-pc099", who=who)
 
     assert exc_info.value.status_code == 404
+
+
+# ── /onboot ──────────────────────────────────────────────────────────────
+
+PENDING = [
+    {"hostname": "pc001", "commands": ["sync:1"]},
+    {"hostname": "lehrer-pc002", "commands": ["start:1"]},
+]
+
+
+def test_get_onboot_commands_global_admin_sees_everything(monkeypatch):
+    monkeypatch.setattr(linbo_sync, "list_onboot_commands", lambda: PENDING)
+
+    result = linbo_sync.get_onboot_commands(who=Mock(school="global"))
+
+    assert result == {"onboot": PENDING}
+
+
+def test_get_onboot_commands_school_admin_is_filtered(monkeypatch):
+    monkeypatch.setattr(linbo_sync, "list_onboot_commands", lambda: PENDING)
+    devices = Mock()
+    devices.devices = [{"hostname": "pc002"}]
+    monkeypatch.setattr(linbo_sync, "Devices", lambda school: devices)
+
+    result = linbo_sync.get_onboot_commands(who=Mock(school="lehrer"))
+
+    assert result == {"onboot": [PENDING[1]]}
+
+
+def test_withdraw_onboot_command_deletes_the_host_file(monkeypatch):
+    delete = Mock()
+    monkeypatch.setattr(linbo_sync, "delete_onboot_command", delete)
+
+    linbo_sync.withdraw_onboot_command("pc001", who=Mock(school="global"))
+
+    delete.assert_called_once_with("pc001")
+
+
+def test_withdraw_onboot_command_of_another_school_is_404(monkeypatch):
+    delete = Mock()
+    monkeypatch.setattr(linbo_sync, "delete_onboot_command", delete)
+    devices = Mock()
+    devices.devices = [{"hostname": "pc002"}]
+    monkeypatch.setattr(linbo_sync, "Devices", lambda school: devices)
+
+    with pytest.raises(HTTPException) as error:
+        linbo_sync.withdraw_onboot_command("pc001", who=Mock(school="lehrer"))
+
+    assert error.value.status_code == 404
+    delete.assert_not_called()
+
+
+def test_withdraw_onboot_command_without_pending_command_is_404(monkeypatch):
+    monkeypatch.setattr(linbo_sync, "delete_onboot_command", Mock(side_effect=FileNotFoundError))
+
+    with pytest.raises(HTTPException) as error:
+        linbo_sync.withdraw_onboot_command("pc001", who=Mock(school="global"))
+
+    assert error.value.status_code == 404
+
+
+def test_withdraw_onboot_command_invalid_hostname_is_400(monkeypatch):
+    monkeypatch.setattr(linbo_sync, "delete_onboot_command", Mock(side_effect=ValueError("Invalid host name")))
+
+    with pytest.raises(HTTPException) as error:
+        linbo_sync.withdraw_onboot_command("../x", who=Mock(school="global"))
+
+    assert error.value.status_code == 400
+
+
+def test_get_host_onboot_command_reads_one_host(monkeypatch):
+    monkeypatch.setattr(linbo_sync, "get_onboot_command", lambda hostname: PENDING[0])
+
+    assert linbo_sync.get_host_onboot_command("pc001", who=Mock(school="global")) == PENDING[0]
+
+
+def test_get_host_onboot_command_of_another_school_is_404(monkeypatch):
+    get = Mock()
+    monkeypatch.setattr(linbo_sync, "get_onboot_command", get)
+    devices = Mock()
+    devices.devices = [{"hostname": "pc002"}]
+    monkeypatch.setattr(linbo_sync, "Devices", lambda school: devices)
+
+    with pytest.raises(HTTPException) as error:
+        linbo_sync.get_host_onboot_command("pc001", who=Mock(school="lehrer"))
+
+    assert error.value.status_code == 404
+    get.assert_not_called()
+
+
+def test_get_host_onboot_command_without_pending_command_is_404(monkeypatch):
+    monkeypatch.setattr(linbo_sync, "get_onboot_command", Mock(side_effect=FileNotFoundError))
+
+    with pytest.raises(HTTPException) as error:
+        linbo_sync.get_host_onboot_command("pc001", who=Mock(school="global"))
+
+    assert error.value.status_code == 404
+
+
+def test_get_host_onboot_command_invalid_hostname_is_400(monkeypatch):
+    monkeypatch.setattr(linbo_sync, "get_onboot_command", Mock(side_effect=ValueError("Invalid host name")))
+
+    with pytest.raises(HTTPException) as error:
+        linbo_sync.get_host_onboot_command("../x", who=Mock(school="global"))
+
+    assert error.value.status_code == 400

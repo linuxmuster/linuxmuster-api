@@ -14,6 +14,9 @@ from linuxmusterTools.linbo import (
     LinboBootLogs,
     LinboRemote,
     LinboRemoteParameterError,
+    delete_onboot_command,
+    get_onboot_command,
+    list_onboot_commands,
     list_running_sessions,
 )
 from linuxmusterTools.linbo.host_status import classify_host
@@ -184,3 +187,105 @@ def get_host_status(
             raise HTTPException(status_code=404, detail=f"Host {hostname} not found")
 
     return {"hostname": hostname, "status": classify_host(hostname)}
+
+
+@router.get("/onboot", name="List the pending onboot commands")
+def get_onboot_commands(
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
+):
+    """
+    ## List the onboot commands waiting for a host's next boot.
+
+    A run with `onboot` leaves the commands on the server until the host
+    boots and downloads them. A global-administrator sees every host, a
+    school-administrator only the hosts belonging to their own school.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    """
+
+
+    pending = list_onboot_commands()
+
+    if who.school == 'global':
+        return {"onboot": pending}
+
+    known_hostnames = {
+        f'{who.school}-{device["hostname"]}' if who.school != 'default-school' else device['hostname']
+        for device in Devices(school=who.school).devices
+    }
+    return {"onboot": [p for p in pending if p['hostname'] in known_hostnames]}
+
+
+@router.get("/onboot/{hostname}", name="Read a host's pending onboot commands")
+def get_host_onboot_command(
+    hostname: str,
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
+):
+    """
+    ## Read the onboot commands waiting for a host's next boot.
+
+    A school-administrator can only read hosts belonging to their own school.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param hostname: Hostname whose pending commands to read
+    """
+
+
+    if who.school != 'global':
+        known_hostnames = {
+            f'{who.school}-{device["hostname"]}' if who.school != 'default-school' else device['hostname']
+            for device in Devices(school=who.school).devices
+        }
+        if hostname not in known_hostnames:
+            raise HTTPException(status_code=404, detail=f"Host {hostname} not found")
+
+    try:
+        return get_onboot_command(hostname)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"No onboot command pending for {hostname}")
+
+
+@router.delete("/onboot/{hostname}", name="Withdraw a host's pending onboot commands")
+def withdraw_onboot_command(
+    hostname: str,
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
+):
+    """
+    ## Withdraw a host's onboot commands before its next boot.
+
+    A school-administrator can only withdraw commands of hosts belonging to
+    their own school.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param hostname: Hostname whose pending commands to withdraw
+    """
+
+
+    if who.school != 'global':
+        known_hostnames = {
+            f'{who.school}-{device["hostname"]}' if who.school != 'default-school' else device['hostname']
+            for device in Devices(school=who.school).devices
+        }
+        if hostname not in known_hostnames:
+            raise HTTPException(status_code=404, detail=f"Host {hostname} not found")
+
+    try:
+        delete_onboot_command(hostname)
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+    except FileNotFoundError:
+        raise HTTPException(status_code=404, detail=f"No onboot command pending for {hostname}")
