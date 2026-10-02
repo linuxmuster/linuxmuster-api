@@ -6,6 +6,7 @@ This router only handles HTTP concerns (auth, validation, responses).
 """
 
 import os.path
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -121,6 +122,39 @@ def get_server_info(
         "broadcast": ini.get("broadcast", ""),
         "schools": schools,
     }
+
+
+@router.post("/restart-services", name="Restart the LINBO multicast and torrent services")
+def restart_services(
+    who: AuthenticatedUser = Depends(RoleChecker("GS")),
+):
+    """
+    ## Restart the LINBO multicast and torrent services.
+
+    Needed after a change on an image, so that both services distribute the
+    new version. The services are global: a school-administrator restarts
+    them for every school.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    :return: The restarted services
+    :rtype: dict
+    """
+
+
+    try:
+        services = restart_image_services()
+    except subprocess.CalledProcessError as e:
+        raise HTTPException(status_code=500, detail=f"Could not restart the image services: {e.stderr.strip()}")
+    except subprocess.TimeoutExpired:
+        raise HTTPException(status_code=500, detail="Restarting the image services timed out")
+
+    return {"services": services}
 
 
 @router.get("/health", name="LINBO subsystem health check")
