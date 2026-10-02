@@ -98,7 +98,7 @@ def get_computer_roles(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
 
 
     try:
-        return sorted(SophomorixIni().computerrole)
+        return sorted(SophomorixIni().computer_roles.roles)
     except (KeyError, configparser.Error) as e:
         # ConfigParser.read() ignores a missing or unreadable file, and the
         # constructor then reads a section this endpoint never asked for, so an

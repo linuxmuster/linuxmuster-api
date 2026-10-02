@@ -31,7 +31,7 @@ ROLES = [
 @pytest.fixture
 def sophomorix_ini(monkeypatch):
     ini = Mock()
-    ini.computerrole = list(reversed(ROLES))
+    ini.computer_roles.roles = tuple(reversed(ROLES))
     monkeypatch.setattr(devices, "SophomorixIni", lambda: ini)
     return ini
 
@@ -79,7 +79,7 @@ def test_roles_follow_the_installation_rather_than_a_fixed_list(sophomorix_ini):
     # The point of the endpoint: a server that defines its own roles gets them,
     # which a hardcoded list in a client could not. Also the assertion that fails
     # if the handler ever stops reading the ini.
-    sophomorix_ini.computerrole = ["custom-lab-pc", "addc"]
+    sophomorix_ini.computer_roles.roles = ("custom-lab-pc", "addc")
 
     assert devices.get_computer_roles(None) == ["addc", "custom-lab-pc"]
 
@@ -92,7 +92,7 @@ def test_roles_are_read_per_request(monkeypatch):
     def _make():
         calls.append(1)
         ini = Mock()
-        ini.computerrole = ROLES
+        ini.computer_roles.roles = tuple(ROLES)
         return ini
 
     monkeypatch.setattr(devices, "SophomorixIni", _make)
