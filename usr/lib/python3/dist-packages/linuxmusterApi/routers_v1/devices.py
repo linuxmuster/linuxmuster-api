@@ -190,7 +190,7 @@ def modify_device(device: str, device_details: Device, who: AuthenticatedUser = 
             raise HTTPException(status_code=400, detail=f"Both unicodePwd_hash and supplementalCredentials_hash must be given.")
 
         device_manager = DeviceManager()
-        device_manager.set_credentials(device, ucPwd_hash, suppCred_hash)
+        device_manager.set_credentials(device, ucPwd_hash, suppCred_hash, school=school)
 
     elif device_details.unicodePwd:
         device_writer.setattr(data={'unicodePwd': device_details.unicodePwd})
