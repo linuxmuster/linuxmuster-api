@@ -5,7 +5,7 @@ from security import UserChecker, UserListChecker, AuthenticatedUser
 from utils.checks import get_user_or_404
 from .body_schemas import UserList
 from linuxmusterTools.ldapconnector import LMNUser, LMNLdapReader as lr
-from linuxmusterTools.common import Validator, NAME_RULES
+from linuxmusterTools.common import Validator, NAME_RULES, sort_naturally
 
 
 router = APIRouter(
@@ -151,7 +151,7 @@ def session_create(user: str, sessionname: str, userlist: UserList | None = None
     members = ""
     if userlist:
         if userlist.users:
-            members = ",".join(set(userlist.users))
+            members = ",".join(sort_naturally(set(userlist.users)))
 
     new_session = f"{sid};{sessionname};{members};"
 
@@ -200,7 +200,7 @@ def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who:
             to_delete = set(userlist.users)
             members_set = set(session.members)
             members_set.difference_update(to_delete)
-            session.members = list(members_set)
+            session.members = sort_naturally(members_set)
 
             new_session = f"{session.sid};{session.name};{','.join(session.members)};"
             UserWriter.setattr(data={'sophomorixSessions': new_session}, add=True)
@@ -245,7 +245,7 @@ def add_user_to_session(user: str, sessionsid: str, userlist: UserList, who: Aut
             UserWriter.delattr(data={'sophomorixSessions': old_session})
 
             session.members += userlist.users
-            session.members = list(set(session.members))
+            session.members = sort_naturally(set(session.members))
 
             new_session = f"{session.sid};{session.name};{','.join(session.members)};"
             UserWriter.setattr(data={'sophomorixSessions': new_session}, add=True)
