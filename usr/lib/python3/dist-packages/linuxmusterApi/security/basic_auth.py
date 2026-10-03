@@ -1,5 +1,7 @@
+from base64 import b64decode
 from fastapi import Depends, HTTPException, Request
 from fastapi.security import APIKeyHeader, HTTPBasic, HTTPBasicCredentials
+from fastapi.security.utils import get_authorization_scheme_param
 from starlette import status
 import jwt
 from datetime import datetime, timezone, timedelta
@@ -10,7 +12,33 @@ from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.ldapconnector.models import check_password
 
 
-BASIC_AUTH = HTTPBasic()
+class UTF8HTTPBasic(HTTPBasic):
+    """
+    FastAPI's HTTPBasic only decodes ASCII credentials, while RFC 7617
+    recommends UTF-8 and Samba accepts passwords like €uro123.
+
+    Latin-1 is a fallback for the clients still sending it (e.g. requests
+    with str credentials), used when the bytes are no valid UTF-8.
+    """
+
+    async def __call__(self, request: Request) -> HTTPBasicCredentials:
+        scheme, param = get_authorization_scheme_param(request.headers.get("Authorization"))
+        try:
+            raw = b64decode(param)
+            try:
+                data = raw.decode("utf-8")
+            except UnicodeDecodeError:
+                data = raw.decode("latin-1")
+            username, separator, password = data.partition(":")
+        except ValueError:
+            separator = ''
+        if scheme.lower() != "basic" or not separator:
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Not authenticated",
+                                headers=self.make_authenticate_headers())
+        return HTTPBasicCredentials(username=username, password=password)
+
+# The name main.py declares in the OpenAPI schema, instead of the class name.
+BASIC_AUTH = UTF8HTTPBasic(scheme_name='HTTPBasic')
 
 def generate_jwt(user, role, dn, school, secret):
     payload = {
