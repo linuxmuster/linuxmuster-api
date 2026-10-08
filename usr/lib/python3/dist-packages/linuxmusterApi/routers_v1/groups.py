@@ -18,6 +18,20 @@ router = APIRouter(
 # TODO: cenrtalize
 CUSTOMFIELDS = [f'sophomorixCustom{count}' for count in range(1, 5)] + [f'sophomorixCustomMulti{count}' for count in range(1, 5)]
 
+GROUP_FLAG_ATTRIBUTES = {
+    'hide': 'sophomorixHidden',
+    'join': 'sophomorixJoinable',
+    'mailalias': 'sophomorixMailAlias',
+    'maillist': 'sophomorixMailList',
+}
+
+GROUP_FLAG_DEFAULTS = {
+    'hide': False,
+    'join': True,
+    'mailalias': False,
+    'maillist': False,
+}
+
 @router.get("/", name="List all groups")
 def get_groups_list(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
     """
@@ -169,11 +183,10 @@ def create_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
     except ldap.ALREADY_EXISTS:
         raise HTTPException(status_code=400, detail=f"Group {group} already exists on this server.")
 
+    # A new group gets the defaults for every flag the caller did not send.
     data = {
-        'sophomorixHidden': group_details.hide,
-        'sophomorixJoinable': group_details.join,
-        'sophomorixMailAlias': group_details.mailalias,
-        'sophomorixMailList': group_details.maillist,
+        attribute: GROUP_FLAG_DEFAULTS[flag] if getattr(group_details, flag) is None else getattr(group_details, flag)
+        for flag, attribute in GROUP_FLAG_ATTRIBUTES.items()
     }
 
     if group_details.description:
@@ -233,11 +246,13 @@ def modify_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
     check_valid_school_or_404(school)
     get_group_or_404(group, school)
 
+    # None means "not sent": a partial patch must not rewrite a flag the caller
+    # never mentioned, or a patch renaming the group would also unhide it and
+    # make it joinable, straight from the defaults of a new group.
     data = {
-        'sophomorixHidden': group_details.hide,
-        'sophomorixJoinable': group_details.join,
-        'sophomorixMailAlias': group_details.mailalias,
-        'sophomorixMailList': group_details.maillist,
+        attribute: getattr(group_details, flag)
+        for flag, attribute in GROUP_FLAG_ATTRIBUTES.items()
+        if getattr(group_details, flag) is not None
     }
 
     if group_details.description:

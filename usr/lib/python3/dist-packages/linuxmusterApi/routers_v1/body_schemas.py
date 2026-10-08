@@ -30,10 +30,10 @@ class Group(BaseModel):
 
     description: str | None = ''
     displayName: str | None = ''
-    hide: bool = False
-    join: bool = True
-    mailalias: bool = False
-    maillist: bool = False
+    hide: bool | None = None
+    join: bool | None = None
+    mailalias: bool | None = None
+    maillist: bool | None = None
     mailquota: int | None = None
     members: list = []
     proxyAddresses: list | None = []
