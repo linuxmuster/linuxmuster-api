@@ -3,10 +3,10 @@ import logging
 from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, AuthenticatedUser
-from .body_schemas import Group, UserList
+from .body_schemas import Group, GroupList, UserList
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNGroup, find_legacy_groups
 from linuxmusterTools.common import Validator, NAME_RULES
-from utils.checks import get_group_or_404, require_school, check_valid_school_or_404
+from utils.checks import get_group_or_404, get_dn_or_404, require_school, check_valid_school_or_404
 
 
 router = APIRouter(
@@ -17,6 +17,39 @@ router = APIRouter(
 
 # TODO: cenrtalize
 CUSTOMFIELDS = [f'sophomorixCustom{count}' for count in range(1, 5)] + [f'sophomorixCustomMulti{count}' for count in range(1, 5)]
+
+def check_membergroups_or_4xx(group, membergroups, school):
+    """
+    Resolve every member group before writing anything: a partial refusal
+    would let the caller believe the whole request went through. The writer
+    resolves them again, cheaply, when it applies them.
+
+    :param group: cn of the group which gets the member groups
+    :param membergroups: List of cn of the member groups
+    :param school: School of the group, the member groups must be in it too
+    :raises HTTPException: 400 for the group itself, 404 for an unknown group
+    """
+
+
+    for membergroup in membergroups:
+        if membergroup.lower() == group.lower():
+            raise HTTPException(status_code=400, detail=f"Group {group} can not be a member of itself")
+
+        get_dn_or_404('units', membergroup, 'Group', school=school)
+
+def raise_on_membergroup_failures(group, failures):
+    """
+    Turn the failures reported by the writer into an error naming each group.
+
+    :param group: cn of the modified group
+    :param failures: list of (group, error message) tuples from the writer
+    :raises HTTPException: 500 if any member group could not be written
+    """
+
+
+    if failures:
+        detail = ", ".join(f"{membergroup}: {error}" for membergroup, error in failures)
+        raise HTTPException(status_code=500, detail=f"Could not update the member groups of {group}: {detail}")
 
 @router.get("/", name="List all groups")
 def get_groups_list(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
@@ -134,6 +167,12 @@ def create_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
 
     `comment` is optional.
 
+    ### Members
+
+    - `members` is a list of users (samaccountname)
+    - `membergroups` is a list of schoolclasses, projects or groups of the same
+    school, whose members become members of this group
+
     ### Access
     - global-administrators
     - school-administrators
@@ -162,6 +201,7 @@ def create_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
         raise HTTPException(status_code=400, detail=f"Group {group} already exists on this server.")
 
     check_valid_school_or_404(school)
+    check_membergroups_or_4xx(group, group_details.membergroups, school)
     GroupWriter = LMNGroup(group, school=school)
 
     try:
@@ -201,6 +241,9 @@ def create_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
     if group_details.members:
         GroupWriter.add_members(group_details.members)
 
+    if group_details.membergroups:
+        raise_on_membergroup_failures(group, GroupWriter.add_membergroups(group_details.membergroups))
+
     return GroupWriter.data
 
 @router.patch("/{group}", name="Update the parameters of a specific group")
@@ -232,6 +275,7 @@ def modify_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
     school = group_details.school if who.school == 'global' else who.school
     check_valid_school_or_404(school)
     get_group_or_404(group, school)
+    check_membergroups_or_4xx(group, group_details.membergroups, school)
 
     data = {
         'sophomorixHidden': group_details.hide,
@@ -265,6 +309,9 @@ def modify_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
 
     if group_details.members:
         GroupWriter.add_members(group_details.members)
+
+    if group_details.membergroups:
+        raise_on_membergroup_failures(group, GroupWriter.add_membergroups(group_details.membergroups))
 
     return GroupWriter.data
 
@@ -343,6 +390,79 @@ def remove_members_from_group(group: str, userlist: UserList, school: str = '', 
                 pass
         except Exception:
             logging.warning(f"User {member} not found, will not delete from group {group}")
+
+@router.post("/{group}/membergroups", name="Add groups as members of a specific group")
+@require_school
+def add_membergroups_to_group(group: str, grouplist: GroupList, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+    """
+    ## Add groups as members of a specific group.
+
+    The groups are schoolclasses, projects or groups of the same school. Their
+    members become members of this group through the directory, so a later
+    change in a member group needs no further request.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param group: cn of the group to modify
+    :type group: basestring
+    :param grouplist: List of cn of the groups to add
+    :type grouplist: GroupList
+    :param school: School of the group, required for global-administrators
+    :type school: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
+
+    if not grouplist.groups:
+        raise HTTPException(status_code=400, detail="Missing list of groups to add")
+
+    active_school = school if school else who.school
+    get_group_or_404(group, active_school)
+    check_membergroups_or_4xx(group, grouplist.groups, active_school)
+
+    GroupWriter = LMNGroup(group, school=active_school)
+    raise_on_membergroup_failures(group, GroupWriter.add_membergroups(grouplist.groups))
+
+@router.delete("/{group}/membergroups", status_code=204, name="Remove groups from the members of a specific group")
+@require_school
+def remove_membergroups_from_group(group: str, grouplist: GroupList, school: str = '', who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+    """
+    ## Remove groups from the members of a specific group.
+
+    The users which are direct members of this group stay, even if they are
+    also members of a removed group.
+
+    ### Access
+    - global-administrators
+    - school-administrators
+
+    \f
+    :param group: cn of the group to modify
+    :type group: basestring
+    :param grouplist: List of cn of the groups to remove
+    :type grouplist: GroupList
+    :param school: School of the group, required for global-administrators
+    :type school: basestring
+    :param who: User requesting the data, read from API Token
+    :type who: AuthenticatedUser
+    """
+
+
+    if not grouplist.groups:
+        raise HTTPException(status_code=400, detail="Missing list of groups to remove")
+
+    active_school = school if school else who.school
+    get_group_or_404(group, active_school)
+
+    for membergroup in grouplist.groups:
+        get_dn_or_404('units', membergroup, 'Group', school=active_school)
+
+    GroupWriter = LMNGroup(group, school=active_school)
+    raise_on_membergroup_failures(group, GroupWriter.remove_membergroups(grouplist.groups))
 
 @router.post("/{group}/migrate", name="Migrate a legacy sophomorix-group to OU=LMNGroups")
 @require_school

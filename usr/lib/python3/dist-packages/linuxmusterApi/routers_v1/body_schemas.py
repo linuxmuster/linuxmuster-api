@@ -12,6 +12,14 @@ class UserList(BaseModel):
 
     users: list | None = None
 
+class GroupList(BaseModel):
+    """
+    A list of cn from groups (schoolclasses, projects, groups, etc ...), for nesting them in a group.
+    """
+
+
+    groups: list | None = None
+
 class LMNShareQuota(BaseModel):
     """
     Model for quotas of shares.
@@ -35,6 +43,7 @@ class Group(BaseModel):
     mailalias: bool = False
     maillist: bool = False
     mailquota: int | None = None
+    membergroups: list = []
     members: list = []
     proxyAddresses: list | None = []
     quota: list[LMNShareQuota] | None = []
