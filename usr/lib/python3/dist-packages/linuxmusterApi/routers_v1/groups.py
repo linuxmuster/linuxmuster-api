@@ -233,11 +233,16 @@ def modify_group(group: str, group_details: Group, who: AuthenticatedUser = Depe
     check_valid_school_or_404(school)
     get_group_or_404(group, school)
 
+    flags = {
+        'hide': 'sophomorixHidden',
+        'join': 'sophomorixJoinable',
+        'mailalias': 'sophomorixMailAlias',
+        'maillist': 'sophomorixMailList',
+    }
     data = {
-        'sophomorixHidden': group_details.hide,
-        'sophomorixJoinable': group_details.join,
-        'sophomorixMailAlias': group_details.mailalias,
-        'sophomorixMailList': group_details.maillist,
+        attribute: getattr(group_details, flag)
+        for flag, attribute in flags.items()
+        if flag in group_details.model_fields_set
     }
 
     if group_details.description:

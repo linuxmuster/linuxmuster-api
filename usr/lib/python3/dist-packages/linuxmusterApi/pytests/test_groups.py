@@ -282,3 +282,70 @@ class TestManagementGroupMembers:
         r = self._add(GLOBALADMIN.jwt, ["not-a-real-user-xyz"], school="default-school")
         assert r.status_code == 404
         assert not self._is_member("not-a-real-user-xyz")
+
+
+@_need_group
+class TestGroupPartialPatch:
+    """
+    A partial patch must not rewrite what the caller never sent. The schema
+    used to default join to True and hide, mailalias and maillist to False,
+    so a patch only renaming a group also unhid it and made it joinable.
+    """
+
+    TMP_GROUP = 'zz-pytest-defaults'
+
+    @staticmethod
+    def _details(group):
+        return client.get(f"{BASE_URL}/groups/{group}", headers={"X-API-KEY": GLOBALADMIN.jwt}).json()
+
+    @staticmethod
+    def _patch(group, payload):
+        return client.patch(f"{BASE_URL}/groups/{group}", headers={"X-API-KEY": SCHOOLADMIN.jwt}, json=payload)
+
+    @pytest.fixture
+    def restore(self):
+        before = self._details(GROUP)
+        yield before
+        self._patch(GROUP, {
+            "join": before["sophomorixJoinable"],
+            "hide": before["sophomorixHidden"],
+            "description": before["description"],
+        })
+
+    def test_patch_group_leaves_unsent_flags_alone(self, restore):
+        self._patch(GROUP, {"join": False, "hide": True})
+        staged = self._details(GROUP)
+        assert staged["sophomorixJoinable"] is False
+        assert staged["sophomorixHidden"] is True
+
+        r = self._patch(GROUP, {"description": "partial patch"})
+        assert r.status_code == 200
+
+        after = self._details(GROUP)
+        assert after["description"] == "partial patch"
+        assert after["sophomorixJoinable"] is False
+        assert after["sophomorixHidden"] is True
+        assert after["sophomorixMailList"] == restore["sophomorixMailList"]
+        assert after["sophomorixMailAlias"] == restore["sophomorixMailAlias"]
+
+    def test_patch_group_still_applies_what_is_sent(self, restore):
+        """The guard must not swallow an explicit false."""
+
+        self._patch(GROUP, {"join": False})
+        assert self._details(GROUP)["sophomorixJoinable"] is False
+
+        self._patch(GROUP, {"join": True})
+        assert self._details(GROUP)["sophomorixJoinable"] is True
+
+    def test_create_group_keeps_the_defaults_for_unsent_flags(self):
+        try:
+            r = client.post(f"{BASE_URL}/groups/{self.TMP_GROUP}", headers={"X-API-KEY": SCHOOLADMIN.jwt}, json={})
+            assert r.status_code == 200
+
+            created = self._details(self.TMP_GROUP)
+            assert created["sophomorixJoinable"] is True
+            assert created["sophomorixHidden"] is False
+            assert created["sophomorixMailList"] is False
+            assert created["sophomorixMailAlias"] is False
+        finally:
+            client.delete(f"{BASE_URL}/groups/{self.TMP_GROUP}", headers={"X-API-KEY": SCHOOLADMIN.jwt})
