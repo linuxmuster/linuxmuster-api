@@ -188,6 +188,7 @@ def test_get_running_sessions_school_admin_is_filtered(monkeypatch):
 
 def test_get_session_log_global_admin_unrestricted(monkeypatch):
     boot_logs = Mock()
+    boot_logs.latest_remote_log.return_value = "any-host_linbo-remote_20261011101500.log"
     boot_logs.read_log.return_value = "sync started\nsync finished\n"
     monkeypatch.setattr(linbo_sync, "LinboBootLogs", lambda: boot_logs)
 
@@ -195,7 +196,8 @@ def test_get_session_log_global_admin_unrestricted(monkeypatch):
     result = linbo_sync.get_session_log("any-host", who=who)
 
     assert result == "sync started\nsync finished\n"
-    boot_logs.read_log.assert_called_once_with("any-host.linbo-remote")
+    boot_logs.latest_remote_log.assert_called_once_with("any-host")
+    boot_logs.read_log.assert_called_once_with("any-host_linbo-remote_20261011101500.log")
 
 
 def test_get_session_log_school_admin_own_host(monkeypatch):
@@ -227,7 +229,7 @@ def test_get_session_log_school_admin_other_school_is_404(monkeypatch):
 
 def test_get_session_log_missing_is_404(monkeypatch):
     boot_logs = Mock()
-    boot_logs.read_log.return_value = None
+    boot_logs.latest_remote_log.return_value = None
     monkeypatch.setattr(linbo_sync, "LinboBootLogs", lambda: boot_logs)
 
     who = Mock(school="global")
@@ -236,11 +238,12 @@ def test_get_session_log_missing_is_404(monkeypatch):
         linbo_sync.get_session_log("no-such-host", who=who)
 
     assert exc_info.value.status_code == 404
+    boot_logs.read_log.assert_not_called()
 
 
 def test_get_session_log_unsafe_filename_is_400(monkeypatch):
     boot_logs = Mock()
-    boot_logs.read_log.side_effect = ValueError("Unsafe filename: ../etc/passwd.linbo-remote")
+    boot_logs.latest_remote_log.side_effect = ValueError("Unsafe hostname: ../etc/passwd")
     monkeypatch.setattr(linbo_sync, "LinboBootLogs", lambda: boot_logs)
 
     who = Mock(school="global")

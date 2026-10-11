@@ -125,9 +125,9 @@ def get_session_log(
     """
     ## Read a host's linbo-remote session log.
 
-    tmux's pipe-pane duplicates the session's output to this log as it runs,
-    and it stays readable after the session ends. A school-administrator can
-    only read hosts belonging to their own school.
+    The log of the host's last run: tmux's pipe-pane duplicates the session's
+    output to it as it runs, and it stays readable after the session ends. A
+    school-administrator can only read hosts belonging to their own school.
 
     ### Access
     - global-administrators
@@ -146,8 +146,10 @@ def get_session_log(
         if hostname not in known_hostnames:
             raise HTTPException(status_code=404, detail=f"Host {hostname} not found")
 
+    boot_logs = LinboBootLogs()
     try:
-        content = LinboBootLogs().read_log(f'{hostname}.linbo-remote')
+        filename = boot_logs.latest_remote_log(hostname)
+        content = boot_logs.read_log(filename) if filename else None
     except ValueError as error:
         status_code = 413 if "too large" in str(error).lower() else 400
         raise HTTPException(status_code=status_code, detail=str(error)) from error
