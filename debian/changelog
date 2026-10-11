@@ -1,3 +1,38 @@
+linuxmuster-api7 (7.4.14) lmn74; urgency=medium
+
+  * [security] Basic auth accepts non-ASCII credentials, decoded as UTF-8
+    with a Latin-1 fallback. FastAPI only decoded ASCII, so a password
+    accepted by set-current-password, like one with umlauts, ß or €,
+    could never be used to log in. Fix #47, reported by @TomlDev.
+  * [groups] PATCH /groups/{group} only writes the flags it is sent. The
+    schema defaulted join to True and hide, mailalias and maillist to
+    False, so a patch only renaming a group also unhid it and made it
+    joinable. Fix #49, reported by @Maddi02, whose tests were taken
+    over.
+  * [devices] PATCH /devices/{device} passes the school when writing the
+    credentials of a device, which were looked for in default-school
+    only. Thanks to @amolani (#42).
+  * [linbo] New POST /linbo/restart-services, restarting linbo-multicast
+    and linbo-torrent after a change on an image. The services are
+    global: a school-administrator restarts them for every school.
+    Fix #43, reported by @TomlDev.
+  * [linbo] New GET /linbo/sync/onboot, GET and DELETE
+    /linbo/sync/onboot/{hostname}, to list, read and withdraw the
+    commands waiting for a host's next boot. A school-administrator
+    only sees the hosts of their school. Fix #44, reported by @TomlDev.
+  * [linbo] POST /linbo/hosts/query, GET /linbo/configs and POST
+    /linbo/hosts/scan return an empty list instead of a 404 when
+    nothing matches. Fix #45, reported by @TomlDev.
+  * [linbo] GET /linbo/changes no longer misses a change made in the
+    same second as the cursor. The deletedHosts and deletedStartConfs
+    fields, always empty, are removed. See linuxmuster-tools#38.
+  * [sessions] Session members are sorted in natural order.
+  * [devices] GET /devices/roles reads the computer roles from the new
+    SophomorixIni.computer_roles.
+  * [packaging] Depends on linuxmuster-tools7 (>= 7.4.19).
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 11 Oct 2026 10:30:00 +0200
+
 linuxmuster-api7 (7.4.13) lmn74; urgency=medium
 
   * [security] A host key can be restricted to a list of endpoints with a
