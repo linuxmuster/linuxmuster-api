@@ -170,7 +170,7 @@ def custom_openapi():
     for path, details in openapi_schema["paths"].items():
         if path != '/v1/auth/' and path != '/':
             for method in details.keys():
-                details[method]['security'] = [{'ApiKeyUserAuth': [], 'ApiKeyHostAuth': []}]
+                details[method]['security'] = [{'ApiKeyUserAuth': []}, {'ApiKeyHostAuth': []}]
 
     app.openapi_schema = openapi_schema
     return app.openapi_schema
