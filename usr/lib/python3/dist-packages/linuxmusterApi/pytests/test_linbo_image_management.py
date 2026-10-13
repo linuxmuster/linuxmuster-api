@@ -18,8 +18,7 @@ class FakeImageGroup:
     Stands in for LinboImageGroup with real attributes rather than a Mock,
     because a Mock invents any attribute that is asked of it and would hide the
     case below: LinboImageGroup.load() returns early when an image's .info
-    cannot be read, leaving base None, error set — and diff_image never
-    assigned at all.
+    cannot be read, leaving base and diff_image None, error set.
     """
 
     def __init__(self, name="win11", backups=None, diff=True, usable=True):
@@ -31,6 +30,7 @@ class FakeImageGroup:
             self.diff_image = object() if diff else None
         else:
             self.base = None
+            self.diff_image = None
             self.error = "missing .info"
 
     def to_dict(self):
@@ -89,9 +89,9 @@ def test_delete_image_404s_on_an_unknown_image(manager):
 
 def test_delete_image_404s_on_a_path_like_name(manager):
     """
-    get_linbo_image_group_or_404 only ever looks image_name up as a dict
-    key, never builds a path from it, so a path-traversal-shaped name is not
-    a special case: it simply is not a key, like any other unknown name.
+    delete_image only ever looks image_name up as a dict key, never builds a
+    path from it, so a path-traversal-shaped name is not a special case: it
+    simply is not a key, like any other unknown name.
     """
 
     manager.groups = {"win11": make_group()}
@@ -333,15 +333,23 @@ def test_extras_body_refuses_to_drop_the_info_sidecar():
         LinboImageExtrasBody(desc="Windows 11")
 
 
-# An image whose .info cannot be read stays in the listing, flagged, but no
-# operation on it can succeed — LinboImageGroup.load() leaves base as None and
-# never assigns diff_image. Each of these would otherwise be an opaque 500.
+def test_delete_image_deletes_an_unusable_image(manager):
+    manager.groups = {"win11": make_group(usable=False)}
+
+    result = linbo.delete_image("win11", None)
+
+    manager.delete.assert_called_once_with("win11")
+    assert result == {"image": "win11", "status": "deleted"}
+
+
+# An image whose .info cannot be read stays in the listing, flagged, and no
+# operation but a delete can succeed on it — LinboImageGroup.load() leaves
+# base and diff_image as None. Each of these would otherwise be an opaque 500.
 
 
 @pytest.mark.parametrize(
     "call",
     [
-        pytest.param(lambda: linbo.delete_image("win11", None), id="delete"),
         pytest.param(lambda: linbo.delete_image_diff("win11", None), id="delete-diff"),
         pytest.param(lambda: linbo.list_image_backups("win11", None), id="list-backups"),
         pytest.param(

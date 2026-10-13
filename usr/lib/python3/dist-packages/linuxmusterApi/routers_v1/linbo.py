@@ -1435,7 +1435,15 @@ def delete_image(
     who: AuthenticatedUser = Depends(RoleChecker("GS")),
 ):
     """
-    ## Delete a LINBO image with its backups, differential image and sidecars.
+    ## Delete a LINBO image with its whole directory.
+
+    **The whole directory `/srv/linbo/images/<image_name>/` is removed**: the
+    image, its backups, its differential image, its sidecars, and any other
+    file stored in it, including files added by hand. Clients must warn the
+    admin of this before calling it.
+
+    An image whose `.info` is missing or incomplete, listed with an `error`,
+    can be deleted too.
 
     **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
     server, so a school-administrator changes here what every school uses.
@@ -1451,7 +1459,13 @@ def delete_image(
 
 
     manager = LinboImageManager()
-    get_linbo_image_group_or_404(manager, image_name)
+
+    # Not get_linbo_image_group_or_404: an image with a broken .info, which it
+    # refuses with 409, is precisely one an admin needs to delete.
+    # get_linbo_image_group_or_404(manager, image_name)
+
+    if image_name not in manager.groups:
+        raise HTTPException(status_code=404, detail=f"No image named {image_name}")
 
     run_linbo_image_operation(lambda: manager.delete(image_name))
     return {"image": image_name, "status": "deleted"}
@@ -1496,6 +1510,11 @@ def delete_image_backup(
 ):
     """
     ## Delete a single backup of a LINBO image.
+
+    **The whole backup directory
+    `/srv/linbo/images/<image_name>/backups/<timestamp>/` is removed**,
+    including files added by hand. Clients must warn the admin of this before
+    calling it.
 
     **Not school-scoped.** `/srv/linbo` holds one set of files for the whole
     server, so a school-administrator changes here what every school uses.

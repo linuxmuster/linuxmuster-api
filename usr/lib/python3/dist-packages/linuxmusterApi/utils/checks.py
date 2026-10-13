@@ -321,8 +321,8 @@ def get_linbo_image_group_or_404(manager, image_name):
     group, so callers must resolve it first to answer 404 themselves.
 
     An image whose .info is unreadable is refused with 409: LinboImageGroup.load()
-    stops in that case, leaving base as None and diff_image never assigned, so
-    touching group.diff_image would raise AttributeError.
+    stops in that case, leaving base and diff_image as None, so no operation
+    but a delete can work on it.
 
     :param manager: LinboImageManager instance
     :param image_name: Name of the LINBO image
