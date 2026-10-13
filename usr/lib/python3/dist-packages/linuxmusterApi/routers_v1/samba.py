@@ -26,6 +26,7 @@ def get_password_policy(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     ### Access
     - school-administrators
     - global-administrators
+    - teachers
 
     \f
     :param who: User requesting the data, read from API Token
