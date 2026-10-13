@@ -28,7 +28,15 @@ class TestPasswordConstraints:
         assert set(data.keys()) == {"default", "school", "override"}
         assert data["school"] == SCHOOLADMIN.school
 
-    @pytest.mark.parametrize("user", USERS[2:])
+    def test_get_teacher(self):
+        # A teacher needs the policy to change a password in the interface.
+        r = client.get(f"{BASE_URL}/passwordconstraints/", headers={"X-API-KEY": TEACHER.jwt})
+        assert r.status_code == 200
+        data = r.json()
+        assert set(data.keys()) == {"default", "school", "override"}
+        assert data["school"] == TEACHER.school
+
+    @pytest.mark.parametrize("user", USERS[3:])
     def test_get_denied(self, user):
         r = client.get(f"{BASE_URL}/passwordconstraints/", headers={"X-API-KEY": user.jwt})
         assert r.status_code == 401
