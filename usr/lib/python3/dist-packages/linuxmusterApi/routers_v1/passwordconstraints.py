@@ -16,7 +16,7 @@ router = APIRouter(
 
 
 @router.get("/", name="Read password constraints")
-def get_passwordconstraints(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def get_passwordconstraints(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## Read the content of /etc/linuxmuster/tools/password_constraints.yml.
 
@@ -28,6 +28,7 @@ def get_passwordconstraints(who: AuthenticatedUser = Depends(RoleChecker("GS")))
     ### Access
     - school-administrators (own school only)
     - global-administrators
+    - teachers
 
     \f
     :param who: User requesting the data, read from API Token

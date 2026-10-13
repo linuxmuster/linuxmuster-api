@@ -15,7 +15,7 @@ router = APIRouter(
 )
 
 @router.get("/passwordpolicy", name="Read the domain-wide Samba password policy")
-def get_password_policy(who: AuthenticatedUser = Depends(RoleChecker("GS"))):
+def get_password_policy(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
     """
     ## Read the Samba AD domain-wide password policy.
 
