@@ -42,6 +42,30 @@ def _get_vdi_groups():
         )
 
 
+def _describe_group(name, data):
+    """
+    Presentation data of a group: display name and OS family.
+
+    edulution-linbo-vdi >= 1.1.5 derives them (display_name from the .vdi
+    file, else the start.conf [OS] Name, else the group name). With an older
+    library the group name stands in, so the response shape stays the same.
+    """
+    try:
+        from edulution_linbo_vdi.device_store import describe_group
+    except ImportError:
+        describe_group = None
+    if describe_group is not None:
+        try:
+            described = describe_group(name, data)
+            return {
+                "display_name": described.get("display_name") or name,
+                "os_family": described.get("os_family", ""),
+            }
+        except Exception as exc:
+            logger.warning("Cannot describe VDI group %s: %s", name, exc)
+    return {"display_name": str(data.get("display_name") or name), "os_family": ""}
+
+
 class ConnectionRequest(BaseModel):
     """
     Request body for a VDI connection.
@@ -58,8 +82,9 @@ def get_vdi_groups(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
     """
     ## List all available VDI groups (images).
 
-    Returns each group with its activation status, OS type, and
-    clone pool configuration (minimum, maximum, prestarted VMs).
+    Returns each group with its activation status, OS type, display name
+    (what the Desktop app shows on the card), OS family (windows / linux /
+    other) and clone pool configuration (minimum, maximum, prestarted VMs).
 
     ### Access
     - all authenticated users
@@ -81,6 +106,7 @@ def get_vdi_groups(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
             "name": name,
             "activated": activated,
             "ostype": data.get("ostype", ""),
+            **_describe_group(name, data),
             "cores": data.get("cores", 0),
             "memory": data.get("memory", 0),
             "minimum_vms": data.get("minimum_vms", 0),
