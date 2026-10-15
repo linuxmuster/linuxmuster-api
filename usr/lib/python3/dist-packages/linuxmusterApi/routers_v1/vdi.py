@@ -42,38 +42,6 @@ def _get_vdi_groups():
         )
 
 
-def _describe_group(name, data):
-    """
-    Presentation data of a group: display name and OS family.
-
-    edulution-linbo-vdi >= 1.1.5 derives them (display_name from the .vdi
-    file, else the start.conf [OS] Name, else the group name). With an older
-    library the group name stands in, so the response shape stays the same.
-    """
-    try:
-        from edulution_linbo_vdi.device_store import describe_group
-    except ImportError:
-        describe_group = None
-    if describe_group is not None:
-        try:
-            described = describe_group(name, data)
-            return {
-                "display_name": described.get("display_name") or name,
-                "os_family": described.get("os_family", ""),
-            }
-        except Exception as exc:
-            logger.warning("Cannot describe VDI group %s: %s", name, exc)
-    return {"display_name": str(data.get("display_name") or name), "os_family": ""}
-
-
-class ConnectionRequest(BaseModel):
-    """
-    Request body for a VDI connection.
-    """
-
-    group: str
-    user: str
-
 
 # ---- Groups / Images ----
 
@@ -97,16 +65,35 @@ def get_vdi_groups(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
     """
 
     vdi_groups = _get_vdi_groups()
+
+    # edulution-linbo-vdi >= 1.1.5 derives the display name (from the .vdi
+    # file, else the start.conf [OS] Name, else the group name) and the OS
+    # family. With an older library the group name stands in.
+    try:
+        from edulution_linbo_vdi.device_store import describe_group
+    except ImportError:
+        describe_group = None
+
     result = []
     for name, data in vdi_groups["groups"].items():
         activated = data.get("activated", False)
         if isinstance(activated, str):
             activated = activated.lower() in ("yes", "true", "1")
+        display_name = str(data.get("display_name") or name)
+        os_family = ""
+        if describe_group is not None:
+            try:
+                described = describe_group(name, data)
+                display_name = described.get("display_name") or name
+                os_family = described.get("os_family", "")
+            except Exception as exc:
+                logger.warning("Cannot describe VDI group %s: %s", name, exc)
         result.append({
             "name": name,
             "activated": activated,
             "ostype": data.get("ostype", ""),
-            **_describe_group(name, data),
+            "display_name": display_name,
+            "os_family": os_family,
             "cores": data.get("cores", 0),
             "memory": data.get("memory", 0),
             "minimum_vms": data.get("minimum_vms", 0),
