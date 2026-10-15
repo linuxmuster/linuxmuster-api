@@ -7,6 +7,7 @@ from unittest.mock import Mock
 import pytest
 
 from routers_v1 import vdi
+from routers_v1.body_schemas import ConnectionRequest
 
 
 GROUPS = {
@@ -22,6 +23,12 @@ GROUPS = {
 @pytest.fixture
 def groups(monkeypatch):
     monkeypatch.setattr(vdi, "_get_vdi_groups", Mock(return_value=GROUPS))
+
+
+def test_connection_request_body_is_the_shared_schema():
+    """The body model lives in body_schemas; the router must keep importing it."""
+    assert vdi.ConnectionRequest is ConnectionRequest
+    assert ConnectionRequest(group="win11", user="lehrer01").model_dump() == {"group": "win11", "user": "lehrer01"}
 
 
 def _by_name(result):

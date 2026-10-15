@@ -1,8 +1,8 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 
 from security import RoleChecker, AuthenticatedUser
+from .body_schemas import ConnectionRequest
 
 logger = logging.getLogger(__name__)
 
