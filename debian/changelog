@@ -1,4 +1,4 @@
-linuxmuster-api7 (7.4.15) lmn74; urgency=medium
+linuxmuster-api7 (7.4.16) lmn74; urgency=medium
 
   * [security] [linbo] The onboot routes no longer return the
     "linbo:<password>" entry, the LINBO rsync password in clear, through
