@@ -1,3 +1,21 @@
+linuxmuster-api7 (7.4.15) lmn74; urgency=medium
+
+  * [security] [linbo] The onboot routes no longer return the
+    "linbo:<password>" entry, the LINBO rsync password in clear, through
+    linuxmuster-tools 7.4.20. Fix #51, reported by @TomlDev.
+  * [linbo] DELETE /linbo/images/{image_name} removes the whole image
+    directory, including files added by hand, and also works for an
+    image whose .info is missing or incomplete, refused so far with a
+    409. The same applies to the backup directory deleted by the backup
+    route. See linuxmuster-tools#39, reported by @TomlDev.
+  * [linbo] The linbo-remote log route reads the log of the host's last
+    run, linuxmuster-linbo7 7.4.18 writing one log per run.
+  * [passwords] Teachers can read the password constraints and the
+    effective password policy. Fix #50, reported by @TomlDev.
+  * [packaging] Depends on linuxmuster-tools7 (>= 7.4.20).
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Sun, 25 Oct 2026 22:45:00 +0100
+
 linuxmuster-api7 (7.4.14) lmn74; urgency=medium
 
   * [security] Basic auth accepts non-ASCII credentials, decoded as UTF-8
