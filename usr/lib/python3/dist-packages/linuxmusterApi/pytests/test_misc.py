@@ -1,3 +1,4 @@
+import json
 import sys
 import pytest
 from fastapi.testclient import TestClient
@@ -58,12 +59,27 @@ class TestSamba:
     def fake_connections(self, monkeypatch):
         # Teacher on pc01 in r101, a student on pc02 in r101, another one in
         # r201, and the connection opened by the Webui worker of the teacher.
-        output = (
-            f"101  DOMAIN\\{TEACHER.cn}  users  10.0.0.102 (ipv4:10.0.0.102:50682)  SMB3_11  -  -  AES-128-GMAC\n"
-            f"102  DOMAIN\\{STUDENT.cn}  users  10.0.0.103 (ipv4:10.0.0.103:50710)  SMB3_11  -  -  AES-128-GMAC\n"
-            "103  DOMAIN\\other  users  10.0.0.120 (ipv4:10.0.0.120:50720)  SMB3_11  -  -  AES-128-GMAC\n"
-            f"104  DOMAIN\\{TEACHER.cn}  users  10.0.0.1 (ipv4:10.0.0.1:51538)  SMB3_11  -  -  AES-128-GMAC\n"
-        )
+        sessions = [
+            (101, TEACHER.cn, '10.0.0.102', 50682),
+            (102, STUDENT.cn, '10.0.0.103', 50710),
+            (103, 'other', '10.0.0.120', 50720),
+            (104, TEACHER.cn, '10.0.0.1', 51538),
+        ]
+        # Same format as `smbstatus -b -j`, only with the fields read by lmntools
+        output = json.dumps({'sessions': {
+            str(pid): {
+                'server_id': {'pid': str(pid)},
+                'username': f'DOMAIN\\{user}',
+                'groupname': 'users',
+                'auth_time': '2026-10-26T19:00:00.000000+01:00',
+                'remote_machine': ip,
+                'hostname': f'ipv4:{ip}:{port}',
+                'session_dialect': 'SMB3_11',
+                'encryption': {'cipher': '-'},
+                'signing': {'cipher': 'AES-128-GMAC'},
+            }
+            for pid, user, ip, port in sessions
+        }})
         hostnames = {
             '10.0.0.102': {'hostname': 'pc01', 'room': 'r101'},
             '10.0.0.103': {'hostname': 'pc02', 'room': 'r101'},
@@ -92,7 +108,7 @@ class TestSamba:
             'objects': {
                 STUDENT.cn: {
                     'COMPUTER': 'pc02', 'IP': '10.0.0.103', 'IPV4': '10.0.0.103', 'PORT': '50710', 'ROOM': 'r101',
-                    'SMBSTATUS_LINE': f"102  DOMAIN\\{STUDENT.cn}  users  10.0.0.103 (ipv4:10.0.0.103:50710)  SMB3_11  -  -  AES-128-GMAC",
+                    'SMBSTATUS_LINE': '',
                 },
             },
         }
