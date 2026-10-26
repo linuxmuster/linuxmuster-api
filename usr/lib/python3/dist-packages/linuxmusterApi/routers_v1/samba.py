@@ -2,7 +2,7 @@ from dataclasses import asdict
 from fastapi import APIRouter, Depends, HTTPException
 
 from security import RoleChecker, AuthenticatedUser
-from utils.sophomorix import lmn_getSophomorixValue
+from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.samba_util.smbstatus import SMBConnections
 from linuxmusterTools.samba_util import DomainPasswordSettingsManager
 from .body_schemas import DomainPasswordPolicy
@@ -76,47 +76,48 @@ def get_groups_list(username: str, who: AuthenticatedUser = Depends(RoleChecker(
     ### Access
     - global-administrators
     - school-administrators
-    - teachers
-
-    ### This endpoint uses Sophomorix.
+    - teachers (only for themselves)
 
     \f
+    :param username: login of the user
+    :type username: str
     :param who: User requesting the data, read from API Token
     :type who: AuthenticatedUser
     :return: Dict containing usernames and objects
     :rtype: dict
     """
 
-    school = who.school
-
     if who.role == 'teacher':
         if username != who.user:
             raise HTTPException(status_code=403, detail=f"Forbidden")
 
-    try:
-        sophomorixCommand = [
-            'sophomorix-query', '-jj', '--smbstatus',
-            '--schoolbase', school,
-            '--query-user', username
-        ]
+    school = who.school
+    if school == 'global':
+        school = lr.getval(f'/users/{username}', 'sophomorixSchoolname')
 
-        response = lmn_getSophomorixValue(sophomorixCommand, '')
-        # remove our own
-        room = response[username]['ROOM']
-        response.pop(username, None)
-        return {
-            "usersList": list(response.keys()) if response else [],
-            "name": room,
-            "objects": response,
+    if school in (None, 'global'):
+        # Unknown user, or global account without devices.csv
+        room, connections = '', {}
+    else:
+        room, connections = SMBConnections(school=school).get_room_users(username)
+
+    objects = {}
+    for user, details in connections.items():
+        ipv4, _, port = (details.ip4 or '').rpartition(':')
+        objects[user] = {
+            'COMPUTER': details.hostname,
+            'IP': details.machine,
+            'IPV4': ipv4,
+            'PORT': port,
+            'ROOM': details.room,
+            'SMBSTATUS_LINE': details.rawline,
         }
-    except (IndexError, Exception) as e:
-        # response is an empty dict, not able to detect the room
-        # or the other users in room
-        return {
-            "usersList": [],
-            "name": '',
-            "objects": {},
-        }
+
+    return {
+        "usersList": list(objects.keys()),
+        "name": room,
+        "objects": objects,
+    }
 
 @router.get("/smbstatus", name="Parsed output of smbstatus")
 def get_smbstatus(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
@@ -139,27 +140,17 @@ def get_smbstatus(who: AuthenticatedUser = Depends(RoleChecker("GST"))):
 
     smb_connections = SMBConnections()
 
-    connections = {
-        user: details.as_dict()
-        for user,details in smb_connections.users.items()
-    }
-
     if who.role == "teacher":
-        if who.user not in connections:
-            # Teacher not found in samba connections
-            return {}
-        else:
-            user_room = connections[who.user][room]
-            return {
-                user: details
-                for user,details in connections.items()
-                if details.room == user_room
-            }
+        room, connections = smb_connections.get_room_users(who.user)
+        if room:
+            connections[who.user] = smb_connections.users[who.user]
     else:
-        return {
-            user: details.as_dict()
-            for user,details in connections.items()
-        }
+        connections = smb_connections.users
+
+    return {
+        user: details.as_dict()
+        for user,details in connections.items()
+    }
 
 
 

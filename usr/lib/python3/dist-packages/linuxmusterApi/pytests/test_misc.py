@@ -3,6 +3,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from .credentials import *
+import linuxmusterTools.samba_util.smbstatus as smbstatus_module
 
 sys.path.append(LOCAL_API_PATH)
 from main import app
@@ -50,6 +51,91 @@ class TestSamba:
     @pytest.mark.parametrize("user", USERS[3:])
     def test_smbstatus_denied(self, user):
         r = client.get(f"{BASE_URL}/samba/smbstatus", headers={"X-API-KEY": user.jwt})
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
+
+    @pytest.fixture
+    def fake_connections(self, monkeypatch):
+        # Teacher on pc01 in r101, a student on pc02 in r101, another one in
+        # r201, and the connection opened by the Webui worker of the teacher.
+        output = (
+            f"101  DOMAIN\\{TEACHER.cn}  users  10.0.0.102 (ipv4:10.0.0.102:50682)  SMB3_11  -  -  AES-128-GMAC\n"
+            f"102  DOMAIN\\{STUDENT.cn}  users  10.0.0.103 (ipv4:10.0.0.103:50710)  SMB3_11  -  -  AES-128-GMAC\n"
+            "103  DOMAIN\\other  users  10.0.0.120 (ipv4:10.0.0.120:50720)  SMB3_11  -  -  AES-128-GMAC\n"
+            f"104  DOMAIN\\{TEACHER.cn}  users  10.0.0.1 (ipv4:10.0.0.1:51538)  SMB3_11  -  -  AES-128-GMAC\n"
+        )
+        hostnames = {
+            '10.0.0.102': {'hostname': 'pc01', 'room': 'r101'},
+            '10.0.0.103': {'hostname': 'pc02', 'room': 'r101'},
+            '10.0.0.120': {'hostname': 'pc03', 'room': 'r201'},
+        }
+        monkeypatch.setattr(smbstatus_module.subprocess, 'getoutput', lambda cmd: output)
+        monkeypatch.setattr(smbstatus_module.SMBConnections, 'load_hostnames', lambda self: hostnames)
+        monkeypatch.setattr(smbstatus_module, 'SERVER_IP', '10.0.0.1')
+
+    def test_smbstatus_sa_with_connections(self, fake_connections):
+        r = client.get(f"{BASE_URL}/samba/smbstatus", headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 200
+        assert set(r.json().keys()) == {TEACHER.cn, STUDENT.cn, 'other'}
+
+    def test_smbstatus_teacher_with_connections(self, fake_connections):
+        r = client.get(f"{BASE_URL}/samba/smbstatus", headers={"X-API-KEY": TEACHER.jwt})
+        assert r.status_code == 200
+        assert set(r.json().keys()) == {TEACHER.cn, STUDENT.cn}
+
+    def test_user_in_room_with_connections(self, fake_connections):
+        r = client.get(f"{BASE_URL}/samba/userInRoom/{TEACHER.cn}", headers={"X-API-KEY": TEACHER.jwt})
+        assert r.status_code == 200
+        assert r.json() == {
+            'usersList': [STUDENT.cn],
+            'name': 'r101',
+            'objects': {
+                STUDENT.cn: {
+                    'COMPUTER': 'pc02', 'IP': '10.0.0.103', 'IPV4': '10.0.0.103', 'PORT': '50710', 'ROOM': 'r101',
+                    'SMBSTATUS_LINE': f"102  DOMAIN\\{STUDENT.cn}  users  10.0.0.103 (ipv4:10.0.0.103:50710)  SMB3_11  -  -  AES-128-GMAC",
+                },
+            },
+        }
+
+    def test_user_in_room_teacher(self):
+        r = client.get(f"{BASE_URL}/samba/userInRoom/{TEACHER.cn}", headers={"X-API-KEY": TEACHER.jwt})
+        assert r.status_code == 200
+        assert set(r.json().keys()) == {'usersList', 'name', 'objects'}
+
+    def test_user_in_room_teacher_other_user(self):
+        r = client.get(f"{BASE_URL}/samba/userInRoom/{STUDENT.cn}", headers={"X-API-KEY": TEACHER.jwt})
+        assert r.status_code == 403
+
+    def test_user_in_room_sa(self):
+        r = client.get(f"{BASE_URL}/samba/userInRoom/{TEACHER.cn}", headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 200
+
+    def test_user_in_room_ga(self):
+        r = client.get(f"{BASE_URL}/samba/userInRoom/{TEACHER.cn}", headers={"X-API-KEY": GLOBALADMIN.jwt})
+        assert r.status_code == 200
+
+    def test_user_in_room_ga_uses_the_school_of_the_user(self, fake_connections, monkeypatch):
+        schools = []
+        original_init = smbstatus_module.SMBConnections.__init__
+        def init(self, school='default-school'):
+            schools.append(school)
+            original_init(self, school)
+        monkeypatch.setattr(smbstatus_module.SMBConnections, '__init__', init)
+
+        r = client.get(f"{BASE_URL}/samba/userInRoom/{TEACHER.cn}", headers={"X-API-KEY": GLOBALADMIN.jwt})
+        assert r.status_code == 200
+        assert r.json()['name'] == 'r101'
+        assert schools == [TEACHER.school]
+
+    @pytest.mark.parametrize("username", [GLOBALADMIN.cn, "nonexistentuser"])
+    def test_user_in_room_ga_without_school(self, username):
+        r = client.get(f"{BASE_URL}/samba/userInRoom/{username}", headers={"X-API-KEY": GLOBALADMIN.jwt})
+        assert r.status_code == 200
+        assert r.json() == {"usersList": [], "name": "", "objects": {}}
+
+    @pytest.mark.parametrize("user", USERS[3:])
+    def test_user_in_room_denied(self, user):
+        r = client.get(f"{BASE_URL}/samba/userInRoom/{user.cn}", headers={"X-API-KEY": user.jwt})
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
