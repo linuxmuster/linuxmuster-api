@@ -235,23 +235,18 @@ def request_connection(data: ConnectionRequest, who: AuthenticatedUser = Depends
         logger.error("Error getting connection for %s: %s", data.user, exc)
         raise HTTPException(status_code=500, detail=str(exc))
 
-    # Find the assigned VM to return its details
+    # Return the VM the broker assigned. Searching by lastConnectionRequestUser
+    # could find an older assignment of the same user on another VM.
+    vmid = str(conn["vmid"])
     group_data = vdi_groups["groups"][data.group]
-    vm_states = clone_mgr.get_states(group_data, data.group)
-    vm_info = {}
-    if vm_states:
-        for vmid, info in vm_states.items():
-            if vmid == "summary" or not isinstance(info, dict):
-                continue
-            if info.get("lastConnectionRequestUser") == data.user:
-                vm_info = {
-                    "vmid": vmid,
-                    "name": info.get("name", ""),
-                    "ip": info.get("ip", ""),
-                    "status": info.get("status", ""),
-                    "group": data.group,
-                }
-                break
+    info = (clone_mgr.get_states(group_data, data.group) or {}).get(vmid) or {}
+    vm_info = {
+        "vmid": vmid,
+        "name": info.get("name") or conn.get("name", ""),
+        "ip": info.get("ip") or conn.get("ip", ""),
+        "status": info.get("status", ""),
+        "group": data.group,
+    }
 
     return {
         "vm": vm_info,
