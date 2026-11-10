@@ -446,3 +446,12 @@ class DomainPasswordPolicy(BaseModel):
     min_pwd_age: int | None = None
     max_pwd_age: int | None = None
     complexity: bool | None = None
+
+
+class ConnectionRequest(BaseModel):
+    """
+    Request body for a VDI connection (POST /vdi/connection).
+    """
+
+    group: str
+    user: str
