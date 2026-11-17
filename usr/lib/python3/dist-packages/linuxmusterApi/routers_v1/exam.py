@@ -1,3 +1,4 @@
+import re
 from fastapi import APIRouter, Depends, HTTPException
 from time import localtime, strftime
 
@@ -80,6 +81,9 @@ def stop_exam_mode(stopexam: StopExam, who: AuthenticatedUser = Depends(UserList
 
     now = strftime("%Y-%m-%d_%Hh%Mm%S", localtime())
     target = f'EXAM_{stopexam.group_type}_{stopexam.group_name}_{now}'
+    
+    # Escape chars in target directory
+    target = re.sub(r'[^A-Za-z0-9_-]', '_', target)
 
     try:
         # Since the cn of the users are given and uniq across schools, no need to specify the school
