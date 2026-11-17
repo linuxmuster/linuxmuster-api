@@ -36,7 +36,15 @@ def query_user(school: str='default-school', keyword: str='', who: Authenticated
     """
 
 
-    if school == 'global':
-        return lr.get(f'/search/{keyword}')
+    if who.role != 'globaladministrator' and school != who.school:
+        raise HTTPException(status_code=403, detail=f"Search not allowed in school {school}.")
 
-    return lr.get(f'/search/{keyword}', school=school)
+    if school == 'global':
+        results = lr.get(f'/search/{keyword}')
+    else:
+        results = lr.get(f'/search/{keyword}', school=school)
+
+    for result in results:
+        result.pop('sophomorixFirstPassword', None)
+
+    return results
