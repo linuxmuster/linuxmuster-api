@@ -65,8 +65,8 @@ class BasicChecker:
                 'teacher': 2,
                 'student': 1,
                 'examuser': 1,
-                'parent': 1,
-                'staff': 1
+                'parent': 2,
+                'staff': 2
             }
 
             identity = who.user
@@ -94,9 +94,9 @@ class BasicChecker:
             if identity_role not in ['teacher', 'schooladministrator']:
                 return False
 
-            # Same role but other user -> access forbidden
-            if identity_role == user_role:
-                # User can only change its own password, not from someone else with the same role
+            # Same rank but other user -> access forbidden
+            if role_rank[identity_role] == role_rank.get(user_role, 5):
+                # User can only change its own password, not from someone else with the same rank
                 if identity != requested_user:
                     return False
             else:
