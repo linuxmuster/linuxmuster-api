@@ -187,6 +187,22 @@ def get_printer_or_404(printer, school):
 
     return printer_details
 
+def check_management_group_or_404(group, school):
+    """
+    Only real management groups of the school (OU=Management) may be modified
+    through the /managementgroups endpoints, never arbitrary AD groups like
+    "Domain Admins".
+    """
+
+    cn = group if school == 'default-school' else f"{school}-{group}"
+    try:
+        found = lr.getval(f'/managementgroups/{cn}', 'cn', school=school)
+    except Exception:
+        # Names with characters out of the route pattern, e.g. "Domain Admins"
+        found = None
+    if found != cn:
+        raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
+
 def get_dn_or_404(route, name, kind):
     """
     Resolve the distinguishedName of an object, or raise an error naming it.
