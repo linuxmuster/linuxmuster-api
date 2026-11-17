@@ -4,7 +4,7 @@ from security import RoleChecker, UserListChecker, AuthenticatedUser
 from .body_schemas import UserList
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr
 from linuxmusterTools.samba_util import GroupManager
-from utils.checks import require_school
+from utils.checks import check_management_group_or_404, require_school
 
 
 router = APIRouter(
@@ -102,6 +102,7 @@ def remove_user_from_group(group: str, userlist: UserList, school: str = '', who
         raise HTTPException(status_code=400, detail=f"Missing userlist of members to delete")
 
     active_school = school if school else who.school
+    check_management_group_or_404(group, active_school)
 
     try:
         GroupManager(school=active_school).remove_members(group, userlist.users)
@@ -146,6 +147,7 @@ def add_user_to_group(group: str, userlist: UserList, school: str = '', who: Aut
         raise HTTPException(status_code=400, detail=f"Missing userlist of members to add")
 
     active_school = school if school else who.school
+    check_management_group_or_404(group, active_school)
 
     try:
         GroupManager(school=active_school).add_members(group, userlist.users)

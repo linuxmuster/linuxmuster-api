@@ -283,6 +283,62 @@ class TestManagementGroupMembers:
         assert r.status_code == 404
         assert not self._is_member("not-a-real-user-xyz")
 
+    def test_post_member_teacher(self):
+        assert self._add(TEACHER.jwt, [STUDENT.cn]).status_code == 200
+        assert self._is_member(STUDENT.cn)
+
+
+class _FakeGroupManager:
+    """
+    Records the calls instead of writing to the AD: a broken check must not
+    actually put somebody into "Domain Admins" on the test server.
+    """
+
+    calls = []
+
+    def __init__(self, school='default-school'):
+        pass
+
+    def add_members(self, group, members):
+        self.calls.append(('add', group))
+
+    def remove_members(self, group, members):
+        self.calls.append(('remove', group))
+
+
+class TestManagementGroupWhitelist:
+    @pytest.fixture(autouse=True)
+    def _fake_group_manager(self, monkeypatch):
+        _FakeGroupManager.calls = []
+        monkeypatch.setattr("routers_v1.managementgroups.GroupManager", _FakeGroupManager)
+
+    @pytest.mark.parametrize("method", ["POST", "DELETE"])
+    @pytest.mark.parametrize("group", ["Domain Admins", "Administrators", "Enterprise Admins",
+                                       "global-admins", "all-wifi", "Wifi", "teachers"])
+    @pytest.mark.parametrize("user", [SCHOOLADMIN, TEACHER])
+    def test_non_management_group_404(self, method, group, user):
+        r = client.request(method, f"{BASE_URL}/managementgroups/{group}/members",
+                           headers={"X-API-KEY": user.jwt}, json={"users": [STUDENT.cn]})
+        # The older check rejects teachers on any name containing "admins" first
+        expected = 403 if user is TEACHER and "admins" in group else 404
+        assert r.status_code == expected
+        assert _FakeGroupManager.calls == []
+
+    @pytest.mark.parametrize("method", ["POST", "DELETE"])
+    def test_admins_teacher_forbidden(self, method):
+        r = client.request(method, f"{BASE_URL}/managementgroups/admins/members",
+                           headers={"X-API-KEY": TEACHER.jwt}, json={"users": [STUDENT.cn]})
+        assert r.status_code == 403
+        assert _FakeGroupManager.calls == []
+
+    @pytest.mark.parametrize("method, action", [("POST", "add"), ("DELETE", "remove")])
+    @pytest.mark.parametrize("group", ["wifi", "internet", "intranet", "webfilter", "printing"])
+    def test_management_group_allowed(self, method, action, group):
+        r = client.request(method, f"{BASE_URL}/managementgroups/{group}/members",
+                           headers={"X-API-KEY": TEACHER.jwt}, json={"users": [STUDENT.cn]})
+        assert r.status_code in (200, 204)
+        assert _FakeGroupManager.calls == [(action, group)]
+
 
 @_need_group
 class TestGroupPartialPatch:
