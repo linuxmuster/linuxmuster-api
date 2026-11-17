@@ -101,6 +101,33 @@ class TestSchoolClasses:
         data = r.json()
         assert isinstance(data, list)
 
+    @pytest.mark.parametrize("route", ["teachers", "parents"])
+    @pytest.mark.parametrize("user, visible", [(GLOBALADMIN, True), (SCHOOLADMIN, True), (TEACHER, False)])
+    def test_get_schoolclass_members_first_password(self, monkeypatch, route, user, visible):
+        # Simulated LDAP: the test schoolclass may have no teacher or parent
+        # (lr is shared with the authentication, only intercept the member lookups)
+        from routers_v1.schoolclasses import lr
+        real_get, real_getval = lr.get, lr.getval
+
+        def fake_getval(url, *args, **kwargs):
+            if url.startswith(f'/units/{SCHOOLCLASS}-'):
+                return ['CN=member,DC=example']
+            return real_getval(url, *args, **kwargs)
+
+        def fake_get(url, *args, **kwargs):
+            if url.startswith('/dn/'):
+                return {'cn': 'member', 'sophomorixFirstPassword': 'secret'}
+            return real_get(url, *args, **kwargs)
+
+        monkeypatch.setattr("routers_v1.schoolclasses.get_schoolclass_or_404", lambda *a, **k: {})
+        monkeypatch.setattr(lr, "getval", fake_getval)
+        monkeypatch.setattr(lr, "get", fake_get)
+
+        r = client.get(f"{BASE_URL}/schoolclasses/{SCHOOLCLASS}/{route}", headers={"X-API-KEY": user.jwt})
+        assert r.status_code == 200
+        assert len(r.json()) == 1
+        assert ('sophomorixFirstPassword' in r.json()[0]) is visible
+
     @pytest.mark.parametrize("user", USERS[3:])
     def test_get_schoolclass_teachers_denied(self, user):
         r = client.get(f"{BASE_URL}/schoolclasses/{SCHOOLCLASS}/teachers", headers={"X-API-KEY": user.jwt})

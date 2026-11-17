@@ -78,6 +78,26 @@ class TestUsers:
         data = r.json()
         assert data["cn"] == STUDENT.cn
 
+    def test_get_user_teacher_accesses_student(self):
+        r = client.get(f"{BASE_URL}/users/{STUDENT.cn}", headers={"X-API-KEY": TEACHER.jwt})
+        assert r.status_code == 200
+
+    @pytest.mark.parametrize("user", [PARENT, STAFF])
+    def test_get_user_teacher_denied_on_same_rank(self, user):
+        # Parents and staff have the same rank as teachers
+        r = client.get(f"{BASE_URL}/users/{user.cn}", headers={"X-API-KEY": TEACHER.jwt})
+        assert r.status_code == 401
+
+    @pytest.mark.parametrize("user", [PARENT, STAFF])
+    def test_get_user_sa_accesses_parent_and_staff(self, user):
+        r = client.get(f"{BASE_URL}/users/{user.cn}", headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 200
+
+    @pytest.mark.parametrize("user", [PARENT, STAFF])
+    def test_get_user_parent_staff_denied_on_student(self, user):
+        r = client.get(f"{BASE_URL}/users/{STUDENT.cn}", headers={"X-API-KEY": user.jwt})
+        assert r.status_code == 401
+
 
 class TestUserPasswords:
     """

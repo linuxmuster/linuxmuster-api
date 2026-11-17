@@ -51,6 +51,12 @@ class TestPrinters:
         r = client.get(f"{BASE_URL}/printers/{PRINTER}", headers={"X-API-KEY": TEACHER.jwt})
         assert r.status_code == 200
 
+    @_need_printer
+    def test_get_printer_all_members_teacher_without_first_password(self):
+        r = client.get(f"{BASE_URL}/printers/{PRINTER}?all_members=true", headers={"X-API-KEY": TEACHER.jwt})
+        assert r.status_code == 200
+        assert all('sophomorixFirstPassword' not in member for member in r.json()['members'])
+
     @pytest.mark.parametrize("user", USERS[3:])
     def test_get_printer_denied(self, user):
         r = client.get(f"{BASE_URL}/printers/{PRINTER}", headers={"X-API-KEY": user.jwt})
