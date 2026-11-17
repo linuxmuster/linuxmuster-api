@@ -153,6 +153,21 @@ def get_printer_or_404(printer, school):
 
     return printer_details
 
+def check_management_group_or_404(group, school):
+    """
+    Only real management groups of the school (OU=Management) may be modified
+    through the /managementgroups endpoints. The cn must match exactly: LDAP
+    ignores the case, so "Admins" would otherwise find the admins group.
+    """
+
+    try:
+        found = lr.getval(f'/managementgroups/{group}', 'cn', school=school)
+    except Exception:
+        # Names with characters out of the route pattern
+        found = None
+    if found != group:
+        raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
+
 def check_valid_school_or_404(school):
     """
     Check if the given school is a valid school.
