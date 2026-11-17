@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from security import RoleChecker, UserListChecker, AuthenticatedUser
 from .body_schemas import UserList
 from linuxmusterTools.ldapconnector import LMNLdapReader as lr, LMNMgmtGroup
+from utils.checks import check_management_group_or_404
 
 
 router = APIRouter(
@@ -93,10 +94,7 @@ def remove_user_from_group(group: str, userlist: UserList, who: AuthenticatedUse
         # Nothing to do
         raise HTTPException(status_code=400, detail=f"Missing userlist of members to delete")
 
-    group_details = lr.get(f'/managementgroups/{group}', school=who.school)
-
-    if not group_details:
-        raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
+    check_management_group_or_404(group, who.school)
 
     for member in userlist.users:
         try:
@@ -138,10 +136,7 @@ def add_user_to_group(group: str, userlist: UserList, who: AuthenticatedUser = D
         # Nothing to do
         raise HTTPException(status_code=400, detail=f"Missing userlist of members to add")
 
-    group_details = lr.get(f'/managementgroups/{group}', school=who.school)
-
-    if not group_details:
-        raise HTTPException(status_code=404, detail=f"Management group {group} not found.")
+    check_management_group_or_404(group, who.school)
 
     for member in userlist.users:
         try:
