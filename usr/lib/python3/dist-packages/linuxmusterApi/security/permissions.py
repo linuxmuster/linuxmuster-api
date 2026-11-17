@@ -79,14 +79,20 @@ class BasicChecker:
             # Ensure the requested user exists in LDAP
             try:
                 if requested_user.endswith('-exam'):
-                    user_role = lr.getval(f'/users/exam/{requested_user}', 'sophomorixRole')
+                    user_data = lr.getvalues(f'/users/exam/{requested_user}', ['sophomorixRole', 'sophomorixSchoolname'])
                 else:
-                    user_role = lr.getval(f'/users/{requested_user}', 'sophomorixRole')
+                    user_data = lr.getvalues(f'/users/{requested_user}', ['sophomorixRole', 'sophomorixSchoolname'])
             except Exception:
                 raise HTTPException(status_code=404, detail=f"Requested user {requested_user} not found")
 
+            user_role = user_data['sophomorixRole']
+
             # Is it really a valid user ?
             if user_role is None:
+                return False
+
+            # Users from another school are out of reach
+            if user_data['sophomorixSchoolname'] != who.school:
                 return False
 
             ## Some additional security checks
@@ -218,20 +224,26 @@ def check_print_permissions(who, users):
 
         # Ensure the requested user exists in LDAP
         if user.endswith('-exam'):
-            user_role = lr.getval(f'/users/exam/{user}', 'sophomorixRole')
+            user_data = lr.getvalues(f'/users/exam/{user}', ['sophomorixRole', 'sophomorixSchoolname'])
         else:
-            user_role = lr.getval(f'/users/{user}', 'sophomorixRole')
+            user_data = lr.getvalues(f'/users/{user}', ['sophomorixRole', 'sophomorixSchoolname'])
+
+        user_role = user_data['sophomorixRole']
 
         # Ignoring unknow users
         if user_role is None:
+            to_remove.add(user)
+
+        # Ignoring users from another school
+        elif who.role != 'globaladministrator' and user_data['sophomorixSchoolname'] != who.school:
             to_remove.add(user)
 
         # Do not print admins password
         elif user_role in ['globaladministrator', 'schooladministrator']:
             to_remove.add(user)
 
-        # As a teacher, do not see other teacher's password
-        elif who.role == 'teacher' and user_role == 'teacher':
+        # As a teacher, only print the passwords of students
+        elif who.role == 'teacher' and user_role not in ['student', 'examuser']:
             to_remove.add(user)
 
     users.difference_update(to_remove)
