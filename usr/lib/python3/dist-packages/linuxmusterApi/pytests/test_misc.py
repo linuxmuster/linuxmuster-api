@@ -35,6 +35,24 @@ class TestQuery:
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
+    def test_query_ga_global(self):
+        r = client.get(f"{BASE_URL}/query/global/{TEACHER.cn}", headers={"X-API-KEY": GLOBALADMIN.jwt})
+        assert r.status_code == 200
+        assert len(r.json()) > 0
+
+    @pytest.mark.parametrize("user", [SCHOOLADMIN, TEACHER])
+    @pytest.mark.parametrize("school", ["global", "other-school"])
+    def test_query_other_school_forbidden(self, user, school):
+        r = client.get(f"{BASE_URL}/query/{school}/{TEACHER.cn}", headers={"X-API-KEY": user.jwt})
+        assert r.status_code == 403
+
+    @pytest.mark.parametrize("user, school", [(GLOBALADMIN, "global"), (GLOBALADMIN, SCHOOL), (SCHOOLADMIN, SCHOOL), (TEACHER, SCHOOL)])
+    def test_query_never_returns_first_passwords(self, user, school):
+        r = client.get(f"{BASE_URL}/query/{school}/{TEACHER.cn}", headers={"X-API-KEY": user.jwt})
+        assert r.status_code == 200
+        assert len(r.json()) > 0
+        assert all('sophomorixFirstPassword' not in result for result in r.json())
+
 
 class TestSamba:
     def test_smbstatus_ga(self):
