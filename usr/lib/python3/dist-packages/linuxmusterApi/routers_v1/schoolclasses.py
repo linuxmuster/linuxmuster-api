@@ -357,6 +357,7 @@ def schoolclass_parents(schoolclass: str, who: AuthenticatedUser = Depends(RoleC
     ### Access
     - global-administrators
     - school-administrators
+    - teachers
 
     \f
     :param schoolclass: cn of the schoolclass
@@ -375,7 +376,10 @@ def schoolclass_parents(schoolclass: str, who: AuthenticatedUser = Depends(RoleC
 
     if members is not None:
         for member_dn in members:
-            response.append(lr.get(f'/dn/{member_dn}'))
+            member = lr.get(f'/dn/{member_dn}')
+            if who.role == 'teacher':
+                member.pop('sophomorixFirstPassword', None)
+            response.append(member)
 
     return response
 
@@ -406,6 +410,9 @@ def schoolclass_teachers(schoolclass: str, who: AuthenticatedUser = Depends(Role
 
     if members is not None:
         for member_dn in members:
-            response.append(lr.get(f'/dn/{member_dn}'))
+            member = lr.get(f'/dn/{member_dn}')
+            if who.role == 'teacher':
+                member.pop('sophomorixFirstPassword', None)
+            response.append(member)
 
     return response

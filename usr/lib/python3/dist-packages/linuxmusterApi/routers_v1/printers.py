@@ -77,6 +77,9 @@ def get_printer(printer: str, all_members: bool = False, who: AuthenticatedUser 
 
     if all_members:
         printer_details['members'] = [lr.get(f'/users/{member}') for member in printer_details['all_members']]
+        if who.role == 'teacher':
+            for member in printer_details['members']:
+                member.pop('sophomorixFirstPassword', None)
 
     if who.role in ["schooladministrator", "globaladministrator"]:
         # No filter
