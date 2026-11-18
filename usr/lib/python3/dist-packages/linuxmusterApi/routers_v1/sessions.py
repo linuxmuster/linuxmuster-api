@@ -157,6 +157,10 @@ def session_create(user: str, sessionname: str, userlist: UserList | None = None
     members = ""
     if userlist:
         if userlist.users:
+            checker = UserListChecker("GST")
+            for member in userlist.users:
+                if not checker._check_role_permissions(who, member):
+                    raise HTTPException(status_code=401, detail=f'Permission denied to request user {member}')
             members = ",".join(set(userlist.users))
 
     new_session = f"{sid};{sessionname};{members};"
@@ -168,7 +172,7 @@ def session_create(user: str, sessionname: str, userlist: UserList | None = None
     except Exception as e:
        raise HTTPException(status_code=404, detail=str(e))
 
-@router.delete("/{user}/{sessionsid}/members", status_code=204, name="Remove members from a specific session of a specific user")
+@router.delete("/{user}/{sessionsid}/members", status_code=204, name="Remove members from a specific session of a specific user", dependencies=[Depends(UserChecker("GST"))])
 def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
     ## Remove members from a specific session of a specific user.
@@ -215,7 +219,7 @@ def remove_user_from_session(user:str, sessionsid: str, userlist: UserList, who:
     else:
        raise HTTPException(status_code=404, detail=f"Session {sessionsid} not found by {user}")
 
-@router.post("/{user}/{sessionsid}/members", name="Add members to a specific session of a specific user")
+@router.post("/{user}/{sessionsid}/members", name="Add members to a specific session of a specific user", dependencies=[Depends(UserChecker("GST"))])
 def add_user_to_session(user: str, sessionsid: str, userlist: UserList, who: AuthenticatedUser = Depends(UserListChecker("GST"))):
     """
     ## Add members to a specific session of a specific user.
