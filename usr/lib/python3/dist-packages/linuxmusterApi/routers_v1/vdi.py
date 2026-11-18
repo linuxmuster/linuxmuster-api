@@ -1,8 +1,8 @@
 import logging
 from fastapi import APIRouter, Depends, HTTPException
-from pydantic import BaseModel
 
 from security import RoleChecker, AuthenticatedUser
+from .body_schemas import ConnectionRequest
 
 logger = logging.getLogger(__name__)
 
@@ -42,14 +42,6 @@ def _get_vdi_groups():
         )
 
 
-class ConnectionRequest(BaseModel):
-    """
-    Request body for a VDI connection.
-    """
-
-    group: str
-    user: str
-
 
 # ---- Groups / Images ----
 
@@ -58,8 +50,9 @@ def get_vdi_groups(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
     """
     ## List all available VDI groups (images).
 
-    Returns each group with its activation status, OS type, and
-    clone pool configuration (minimum, maximum, prestarted VMs).
+    Returns each group with its activation status, OS type, display name
+    (what the Desktop app shows on the card), OS family (windows / linux /
+    other) and clone pool configuration (minimum, maximum, prestarted VMs).
 
     ### Access
     - all authenticated users
@@ -72,15 +65,35 @@ def get_vdi_groups(who: AuthenticatedUser = Depends(RoleChecker("GSTsPF"))):
     """
 
     vdi_groups = _get_vdi_groups()
+
+    # edulution-linbo-vdi >= 1.1.5 derives the display name (from the .vdi
+    # file, else the start.conf [OS] Name, else the group name) and the OS
+    # family. With an older library the group name stands in.
+    try:
+        from edulution_linbo_vdi.device_store import describe_group
+    except ImportError:
+        describe_group = None
+
     result = []
     for name, data in vdi_groups["groups"].items():
         activated = data.get("activated", False)
         if isinstance(activated, str):
             activated = activated.lower() in ("yes", "true", "1")
+        display_name = str(data.get("display_name") or name)
+        os_family = ""
+        if describe_group is not None:
+            try:
+                described = describe_group(name, data)
+                display_name = described.get("display_name") or name
+                os_family = described.get("os_family", "")
+            except Exception as exc:
+                logger.warning("Cannot describe VDI group %s: %s", name, exc)
         result.append({
             "name": name,
             "activated": activated,
             "ostype": data.get("ostype", ""),
+            "display_name": display_name,
+            "os_family": os_family,
             "cores": data.get("cores", 0),
             "memory": data.get("memory", 0),
             "minimum_vms": data.get("minimum_vms", 0),
@@ -235,23 +248,18 @@ def request_connection(data: ConnectionRequest, who: AuthenticatedUser = Depends
         logger.error("Error getting connection for %s: %s", data.user, exc)
         raise HTTPException(status_code=500, detail=str(exc))
 
-    # Find the assigned VM to return its details
+    # Return the VM the broker assigned. Searching by lastConnectionRequestUser
+    # could find an older assignment of the same user on another VM.
+    vmid = str(conn["vmid"])
     group_data = vdi_groups["groups"][data.group]
-    vm_states = clone_mgr.get_states(group_data, data.group)
-    vm_info = {}
-    if vm_states:
-        for vmid, info in vm_states.items():
-            if vmid == "summary" or not isinstance(info, dict):
-                continue
-            if info.get("lastConnectionRequestUser") == data.user:
-                vm_info = {
-                    "vmid": vmid,
-                    "name": info.get("name", ""),
-                    "ip": info.get("ip", ""),
-                    "status": info.get("status", ""),
-                    "group": data.group,
-                }
-                break
+    info = (clone_mgr.get_states(group_data, data.group) or {}).get(vmid) or {}
+    vm_info = {
+        "vmid": vmid,
+        "name": info.get("name") or conn.get("name", ""),
+        "ip": info.get("ip") or conn.get("ip", ""),
+        "status": info.get("status", ""),
+        "group": data.group,
+    }
 
     return {
         "vm": vm_info,
