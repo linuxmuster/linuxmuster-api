@@ -47,6 +47,27 @@ class TestSessions:
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
+    @pytest.mark.parametrize("member", [GLOBALADMIN, SCHOOLADMIN])
+    def test_post_session_teacher_higher_member_denied(self, member):
+        r = client.post(
+            f"{BASE_URL}/sessions/{TEACHER.cn}/pytest-denied",
+            json={'users': [STUDENT.cn, member.cn]},
+            headers={"X-API-KEY": TEACHER.jwt}
+        )
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
+
+    @pytest.mark.parametrize("method", ["POST", "DELETE"])
+    def test_members_teacher_other_owner_denied(self, method):
+        r = client.request(
+            method,
+            f"{BASE_URL}/sessions/{SCHOOLADMIN.cn}/nonexistent-session-id/members",
+            json={'users': [STUDENT.cn]},
+            headers={"X-API-KEY": TEACHER.jwt}
+        )
+        assert r.status_code == 401
+        assert 'Permission denied' in r.json()["detail"]
+
     def test_get_session_teacher_first_password_students_only(self):
         # The sid is a timestamp to the second: avoid sharing it with a session created just before
         time.sleep(1)
