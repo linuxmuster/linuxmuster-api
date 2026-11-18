@@ -62,6 +62,15 @@ class TestProjects:
         r = client.get(f"{BASE_URL}/projects/{PROJECT}?all_members=true", headers={"X-API-KEY": GLOBALADMIN.jwt})
         assert r.status_code == 200
 
+    @_need_project
+    def test_get_project_all_members_teacher_first_password_students_only(self):
+        r = client.get(f"{BASE_URL}/projects/{PROJECT}?all_members=true", headers={"X-API-KEY": TEACHER.jwt})
+        assert r.status_code == 200
+        data = r.json()
+        for member in data['members'] + data['admins']:
+            if member['sophomorixRole'] not in ['student', 'examuser']:
+                assert 'sophomorixFirstPassword' not in member
+
     @pytest.mark.parametrize("user", USERS[3:])
     def test_get_project_all_members_denied(self, user):
         r = client.get(f"{BASE_URL}/projects/{PROJECT}?all_members=true", headers={"X-API-KEY": user.jwt})

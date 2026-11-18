@@ -42,6 +42,10 @@ def session_user(user: str, members_details: bool = False, who: AuthenticatedUse
         if members_details:
             members_list = ",".join(session.members)
             members = lr.get(f'/batch_users/{members_list}') if members_list else []
+            if who.role == 'teacher':
+                for member in members:
+                    if member.get('sophomorixRole') not in ['student', 'examuser']:
+                        member.pop('sophomorixFirstPassword', None)
         else:
             members = session.members
         s = {
@@ -81,6 +85,10 @@ def get_session_sessionname(user:str, sessionsid: str, who: AuthenticatedUser = 
         if sessionsid == session.sid:
             members_list = ",".join(session.members)
             members = lr.get(f'/batch_users/{members_list}') if members_list else []
+            if who.role == 'teacher':
+                for member in members:
+                    if member.get('sophomorixRole') not in ['student', 'examuser']:
+                        member.pop('sophomorixFirstPassword', None)
             return {
                 'sid': session.sid,
                 'name': session.name,

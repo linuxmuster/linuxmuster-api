@@ -109,6 +109,10 @@ def get_project_details(project: str, all_members: bool = False, who: Authentica
         admins_list = ",".join(project_details['all_admins'])
         project_details['members'] = lr.get(f'/batch_users/{members_list}') if members_list else []
         project_details['admins'] = lr.get(f'/batch_users/{admins_list}') if admins_list else []
+        if who.role == 'teacher':
+            for member in project_details['members'] + project_details['admins']:
+                if member.get('sophomorixRole') not in ['student', 'examuser']:
+                    member.pop('sophomorixFirstPassword', None)
 
     return project_details
 
