@@ -1,3 +1,23 @@
+linuxmuster-api7 (7.3.37) lmn73; urgency=high
+
+  * [security] Teachers could add themselves to the admins management
+    group by changing the case of its name: the cn must match exactly.
+  * [security] Root command execution through the target directory of
+    POST /exammode/stop.
+  * [security] /query is limited to the own school, except for global
+    administrators, and never returns first passwords.
+  * [security] Parents and staff have the same rank as teachers. A user
+    can't act on another user of the same rank or of another school.
+  * [security] First passwords of other users are hidden from teachers
+    (except students) and from school administrators (administrators).
+  * [security] School administrators only see the administrators and
+    bind users of their own school.
+  * [security] [sessions] The members of a new session and the owner of
+    a session are checked.
+  * Depends on linuxmuster-tools7 (>= 7.3.50).
+
+ -- Arnaud Kientz <arnaud@linuxmuster.net>  Wed, 18 Nov 2026 10:39:33 +0100
+
 linuxmuster-api7 (7.3.36) lmn73; urgency=medium
 
   * Configure rate limit and whitelist ips. See #41. 
