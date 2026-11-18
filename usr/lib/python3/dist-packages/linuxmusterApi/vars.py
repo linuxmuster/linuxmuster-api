@@ -1,4 +1,4 @@
-VERSION = "7.3.36"
+VERSION = "7.3.37"
 TITLE = "Linuxmuster.net API"
 
 DESCRIPTION = """
