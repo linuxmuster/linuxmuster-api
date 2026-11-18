@@ -71,6 +71,30 @@ class TestSchoolAdministrators:
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
 
+    def test_get_schooladmins_sa_other_school_forbidden(self):
+        r = client.get(f"{BASE_URL}/schooladministrators/", params={"school": "other-school"}, headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 403
+
+    def test_get_schooladmins_sa_own_school_only(self):
+        r = client.get(f"{BASE_URL}/schooladministrators/", headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 200
+        assert all(admin['sophomorixSchoolname'] == SCHOOLADMIN.school for admin in r.json())
+
+    def test_get_schooladmins_sa_no_first_password(self):
+        r = client.get(f"{BASE_URL}/schooladministrators/", headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 200
+        assert all('sophomorixFirstPassword' not in admin for admin in r.json())
+
+    def test_get_schooladmin_sa_no_first_password(self):
+        r = client.get(f"{BASE_URL}/schooladministrators/{SCHOOLADMIN.cn}", headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 200
+        assert 'sophomorixFirstPassword' not in r.json()
+
+    def test_get_schooladmin_ga_first_password(self):
+        r = client.get(f"{BASE_URL}/schooladministrators/{SCHOOLADMIN.cn}", headers={"X-API-KEY": GLOBALADMIN.jwt})
+        assert r.status_code == 200
+        assert 'sophomorixFirstPassword' in r.json()
+
 
 class TestBindUsers:
     def test_get_globalbindusers_ga(self):
@@ -100,6 +124,15 @@ class TestBindUsers:
         r = client.get(f"{BASE_URL}/schoolbindusers/", headers={"X-API-KEY": user.jwt})
         assert r.status_code == 401
         assert 'Permission denied' in r.json()["detail"]
+
+    def test_get_schoolbindusers_sa_other_school_forbidden(self):
+        r = client.get(f"{BASE_URL}/schoolbindusers/", params={"school": "other-school"}, headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 403
+
+    def test_get_schoolbindusers_sa_own_school_only(self):
+        r = client.get(f"{BASE_URL}/schoolbindusers/", headers={"X-API-KEY": SCHOOLADMIN.jwt})
+        assert r.status_code == 200
+        assert all(binduser['sophomorixSchoolname'] == SCHOOLADMIN.school for binduser in r.json())
 
 
 class TestTeachers:
