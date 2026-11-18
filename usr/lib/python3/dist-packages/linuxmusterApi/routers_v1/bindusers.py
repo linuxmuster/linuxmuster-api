@@ -66,6 +66,7 @@ def get_all_schoolbindusers(school: str = '', who: AuthenticatedUser = Depends(R
 
     ### Access
     - global-administrators
+    - school-administrators (own school)
 
     \f
     :param who: User requesting the data, read from API Token
@@ -74,6 +75,11 @@ def get_all_schoolbindusers(school: str = '', who: AuthenticatedUser = Depends(R
     :rtype: list
     """
 
+
+    if who.role != 'globaladministrator':
+        if school and school != who.school:
+            raise HTTPException(status_code=403, detail=f"Access to bindusers of school {school} not allowed.")
+        school = who.school
 
     if school:
         # Filter per school
@@ -88,6 +94,7 @@ def get_schoolbinduser(binduser: str, who: AuthenticatedUser = Depends(RoleCheck
 
     ### Access
     - global-administrators
+    - school-administrators (own school)
 
     \f
     :param binduser: The user to get the details from (samaccountname)
@@ -99,7 +106,11 @@ def get_schoolbinduser(binduser: str, who: AuthenticatedUser = Depends(RoleCheck
     """
 
 
-    user_details = lr.get(f'/schoolbindusers/{binduser}')
+    if who.role == 'globaladministrator':
+        user_details = lr.get(f'/schoolbindusers/{binduser}')
+    else:
+        # Same 404 as an unknown account: don't reveal other schools' accounts
+        user_details = lr.get(f'/schoolbindusers/{binduser}', school=who.school)
 
     if user_details:
         return user_details

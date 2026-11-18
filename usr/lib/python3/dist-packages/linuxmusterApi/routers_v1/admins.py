@@ -66,6 +66,7 @@ def get_all_schooladministrators(school: str = '', who: AuthenticatedUser = Depe
 
     ### Access
     - global-administrators
+    - school-administrators (own school)
 
     \f
     :param who: User requesting the data, read from API Token
@@ -75,11 +76,22 @@ def get_all_schooladministrators(school: str = '', who: AuthenticatedUser = Depe
     """
 
 
+    if who.role != 'globaladministrator':
+        if school and school != who.school:
+            raise HTTPException(status_code=403, detail=f"Access to schooladministrators of school {school} not allowed.")
+        school = who.school
+
     if school:
         # Filter per school
-        return lr.get('/schooladministrators', school=school)
+        results = lr.get('/schooladministrators', school=school)
+    else:
+        results = lr.get('/schooladministrators')
 
-    return lr.get('/schooladministrators')
+    if who.role != 'globaladministrator':
+        for result in results:
+            result.pop('sophomorixFirstPassword', None)
+
+    return results
 
 @router_school.get("/{admin}", name="User details")
 def get_schooladministrator(admin: str, who: AuthenticatedUser = Depends(RoleChecker("GS"))):
@@ -88,6 +100,7 @@ def get_schooladministrator(admin: str, who: AuthenticatedUser = Depends(RoleChe
 
     ### Access
     - global-administrators
+    - school-administrators (own school)
 
     \f
     :param admin: The user to get the details from (samaccountname)
@@ -99,9 +112,14 @@ def get_schooladministrator(admin: str, who: AuthenticatedUser = Depends(RoleChe
     """
 
 
-    user_details = lr.get(f'/schooladministrators/{admin}')
+    if who.role == 'globaladministrator':
+        user_details = lr.get(f'/schooladministrators/{admin}')
+    else:
+        user_details = lr.get(f'/schooladministrators/{admin}', school=who.school)
 
     if user_details:
+        if who.role != 'globaladministrator':
+            user_details.pop('sophomorixFirstPassword', None)
         return user_details
 
     raise HTTPException(status_code=404, detail=f"Schooladministrator {admin} not found")
